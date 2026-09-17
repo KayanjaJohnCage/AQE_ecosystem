@@ -1,30 +1,22 @@
 import { NextResponse } from 'next/server'
-import { createVipWithdrawalRequest } from '../../../lib/aqe/vip'
+import { resolveMutationUserId } from '../../../../lib/aqe/auth'
+import { createPersistedVipWithdrawalRequest } from '../../../../lib/aqe/vip'
 
 export async function POST(request: Request) {
   try {
     const body = await request.json().catch(() => ({}))
+    const identity = await resolveMutationUserId(request, typeof body.userId === 'string' ? body.userId : undefined)
 
-    const result = createVipWithdrawalRequest({
-      userId: String(body.userId ?? 'demo-vip-user'),
-      amount: Number(body.amount ?? 0),
-      schedule: Array.isArray(body.schedule)
-        ? body.schedule.map((entry: any) => ({
-            dayOfWeek: Number(entry.dayOfWeek),
-            isWithdrawalDay: Boolean(entry.isWithdrawalDay),
-            isActive: entry.isActive ?? true,
-            cutoffTime: entry.cutoffTime ?? '18:00',
-            processingWindow: entry.processingWindow ?? '2 business days'
-          }))
-        : [
-            { dayOfWeek: 1, isWithdrawalDay: true },
-            { dayOfWeek: 3, isWithdrawalDay: true },
-            { dayOfWeek: 5, isWithdrawalDay: true }
-          ],
-      now: body.now ? new Date(body.now) : new Date()
+    if (!identity.ok) {
+      return NextResponse.json({ ok: false, reason: identity.reason }, { status: 401 })
+    }
+
+    const result = await createPersistedVipWithdrawalRequest({
+      userId: identity.userId,
+      amount: Number(body.amount ?? 0)
     })
 
-    return NextResponse.json(result)
+    return NextResponse.json(result, { status: result.ok ? 200 : 400 })
   } catch (error) {
     return NextResponse.json(
       {

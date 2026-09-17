@@ -1,64 +1,51 @@
-# AQE Ecosystem — Phase 1 (Working repo)
+# AQE Ecosystem
 
-This repository contains the Phase 1 scaffold for the AQE production app: Next.js + TypeScript + Supabase foundation.
+AQE is a greenfield MVP ecosystem for customer, manager, VIP, and wallet workflows. This repository is being rebuilt around a real production architecture using Next.js, TypeScript, Supabase, and server-side authorization.
 
-## Updated product architecture
+## Stack
 
-The updated handoff makes several rules explicit:
+- Next.js 14
+- TypeScript
+- Supabase Auth + PostgreSQL + Storage
+- Vitest
+- Zod
 
-- QC and cash are two different economic systems.
-- `qc_wallet` and `qc_ledger` are authoritative and server-side only.
-- Creator earnings and withdrawals belong to the cash/economy layer.
-- Manager Support Room is user-facing support; internal manager/admin tools must remain separate.
-- VIP withdrawals must follow a configurable three-day weekly schedule.
+## Current status
 
-## Supabase region recommendation
+The application foundation and server-side business workflows are implemented. This includes Supabase Auth, RBAC, profiles, RLS migrations, QC charging, wallets, payments, subscriptions, media uploads, support, VIP withdrawals, bookings, marketplace products, comments, messaging, and audit logging.
 
-For the initial AQE deployment, the recommended production region is Frankfurt (`eu-central-1`) unless a specific data-residency requirement dictates otherwise.
+## Local setup
 
-The app should use the Supabase Data API for browser access and a direct PostgreSQL/Postgres connection for migrations and admin tasks. Secret values must stay on the server and never be exposed to the browser.
+1. Install dependencies with `npm install`.
+2. Copy `.env.example` to `.env.local` and fill all three Supabase values.
+3. Apply migrations `0001` through `0012` in filename order.
+4. Run `npm test` and `npm run typecheck`.
+5. Start the app with `npm run dev`.
+6. Check `http://localhost:3000/api/health`.
 
-## Quick start
+### Environment variables
 
-1. Copy `.env.example` to `.env.local` and fill values.
-2. Install packages:
+- `NEXT_PUBLIC_SUPABASE_URL`: Supabase project URL.
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`: Supabase publishable/anon key.
+- `SUPABASE_SERVICE_ROLE_KEY`: server-only key. Never expose or commit it.
+- `NEXT_PUBLIC_APP_ENV`: `development`, `staging`, or `production`.
 
-```bash
-npm install
-```
+Blank Supabase values enable limited demo mode. Persistent workflows require Supabase configuration and applied migrations.
 
-3. Start the app:
+## Important rules
 
-```bash
-npm run dev
-```
+- Do not fake financial confirmation.
+- QC and wallet operations must be server-side.
+- VIP-specific access is controlled by the server, not browser state.
+- Use Supabase Storage and database records for all media.
 
-## Useful scripts
+## Production boundaries
 
-- `npm run dev` — Next.js dev server
-- `npm run build` — Create production build
-- `npm run start` — Start production server
-- `npm run lint` — Run ESLint
-- `npm run typecheck` — Run TypeScript typecheck
-- `npm run test` — Run Vitest tests
+- Apply all migrations before staging or production use.
+- Connect real payment provider credentials and webhooks before accepting money.
+- Keep `SUPABASE_SERVICE_ROLE_KEY` server-only.
+- Demo fallback behavior is for local development only.
 
-## Phase 1 deliverables
+## Verification
 
-- Next.js (App Router) + TypeScript
-- Supabase client wiring
-- Customer & Manager UI shells
-- ESLint and TypeScript config
-- Vitest test runner
-- CI workflow skeleton
-- `.env.example` and migration foundation
-
-## Next engineering steps
-
-- Add server-side QC transaction service and atomic balance updates
-- Build `qc_wallet` + `qc_ledger` schema and related policies
-- Add daily claim and weekly attendance logic
-- Separate support tickets from internal admin tools
-- Introduce configurable VIP withdrawal schedule and approval flow
-- Add audit logs, RLS, and idempotency protections
-
-See [docs/aqe-architecture.md](docs/aqe-architecture.md) for the implementation summary.
+Verify with `npm run typecheck`, `npm test`, and `npm run build`. Use `npm run dev` for local development and `/api/health` to inspect configuration.

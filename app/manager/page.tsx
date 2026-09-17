@@ -1,4 +1,3 @@
-import React from 'react'
 import '../../app/globals.css'
 
 const supportQueue = [
@@ -15,12 +14,15 @@ export default function ManagerPage() {
         <h2>Manager</h2>
         <nav>
           <ul>
-            <li>Dashboard</li>
+            <li>Command Center</li>
             <li>Users</li>
-            <li>QC ledger</li>
+            <li>Profiles</li>
+            <li>Subscriptions</li>
+            <li>Bookings</li>
+            <li>Transactions</li>
             <li>Withdrawals</li>
-            <li>Support queue</li>
-            <li>Audit logs</li>
+            <li>Moderation</li>
+            <li>Audit</li>
           </ul>
         </nav>
       </aside>

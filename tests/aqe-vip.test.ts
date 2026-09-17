@@ -19,7 +19,7 @@ describe('VIP withdraw schedule', () => {
       { dayOfWeek: 5, isWithdrawalDay: true }
     ]
 
-    expect(isVipWithdrawalAllowed(schedule, new Date('2026-09-07T12:00:00Z')).allowed).toBe(false)
+    expect(isVipWithdrawalAllowed(schedule, new Date('2026-09-08T12:00:00Z')).allowed).toBe(false)
     expect(isVipWithdrawalAllowed(schedule, new Date('2026-09-09T12:00:00Z')).allowed).toBe(true)
   })
 
