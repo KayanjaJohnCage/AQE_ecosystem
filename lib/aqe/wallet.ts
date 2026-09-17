@@ -1,38 +1,43 @@
-export type WalletLedgerDirection = 'credit' | 'debit'
+export type WalletLedgerDirection = "credit" | "debit";
 
 export type WalletLedgerEntry = {
-  id: string
-  userId: string
-  amount: number
-  currency: string
-  direction: WalletLedgerDirection
-  referenceType: string
-  referenceId: string
-  status: 'pending' | 'completed' | 'failed'
-  createdAt: string
-  balanceAfter: number
-}
+  id: string;
+  userId: string;
+  amount: number;
+  currency: string;
+  direction: WalletLedgerDirection;
+  referenceType: string;
+  referenceId: string;
+  status: "pending" | "completed" | "failed";
+  createdAt: string;
+  balanceAfter: number;
+};
 
 export function applyWalletLedger({
   userId,
   amount,
-  currency = 'USD',
+  currency = "USD",
   direction,
   referenceType,
   referenceId,
   currentBalance = 0,
-  status = 'completed'
+  status = "completed",
 }: {
-  userId: string
-  amount: number
-  currency?: string
-  direction: WalletLedgerDirection
-  referenceType: string
-  referenceId: string
-  currentBalance?: number
-  status?: 'pending' | 'completed' | 'failed'
-}): { ok: boolean; balanceAfter: number; ledgerEntry: WalletLedgerEntry; reason?: string } {
-  const numericAmount = Number(amount)
+  userId: string;
+  amount: number;
+  currency?: string;
+  direction: WalletLedgerDirection;
+  referenceType: string;
+  referenceId: string;
+  currentBalance?: number;
+  status?: "pending" | "completed" | "failed";
+}): {
+  ok: boolean;
+  balanceAfter: number;
+  ledgerEntry: WalletLedgerEntry;
+  reason?: string;
+} {
+  const numericAmount = Number(amount);
 
   if (!Number.isFinite(numericAmount) || numericAmount <= 0) {
     return {
@@ -48,13 +53,13 @@ export function applyWalletLedger({
         referenceId,
         status,
         createdAt: new Date().toISOString(),
-        balanceAfter: currentBalance
+        balanceAfter: currentBalance,
       },
-      reason: 'Amount must be greater than zero.'
-    }
+      reason: "Amount must be greater than zero.",
+    };
   }
 
-  if (direction === 'debit' && currentBalance < numericAmount) {
+  if (direction === "debit" && currentBalance < numericAmount) {
     return {
       ok: false,
       balanceAfter: currentBalance,
@@ -66,15 +71,18 @@ export function applyWalletLedger({
         direction,
         referenceType,
         referenceId,
-        status: 'failed',
+        status: "failed",
         createdAt: new Date().toISOString(),
-        balanceAfter: currentBalance
+        balanceAfter: currentBalance,
       },
-      reason: 'Insufficient wallet balance.'
-    }
+      reason: "Insufficient wallet balance.",
+    };
   }
 
-  const balanceAfter = direction === 'credit' ? currentBalance + numericAmount : currentBalance - numericAmount
+  const balanceAfter =
+    direction === "credit"
+      ? currentBalance + numericAmount
+      : currentBalance - numericAmount;
 
   return {
     ok: true,
@@ -89,7 +97,7 @@ export function applyWalletLedger({
       referenceId,
       status,
       createdAt: new Date().toISOString(),
-      balanceAfter
-    }
-  }
+      balanceAfter,
+    },
+  };
 }

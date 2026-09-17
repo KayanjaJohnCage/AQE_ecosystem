@@ -1,17 +1,22 @@
-export type NotificationKind = 'financial' | 'booking' | 'reward' | 'moderation' | 'system'
+export type NotificationKind =
+  | "financial"
+  | "booking"
+  | "reward"
+  | "moderation"
+  | "system";
 
 export function createNotification({
   userId,
   kind,
   title,
   message,
-  read = false
+  read = false,
 }: {
-  userId: string
-  kind: NotificationKind
-  title: string
-  message: string
-  read?: boolean
+  userId: string;
+  kind: NotificationKind;
+  title: string;
+  message: string;
+  read?: boolean;
 }) {
   return {
     id: `notification-${Date.now()}`,
@@ -20,6 +25,6 @@ export function createNotification({
     title,
     message,
     read,
-    createdAt: new Date().toISOString()
-  }
+    createdAt: new Date().toISOString(),
+  };
 }
