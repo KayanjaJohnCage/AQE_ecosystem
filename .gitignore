@@ -1,12 +1,11 @@
 .env
 .env.local
 .env.*.local
-
+Program Files
 node_modules/
 .next/
 out/
 coverage/
-
 *.tsbuildinfo
 *.log
 
