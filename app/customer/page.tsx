@@ -240,51 +240,258 @@ function LegacyCustomerPage() {
 }
 
 export default function CustomerPage() {
-  const [data, setData] = useState({ qcBalance: 0, tier: 'basic', bookings: 0, earnings: 0 })
-  const [authOpen, setAuthOpen] = useState(false)
-  const [authMode, setAuthMode] = useState<'login' | 'register'>('login')
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [displayName, setDisplayName] = useState('')
-  const [message, setMessage] = useState('')
+  const [data, setData] = useState({
+    qcBalance: 0,
+    tier: "basic",
+    bookings: 0,
+    earnings: 0,
+  });
+  const [authOpen, setAuthOpen] = useState(false);
+  const [authMode, setAuthMode] = useState<"login" | "register">("login");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [displayName, setDisplayName] = useState("");
+  const [message, setMessage] = useState("");
 
   useEffect(() => {
-    const session = JSON.parse(localStorage.getItem('aqe-session') ?? '{}')
-    const user = JSON.parse(localStorage.getItem('aqe-user') ?? '{}')
-    const headers: HeadersInit = {}
-    if (session.access_token) headers.authorization = `Bearer ${session.access_token}`
-    if (user.id) headers['x-user-id'] = user.id
-    fetch('/api/dashboard', { headers }).then(async (response) => {
-      if (response.ok) {
-        const payload = await response.json()
-        if (payload.customer) setData(payload.customer)
-      }
-    }).catch(() => undefined)
-  }, [])
+    const session = JSON.parse(localStorage.getItem("aqe-session") ?? "{}");
+    const user = JSON.parse(localStorage.getItem("aqe-user") ?? "{}");
+    const headers: HeadersInit = {};
+    if (session.access_token)
+      headers.authorization = `Bearer ${session.access_token}`;
+    if (user.id) headers["x-user-id"] = user.id;
+    fetch("/api/dashboard", { headers })
+      .then(async (response) => {
+        if (response.ok) {
+          const payload = await response.json();
+          if (payload.customer) setData(payload.customer);
+        }
+      })
+      .catch(() => undefined);
+  }, []);
 
   async function submitAuth(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-    const endpoint = authMode === 'login' ? '/api/auth/login' : '/api/auth/register'
-    const body = authMode === 'login' ? { email, password } : { email, password, displayName }
-    const response = await fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
-    const payload = await response.json()
-    setMessage(payload.ok ? 'Request completed.' : payload.reason || 'Request failed.')
-    if (payload.session?.access_token) localStorage.setItem('aqe-session', JSON.stringify(payload.session))
-    if (payload.user) localStorage.setItem('aqe-user', JSON.stringify(payload.user))
-    if (payload.ok) setAuthOpen(false)
+    event.preventDefault();
+    const endpoint =
+      authMode === "login" ? "/api/auth/login" : "/api/auth/register";
+    const body =
+      authMode === "login"
+        ? { email, password }
+        : { email, password, displayName };
+    const response = await fetch(endpoint, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    const payload = await response.json();
+    setMessage(
+      payload.ok ? "Request completed." : payload.reason || "Request failed.",
+    );
+    if (payload.session?.access_token)
+      localStorage.setItem("aqe-session", JSON.stringify(payload.session));
+    if (payload.user)
+      localStorage.setItem("aqe-user", JSON.stringify(payload.user));
+    if (payload.ok) setAuthOpen(false);
   }
 
   return (
     <main className="aqe-client" id="app">
-      <header className="client-header"><div><div className="client-mark">AQE</div><div className="client-subtitle">AfriQueerEcosystem</div></div><div className="header-actions"><span className="currency-badge">UGX</span><button className="icon-button" type="button" onClick={() => setAuthOpen(true)} aria-label="Open account">◉</button></div></header>
+      <header className="client-header">
+        <div>
+          <div className="client-mark">AQE</div>
+          <div className="client-subtitle">AfriQueerEcosystem</div>
+        </div>
+        <div className="header-actions">
+          <span className="currency-badge">UGX</span>
+          <button
+            className="icon-button"
+            type="button"
+            onClick={() => setAuthOpen(true)}
+            aria-label="Open account"
+          >
+            ◉
+          </button>
+        </div>
+      </header>
       <section className="client-content">
-        <div className="client-hero"><div className="hero-kicker">WELCOME TO YOUR ECOSYSTEM</div><h1>Find your people.<br /><em>Build your world.</em></h1><p>Explore profiles, connect with community, and unlock your next chapter.</p><button className="primary-button" type="button" onClick={() => setAuthOpen(true)}>Explore the ecosystem <span>→</span></button></div>
-        <section className="section-block"><div className="section-heading"><div><span className="eyebrow">YOUR DASHBOARD</span><h2>My account</h2></div><button className="text-button" type="button" onClick={() => setAuthOpen(true)}>Sign in</button></div><div className="account-row"><div className="account-avatar">?</div><div><strong>Guest account</strong><span>Sign in to manage your profile</span></div></div><div className="metric-grid"><div className="metric-card"><span>WALLET</span><strong>{data.qcBalance} QC</strong></div><div className="metric-card"><span>TIER</span><strong>{data.tier}</strong></div><div className="metric-card"><span>BOOKINGS</span><strong>{data.bookings}</strong></div><div className="metric-card"><span>EARNINGS</span><strong>UGX {data.earnings}</strong></div></div></section>
-        <section className="section-block"><div className="section-heading"><div><span className="eyebrow">DISCOVER</span><h2>Explore AQE</h2></div><button className="text-button" type="button">View all</button></div><div className="explore-grid">{['Directory', 'Bookings', 'Messages', 'Rewards', 'Marketplace', 'VIP room'].map((item, index) => <button className="explore-tile" type="button" key={item}><span>{['⌕', '◫', '✉', '★', '▤', '♢'][index]}</span><strong>{item}</strong></button>)}</div></section>
-        <section className="section-block callout"><span className="callout-icon">✦</span><div><span className="eyebrow">VIP ECOSYSTEM</span><h2>Unlock more of AQE</h2><p>Premium tools, private rooms, and deeper connections.</p></div><button type="button" aria-label="Open VIP">→</button></section>
+        <div className="client-hero">
+          <div className="hero-kicker">WELCOME TO YOUR ECOSYSTEM</div>
+          <h1>
+            Find your people.
+            <br />
+            <em>Build your world.</em>
+          </h1>
+          <p>
+            Explore profiles, connect with community, and unlock your next
+            chapter.
+          </p>
+          <button
+            className="primary-button"
+            type="button"
+            onClick={() => setAuthOpen(true)}
+          >
+            Explore the ecosystem <span>→</span>
+          </button>
+        </div>
+        <section className="section-block">
+          <div className="section-heading">
+            <div>
+              <span className="eyebrow">YOUR DASHBOARD</span>
+              <h2>My account</h2>
+            </div>
+            <button
+              className="text-button"
+              type="button"
+              onClick={() => setAuthOpen(true)}
+            >
+              Sign in
+            </button>
+          </div>
+          <div className="account-row">
+            <div className="account-avatar">?</div>
+            <div>
+              <strong>Guest account</strong>
+              <span>Sign in to manage your profile</span>
+            </div>
+          </div>
+          <div className="metric-grid">
+            <div className="metric-card">
+              <span>WALLET</span>
+              <strong>{data.qcBalance} QC</strong>
+            </div>
+            <div className="metric-card">
+              <span>TIER</span>
+              <strong>{data.tier}</strong>
+            </div>
+            <div className="metric-card">
+              <span>BOOKINGS</span>
+              <strong>{data.bookings}</strong>
+            </div>
+            <div className="metric-card">
+              <span>EARNINGS</span>
+              <strong>UGX {data.earnings}</strong>
+            </div>
+          </div>
+        </section>
+        <section className="section-block">
+          <div className="section-heading">
+            <div>
+              <span className="eyebrow">DISCOVER</span>
+              <h2>Explore AQE</h2>
+            </div>
+            <button className="text-button" type="button">
+              View all
+            </button>
+          </div>
+          <div className="explore-grid">
+            {[
+              "Directory",
+              "Bookings",
+              "Messages",
+              "Rewards",
+              "Marketplace",
+              "VIP room",
+            ].map((item, index) => (
+              <button className="explore-tile" type="button" key={item}>
+                <span>{["⌕", "◫", "✉", "★", "▤", "♢"][index]}</span>
+                <strong>{item}</strong>
+              </button>
+            ))}
+          </div>
+        </section>
+        <section className="section-block callout">
+          <span className="callout-icon">✦</span>
+          <div>
+            <span className="eyebrow">VIP ECOSYSTEM</span>
+            <h2>Unlock more of AQE</h2>
+            <p>Premium tools, private rooms, and deeper connections.</p>
+          </div>
+          <button type="button" aria-label="Open VIP">
+            →
+          </button>
+        </section>
       </section>
-      <nav className="client-bottom-nav" aria-label="Primary navigation">{['Home', 'Discover', 'Messages', 'Activity', 'Me'].map((item, index) => <button className={index === 0 ? 'active' : ''} type="button" key={item}><span>{['⌂', '⌕', '✉', '♢', '●'][index]}</span>{item}</button>)}</nav>
-      {authOpen ? <div className="auth-overlay" role="dialog" aria-modal="true"><form className="auth-sheet" onSubmit={submitAuth}><button className="close-button" type="button" onClick={() => setAuthOpen(false)} aria-label="Close">×</button><div className="auth-brand">AQE</div><div className="auth-tabs"><button className={authMode === 'login' ? 'active' : ''} type="button" onClick={() => setAuthMode('login')}>SIGN IN</button><button className={authMode === 'register' ? 'active' : ''} type="button" onClick={() => setAuthMode('register')}>REGISTER</button></div><h2>{authMode === 'login' ? 'Welcome back' : 'Join AQE'}</h2><p>{authMode === 'login' ? 'Return to your ecosystem.' : 'Create your account and start exploring.'}</p>{authMode === 'register' ? <input className="auth-input" value={displayName} onChange={(event) => setDisplayName(event.target.value)} placeholder="Display name" required /> : null}<input className="auth-input" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="Email address" type="email" required /><input className="auth-input" value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Password" type="password" required /><button className="primary-button" type="submit">{authMode === 'login' ? 'Sign in' : 'Create account'} <span>→</span></button>{message ? <small className="auth-message">{message}</small> : null}</form></div> : null}
+      <nav className="client-bottom-nav" aria-label="Primary navigation">
+        {["Home", "Discover", "Messages", "Activity", "Me"].map(
+          (item, index) => (
+            <button
+              className={index === 0 ? "active" : ""}
+              type="button"
+              key={item}
+            >
+              <span>{["⌂", "⌕", "✉", "♢", "●"][index]}</span>
+              {item}
+            </button>
+          ),
+        )}
+      </nav>
+      {authOpen ? (
+        <div className="auth-overlay" role="dialog" aria-modal="true">
+          <form className="auth-sheet" onSubmit={submitAuth}>
+            <button
+              className="close-button"
+              type="button"
+              onClick={() => setAuthOpen(false)}
+              aria-label="Close"
+            >
+              ×
+            </button>
+            <div className="auth-brand">AQE</div>
+            <div className="auth-tabs">
+              <button
+                className={authMode === "login" ? "active" : ""}
+                type="button"
+                onClick={() => setAuthMode("login")}
+              >
+                SIGN IN
+              </button>
+              <button
+                className={authMode === "register" ? "active" : ""}
+                type="button"
+                onClick={() => setAuthMode("register")}
+              >
+                REGISTER
+              </button>
+            </div>
+            <h2>{authMode === "login" ? "Welcome back" : "Join AQE"}</h2>
+            <p>
+              {authMode === "login"
+                ? "Return to your ecosystem."
+                : "Create your account and start exploring."}
+            </p>
+            {authMode === "register" ? (
+              <input
+                className="auth-input"
+                value={displayName}
+                onChange={(event) => setDisplayName(event.target.value)}
+                placeholder="Display name"
+                required
+              />
+            ) : null}
+            <input
+              className="auth-input"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              placeholder="Email address"
+              type="email"
+              required
+            />
+            <input
+              className="auth-input"
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              placeholder="Password"
+              type="password"
+              required
+            />
+            <button className="primary-button" type="submit">
+              {authMode === "login" ? "Sign in" : "Create account"}{" "}
+              <span>→</span>
+            </button>
+            {message ? <small className="auth-message">{message}</small> : null}
+          </form>
+        </div>
+      ) : null}
     </main>
-  )
+  );
 }
