@@ -1,0 +1,3067 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>AQE Ecosystem Manager — Phase 9</title>
+    <style>
+      :root {
+        --bg: #07070b;
+        --panel: #101018;
+        --panel2: #171724;
+        --line: #29293a;
+        --text: #f5f5f7;
+        --muted: #9292a8;
+        --red: #e11d48;
+        --blue: #4f7cff;
+        --green: #22c55e;
+        --amber: #f59e0b;
+        --cyan: #06b6d4;
+        --danger: #ef4444;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font:
+          14px Inter,
+          system-ui,
+          -apple-system,
+          Segoe UI,
+          Roboto,
+          sans-serif;
+      }
+      button,
+      input,
+      select {
+        font: inherit;
+      }
+      .app {
+        min-height: 100vh;
+        display: flex;
+      }
+      .sidebar {
+        width: 255px;
+        background: #0b0b11;
+        border-right: 1px solid var(--line);
+        padding: 18px 12px;
+        position: fixed;
+        inset: 0 auto 0 0;
+        overflow: auto;
+      }
+      .brand {
+        font-size: 22px;
+        font-weight: 900;
+        letter-spacing: 2px;
+        padding: 8px 12px 20px;
+        background: linear-gradient(90deg, var(--red), var(--blue));
+        -webkit-background-clip: text;
+        color: transparent;
+      }
+      .section {
+        font-size: 10px;
+        color: #67677d;
+        font-weight: 800;
+        padding: 14px 12px 7px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+      }
+      .nav button {
+        width: 100%;
+        border: 0;
+        background: transparent;
+        color: #9c9caf;
+        text-align: left;
+        padding: 10px 12px;
+        border-radius: 10px;
+        margin: 2px 0;
+        cursor: pointer;
+      }
+      .nav button:hover,
+      .nav button.active {
+        background: var(--panel2);
+        color: #fff;
+      }
+      .nav i {
+        width: 24px;
+      }
+      .main {
+        margin-left: 255px;
+        flex: 1;
+      }
+      .top {
+        height: 66px;
+        border-bottom: 1px solid var(--line);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 24px;
+        background: rgba(7, 7, 11, 0.92);
+        backdrop-filter: blur(14px);
+        position: sticky;
+        top: 0;
+        z-index: 20;
+      }
+      .content {
+        padding: 24px;
+        max-width: 1500px;
+        margin: auto;
+      }
+      .title {
+        font-size: 25px;
+        font-weight: 850;
+      }
+      .sub {
+        color: var(--muted);
+        margin-top: 5px;
+      }
+      .grid {
+        display: grid;
+        gap: 14px;
+      }
+      .g4 {
+        grid-template-columns: repeat(4, 1fr);
+      }
+      .g3 {
+        grid-template-columns: repeat(3, 1fr);
+      }
+      .g2 {
+        grid-template-columns: repeat(2, 1fr);
+      }
+      .card {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 15px;
+        padding: 17px;
+      }
+      .metric {
+        font-size: 27px;
+        font-weight: 850;
+        margin-top: 7px;
+      }
+      .label {
+        font-size: 11px;
+        color: var(--muted);
+      }
+      .delta {
+        font-size: 11px;
+        margin-top: 7px;
+      }
+      .up {
+        color: var(--green);
+      }
+      .warn {
+        color: var(--amber);
+      }
+      .bad {
+        color: var(--danger);
+      }
+      .table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+      .table th,
+      .table td {
+        text-align: left;
+        padding: 12px;
+        border-bottom: 1px solid var(--line);
+        font-size: 12px;
+      }
+      .table th {
+        color: #85859c;
+        font-size: 10px;
+        text-transform: uppercase;
+      }
+      .pill {
+        display: inline-block;
+        padding: 4px 8px;
+        border-radius: 999px;
+        font-size: 10px;
+        font-weight: 800;
+        background: #222234;
+        color: #c9c9d8;
+      }
+      .green {
+        color: var(--green);
+        background: #10301e;
+      }
+      .amber {
+        color: var(--amber);
+        background: #35280d;
+      }
+      .red {
+        color: #ff7b95;
+        background: #3b121e;
+      }
+      .blue {
+        color: #8eacff;
+        background: #152347;
+      }
+      .toolbar {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin: 18px 0;
+      }
+      .input,
+      .select {
+        background: var(--panel2);
+        border: 1px solid var(--line);
+        color: #fff;
+        border-radius: 10px;
+        padding: 10px 12px;
+        outline: 0;
+      }
+      .input {
+        min-width: 240px;
+      }
+      .btn {
+        border: 1px solid var(--line);
+        background: var(--panel2);
+        color: #fff;
+        border-radius: 9px;
+        padding: 9px 12px;
+        cursor: pointer;
+      }
+      .btn.primary {
+        background: var(--red);
+        border-color: var(--red);
+      }
+      .btn.blue {
+        background: #1a2f67;
+        border-color: #3152a6;
+      }
+      .btn.green {
+        background: #123b24;
+        border-color: #206a3c;
+      }
+      .btn.danger {
+        background: #401521;
+        border-color: #712238;
+      }
+      .page {
+        display: none;
+      }
+      .page.active {
+        display: block;
+      }
+      .two {
+        display: grid;
+        grid-template-columns: 2fr 1fr;
+        gap: 14px;
+      }
+      .activity {
+        display: flex;
+        gap: 10px;
+        padding: 11px 0;
+        border-bottom: 1px solid var(--line);
+      }
+      .dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--blue);
+        margin-top: 5px;
+      }
+      .bar {
+        height: 8px;
+        background: #242436;
+        border-radius: 99px;
+        overflow: hidden;
+      }
+      .bar > i {
+        display: block;
+        height: 100%;
+        background: linear-gradient(90deg, var(--red), var(--blue));
+      }
+      .queue {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px;
+        border: 1px solid var(--line);
+        background: var(--panel2);
+        border-radius: 11px;
+        margin-bottom: 8px;
+      }
+      .avatar {
+        width: 36px;
+        height: 36px;
+        border-radius: 10px;
+        background: linear-gradient(135deg, var(--red), var(--blue));
+        display: grid;
+        place-items: center;
+        font-weight: 800;
+      }
+      .user {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .right {
+        margin-left: auto;
+      }
+      .modal {
+        position: fixed;
+        inset: 0;
+        background: #000b;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 100;
+      }
+      .modal.open {
+        display: flex;
+      }
+      .sheet {
+        width: min(720px, 92vw);
+        max-height: 88vh;
+        overflow: auto;
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        padding: 20px;
+      }
+      .formgrid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+      }
+      .formgrid .full {
+        grid-column: 1/-1;
+      }
+      .notice {
+        padding: 12px;
+        border-radius: 10px;
+        background: #2d230b;
+        border: 1px solid #6a5212;
+        color: #f7c94c;
+        font-size: 12px;
+      }
+      .switch {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 13px 0;
+        border-bottom: 1px solid var(--line);
+      }
+      .toggle {
+        width: 42px;
+        height: 23px;
+        border: 0;
+        border-radius: 99px;
+        background: #343447;
+        padding: 2px;
+      }
+      .toggle i {
+        display: block;
+        width: 19px;
+        height: 19px;
+        background: #fff;
+        border-radius: 50%;
+        transition: 0.2s;
+      }
+      .toggle.on {
+        background: var(--green);
+      }
+      .toggle.on i {
+        transform: translateX(19px);
+      }
+      .toast {
+        position: fixed;
+        right: 22px;
+        bottom: 22px;
+        background: var(--panel);
+        border: 1px solid var(--line);
+        padding: 12px 15px;
+        border-radius: 10px;
+        z-index: 200;
+      }
+      .mobile {
+        display: none;
+      }
+      @media (max-width: 900px) {
+        .sidebar {
+          width: 70px;
+          padding: 12px 7px;
+        }
+        .brand {
+          font-size: 0;
+          text-align: center;
+        }
+        .brand:after {
+          content: "AQ";
+          font-size: 18px;
+        }
+        .nav span,
+        .section {
+          display: none;
+        }
+        .nav button {
+          text-align: center;
+        }
+        .nav i {
+          width: auto;
+        }
+        .main {
+          margin-left: 70px;
+        }
+        .g4 {
+          grid-template-columns: 1fr 1fr;
+        }
+        .g3 {
+          grid-template-columns: 1fr;
+        }
+        .two {
+          grid-template-columns: 1fr;
+        }
+      }
+      @media (max-width: 600px) {
+        .top {
+          padding: 0 12px;
+        }
+        .content {
+          padding: 14px;
+        }
+        .g4,
+        .g2 {
+          grid-template-columns: 1fr;
+        }
+        .input {
+          min-width: 100%;
+        }
+        .formgrid {
+          grid-template-columns: 1fr;
+        }
+        .mobile {
+          display: block;
+        }
+        .top .adminname {
+          display: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app">
+      <aside class="sidebar">
+        <div class="brand">AQE ADMIN</div>
+        <div class="section">Operations</div>
+        <div class="nav">
+          <button class="active" onclick="page('dashboard', this)">
+            ▣ <span>Dashboard</span></button
+          ><button onclick="page('users', this)">
+            ♙ <span>Users & Profiles</span></button
+          ><button onclick="page('media', this)">
+            ▧ <span>Profile Media</span></button
+          ><button onclick="page('verification', this)">
+            ✓ <span>Verification</span></button
+          ><button onclick="page('subscriptions', this)">
+            ◆ <span>Subscriptions</span></button
+          ><button onclick="page('bookings', this)">
+            ◫ <span>Bookings & Requests</span></button
+          ><button onclick="page('messages', this)">
+            ✉ <span>Messages & DM</span></button
+          ><button onclick="page('marketplace', this)">
+            ▤ <span>Marketplace & Stores</span></button
+          ><button onclick="page('assets', this)">
+            ▣ <span>VIP Asset Room</span>
+          </button>
+        </div>
+        <div class="section">Trust & Finance</div>
+        <div class="nav">
+          <button onclick="page('moderation', this)">
+            ⚑ <span>Reports & Moderation</span></button
+          ><button onclick="page('support', this)">
+            ✉ <span>Customer Support</span></button
+          ><button onclick="page('transactions', this)">
+            ₣ <span>Transactions & QC</span></button
+          ><button onclick="page('payments', this)">
+            ⇄ <span>Payments & Approvals</span></button
+          ><button onclick="page('withdrawals', this)">
+            ↥ <span>Withdrawals</span></button
+          ><button onclick="page('risk', this)">
+            ⚠ <span>AML / Risk</span>
+          </button>
+        </div>
+        <div class="section">VIP Ecosystem</div>
+        <div class="nav">
+          <button onclick="page('team', this)">
+            ♟ <span>My Team / Referrals</span></button
+          ><button onclick="page('rewards', this)">
+            ★ <span>Tasks & Rewards</span></button
+          ><button onclick="page('raffle', this)">🎟 <span>Raffle</span></button
+          ><button onclick="page('announcements', this)">
+            ◉ <span>Announcements</span></button
+          ><button onclick="page('notifications', this)">
+            ♢ <span>Notifications</span>
+          </button>
+        </div>
+        <div class="section">Control</div>
+        <div class="nav">
+          <button onclick="page('permissions', this)">
+            ⚿ <span>Roles & Permissions</span></button
+          ><button onclick="page('ownerControl', this)">
+            ✦ <span>Owner Action Console</span></button
+          ><button onclick="page('audit', this)">
+            ◷ <span>Audit Logs</span></button
+          ><button onclick="page('tierRules', this)">
+            ◆ <span>Tier Rules</span></button
+          ><button onclick="page('salary', this)">
+            ₦ <span>VIP Salary</span></button
+          ><button onclick="page('settings', this)">
+            ⚙ <span>Global Settings</span>
+          </button>
+        </div>
+      </aside>
+      <main class="main">
+        <header class="top">
+          <div>
+            <b>AQE Ecosystem Manager</b>
+            <div class="label">
+              Live ecosystem oversight & operational control
+            </div>
+          </div>
+          <div class="user">
+            <div class="avatar">AD</div>
+            <span class="adminname">Administrator</span
+            ><button class="btn" onclick="toast('Manager session controls')">
+              ⌄
+            </button>
+          </div>
+        </header>
+        <div class="content">
+          <section id="dashboard" class="page active">
+            <div class="title">Command Center</div>
+            <div class="sub">
+              Activity overview sourced from the AQE ecosystem state.
+            </div>
+            <div class="grid g4" style="margin-top: 18px">
+              <div class="card">
+                <div class="label">USERS</div>
+                <div id="mUsers" class="metric">0</div>
+              </div>
+              <div class="card">
+                <div class="label">VIP</div>
+                <div id="mVip" class="metric">0</div>
+              </div>
+              <div class="card">
+                <div class="label">MEDIA ASSETS</div>
+                <div id="mMedia" class="metric">0</div>
+              </div>
+              <div class="card">
+                <div class="label">TRANSACTIONS</div>
+                <div id="mTx" class="metric">0</div>
+              </div>
+            </div>
+            <div class="two" style="margin-top: 14px">
+              <div class="card">
+                <h3>Live activity</h3>
+                <div id="liveActivity"></div>
+              </div>
+              <div class="card">
+                <h3>Ecosystem queues</h3>
+                <div id="queues"></div>
+              </div>
+            </div>
+          </section>
+          <section id="users" class="page">
+            <div class="title">Users & Profiles</div>
+            <div class="sub">
+              Manage account state, tier, verification and profile access.
+            </div>
+            <div class="toolbar">
+              <input
+                class="input"
+                placeholder="Search users..."
+                oninput="filterRows(this, 'usersTable')"
+              /><select class="select" id="tierFilter" onchange="renderUsers()">
+                <option>All tiers</option>
+                <option>Guest</option>
+                <option>Basic</option>
+                <option>Premium</option>
+                <option>VIP</option>
+              </select>
+            </div>
+            <div class="card">
+              <table class="table" id="usersTable">
+                <thead>
+                  <tr>
+                    <th>User</th>
+                    <th>Profile</th>
+                    <th>Tier</th>
+                    <th>Wallet</th>
+                    <th>QC</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </section>
+          <section id="media" class="page">
+            <div class="title">Profile Media Manager</div>
+            <div class="sub">
+              Review profile photos, galleries and VIP video assets uploaded
+              through the AQE ecosystem.
+            </div>
+            <div class="toolbar">
+              <select class="select" id="mediaFilter" onchange="renderMedia()">
+                <option>All media</option>
+                <option>Images</option>
+                <option>Videos</option>
+                <option>Profile photos</option></select
+              ><button class="btn" onclick="refreshAll()">Refresh</button>
+            </div>
+            <div class="card">
+              <table class="table" id="mediaTable">
+                <thead>
+                  <tr>
+                    <th>Owner</th>
+                    <th>Tier</th>
+                    <th>Type</th>
+                    <th>Name</th>
+                    <th>Profile Photo</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </section>
+          <section id="verification" class="page">
+            <div class="title">Verification Queue</div>
+            <div class="sub">
+              Review verification cases and record auditable decisions.
+            </div>
+            <div class="card">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th>Case</th>
+                    <th>User</th>
+                    <th>Verification</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody id="verifyTable"></tbody>
+              </table>
+            </div>
+          </section>
+          <section id="subscriptions" class="page">
+            <div class="title">Subscriptions</div>
+            <div class="sub">
+              Premium and VIP plans, entitlement changes and account upgrades.
+            </div>
+            <div class="grid g3" style="margin-top: 18px">
+              <div class="card">
+                <div class="label">PREMIUM USERS</div>
+                <div id="premCount" class="metric">0</div>
+              </div>
+              <div class="card">
+                <div class="label">VIP USERS</div>
+                <div id="vipCount" class="metric">0</div>
+              </div>
+              <div class="card">
+                <div class="label">FAILED / PENDING</div>
+                <div class="metric">—</div>
+              </div>
+            </div>
+            <div class="card" style="margin-top: 14px">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th>Plan</th>
+                    <th>Price</th>
+                    <th>Entitlement</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>Premium</td>
+                    <td>UGX 250,000</td>
+                    <td>Premium profile + 3 photos</td>
+                    <td><span class="pill green">ACTIVE</span></td>
+                  </tr>
+                  <tr>
+                    <td>VIP</td>
+                    <td>UGX 500,000</td>
+                    <td>Full VIP ecosystem</td>
+                    <td><span class="pill blue">ACTIVE</span></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+          <section id="bookings" class="page">
+            <div class="title">Bookings & Requests</div>
+            <div class="sub">Monitor DM access, content and time requests.</div>
+            <div class="grid g4" style="margin-top: 18px">
+              <div class="card">
+                <div class="label">DM REQUESTS</div>
+                <div id="dmQ" class="metric">0</div>
+              </div>
+              <div class="card">
+                <div class="label">CONTENT REQUESTS</div>
+                <div id="contentQ" class="metric">0</div>
+              </div>
+              <div class="card">
+                <div class="label">ACTIVE BOOKINGS</div>
+                <div id="bookQ" class="metric">0</div>
+              </div>
+              <div class="card">
+                <div class="label">DISPUTES</div>
+                <div class="metric">0</div>
+              </div>
+            </div>
+            <div class="card" style="margin-top: 14px">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Requester</th>
+                    <th>Target</th>
+                    <th>Type</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody id="bookingTable"></tbody>
+              </table>
+            </div>
+          </section>
+          <section id="messages" class="page">
+            <div class="title">Messages & DM Requests</div>
+            <div class="sub">
+              Oversight of conversations and authorized DM relationships.
+              Message content is not exposed unnecessarily.
+            </div>
+            <div class="grid g3" style="margin-top: 18px">
+              <div class="card">
+                <div class="label">CONVERSATIONS</div>
+                <div id="convCount" class="metric">0</div>
+              </div>
+              <div class="card">
+                <div class="label">MESSAGES</div>
+                <div id="msgCount" class="metric">0</div>
+              </div>
+              <div class="card">
+                <div class="label">DM ACCESS</div>
+                <div id="authCount" class="metric">0</div>
+              </div>
+            </div>
+          </section>
+          <section id="marketplace" class="page">
+            <div class="title">Marketplace & VIP Stores</div>
+            <div class="sub">Products, storefronts, orders and disputes.</div>
+            <div class="grid g4" style="margin-top: 18px">
+              <div class="card">
+                <div class="label">STORES</div>
+                <div id="storeCount" class="metric">0</div>
+              </div>
+              <div class="card">
+                <div class="label">PRODUCTS</div>
+                <div id="productCount" class="metric">0</div>
+              </div>
+              <div class="card">
+                <div class="label">ORDERS</div>
+                <div class="metric">0</div>
+              </div>
+              <div class="card">
+                <div class="label">DISPUTES</div>
+                <div class="metric">0</div>
+              </div>
+            </div>
+          </section>
+          <section id="assets" class="page">
+            <div class="title">VIP Asset Room</div>
+            <div class="sub">
+              Administrative oversight of protected VIP assets.
+            </div>
+            <div class="notice" style="margin: 18px 0">
+              Private media must remain role-gated and audited. Verification
+              documents are never exposed here.
+            </div>
+            <div class="grid g3">
+              <div class="card">
+                <div class="label">ASSET ROOM ITEMS</div>
+                <div id="assetCount" class="metric">0</div>
+              </div>
+              <div class="card">
+                <div class="label">SAVINGS VAULTS</div>
+                <div id="vaultCount" class="metric">0</div>
+              </div>
+              <div class="card">
+                <div class="label">ACCESS EVENTS</div>
+                <div id="assetEvents" class="metric">0</div>
+              </div>
+            </div>
+          </section>
+          <section id="moderation" class="page">
+            <div class="title">Reports & Moderation</div>
+            <div class="sub">
+              Profiles, messages, media and marketplace reports.
+            </div>
+            <div class="card">
+              <div class="toolbar">
+                <button
+                  class="btn primary"
+                  onclick="recordManagerAction('Moderation queue reviewed')"
+                >
+                  Review queue
+                </button>
+              </div>
+              <div id="modSummary" class="notice">
+                No live moderation backend is attached to this prototype.
+              </div>
+            </div>
+          </section>
+          <section id="support" class="page">
+            <div class="title">Customer Support</div>
+            <div class="sub">
+              Support issues across account, recharge, booking and access flows.
+            </div>
+            <div class="card">
+              <div class="grid g3">
+                <div class="card">
+                  <div class="label">OPEN</div>
+                  <div class="metric">0</div>
+                </div>
+                <div class="card">
+                  <div class="label">URGENT</div>
+                  <div class="metric">0</div>
+                </div>
+                <div class="card">
+                  <div class="label">RECHARGE ISSUES</div>
+                  <div class="metric">0</div>
+                </div>
+              </div>
+            </div>
+          </section>
+          <section id="transactions" class="page">
+            <div class="title">Transactions & QC</div>
+            <div class="sub">
+              Read-only oversight of wallet and unified QC activity; QC rules
+              remain owned by the user ecosystem.
+            </div>
+            <div class="card">
+              <table class="table" id="txTable">
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>User</th>
+                    <th>Type</th>
+                    <th>Amount</th>
+                    <th>QC</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </section>
+          <section id="withdrawals" class="page">
+            <div class="title">Withdrawals</div>
+            <div class="sub">Review withdrawal requests and risk state.</div>
+            <div class="card">
+              <table class="table" id="withdrawalsTableProd">
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>User</th>
+                    <th>Amount</th>
+                    <th>Payout</th>
+                    <th>Provider</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </section>
+          <section id="risk" class="page">
+            <div class="title">AML / Risk</div>
+            <div class="sub">Risk monitoring and human-review controls.</div>
+            <div class="card">
+              <div class="notice">
+                No risk engine is connected to this browser prototype. Do not
+                treat these figures as production compliance data.
+              </div>
+            </div>
+          </section>
+          <section id="team" class="page">
+            <div class="title">My Team / Referrals</div>
+            <div class="sub">
+              Manager visibility into VIP referral trees and team activity.
+            </div>
+            <div class="card">
+              <table class="table" id="teamTable">
+                <thead>
+                  <tr>
+                    <th>VIP</th>
+                    <th>Code</th>
+                    <th>Direct</th>
+                    <th>Earnings</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </section>
+          <section id="rewards" class="page">
+            <div class="title">Tasks & Rewards</div>
+            <div class="sub">
+              Manage VIP tasks, completion state and reward activity.
+            </div>
+            <div class="card">
+              <table class="table" id="rewardTable">
+                <thead>
+                  <tr>
+                    <th>Task</th>
+                    <th>Audience</th>
+                    <th>Status</th>
+                    <th>Reward</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </section>
+          <section id="raffle" class="page">
+            <div class="title">Raffle</div>
+            <div class="sub">
+              Monitor raffle participation without changing the completed QC
+              rules.
+            </div>
+            <div class="card">
+              <div class="grid g3">
+                <div class="card">
+                  <div class="label">TICKETS</div>
+                  <div id="raffleTickets" class="metric">0</div>
+                </div>
+                <div class="card">
+                  <div class="label">PARTICIPANTS</div>
+                  <div id="raffleUsers" class="metric">0</div>
+                </div>
+                <div class="card">
+                  <div class="label">STATUS</div>
+                  <div class="metric" style="font-size: 18px">ACTIVE</div>
+                </div>
+              </div>
+            </div>
+          </section>
+          <section id="announcements" class="page">
+            <div class="title">Announcements</div>
+            <div class="sub">
+              Create ecosystem announcements and targeted VIP notices.
+            </div>
+            <div class="card">
+              <button
+                class="btn primary"
+                onclick="recordManagerAction('Announcement composer opened')"
+              >
+                + New announcement
+              </button>
+            </div>
+          </section>
+          <section id="notifications" class="page">
+            <div class="title">Global Notifications</div>
+            <div class="sub">
+              Operational notifications and user-facing alerts.
+            </div>
+            <div class="card">
+              <button
+                class="btn primary"
+                onclick="
+                  recordManagerAction('Notification broadcast composer opened')
+                "
+              >
+                + Broadcast
+              </button>
+            </div>
+          </section>
+          <section id="permissions" class="page">
+            <div class="title">Roles & Permissions</div>
+            <div class="sub">Least-privilege manager access.</div>
+            <div class="card">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th>Role</th>
+                    <th>Users</th>
+                    <th>Finance</th>
+                    <th>KYC</th>
+                    <th>Moderation</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>Support</td>
+                    <td>✓</td>
+                    <td>—</td>
+                    <td>—</td>
+                    <td>Limited</td>
+                  </tr>
+                  <tr>
+                    <td>Moderator</td>
+                    <td>Limited</td>
+                    <td>—</td>
+                    <td>—</td>
+                    <td>✓</td>
+                  </tr>
+                  <tr>
+                    <td>Finance</td>
+                    <td>Limited</td>
+                    <td>✓</td>
+                    <td>—</td>
+                    <td>—</td>
+                  </tr>
+                  <tr>
+                    <td>Administrator</td>
+                    <td>✓</td>
+                    <td>✓</td>
+                    <td>✓</td>
+                    <td>✓</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+          <section id="audit" class="page">
+            <div class="title">Audit Logs</div>
+            <div class="sub">Manager actions and ecosystem events.</div>
+            <div class="toolbar">
+              <input
+                class="input"
+                placeholder="Search audit log"
+                oninput="filterRows(this, 'auditTable')"
+              />
+            </div>
+            <div class="card">
+              <table class="table" id="auditTable">
+                <thead>
+                  <tr>
+                    <th>Time</th>
+                    <th>Actor</th>
+                    <th>Action</th>
+                    <th>Target</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </section>
+          <section id="ownerControl" class="page">
+            <div class="title">System Owner Action Console</div>
+            <div class="sub">
+              Full prototype control surface for adding, updating, blocking,
+              unblocking and deleting ecosystem records. Every action is written
+              to the manager audit log.
+            </div>
+            <div class="grid g3" style="margin-top: 18px">
+              <div class="card">
+                <div class="label">TARGET</div>
+                <select id="ownerTarget" class="select" style="width: 100%">
+                  <option value="user">User / Account</option>
+                  <option value="profile">Profile</option>
+                  <option value="product">Marketplace Product</option>
+                </select>
+              </div>
+              <div class="card">
+                <div class="label">ACTION</div>
+                <select id="ownerAction" class="select" style="width: 100%">
+                  <option value="add">Add</option>
+                  <option value="update">Update</option>
+                  <option value="block">Block</option>
+                  <option value="unblock">Unblock</option>
+                  <option value="delete">Delete</option>
+                </select>
+              </div>
+              <div class="card">
+                <div class="label">RECORD ID</div>
+                <input
+                  id="ownerRecordId"
+                  class="input"
+                  style="width: 100%"
+                  placeholder="Optional for Add"
+                />
+              </div>
+            </div>
+            <div class="card" style="margin-top: 14px">
+              <div class="label">PAYLOAD / FIELD CHANGES</div>
+              <textarea
+                id="ownerPayload"
+                class="input"
+                style="width: 100%; min-height: 130px; box-sizing: border-box"
+                placeholder='For update/add: JSON such as {"name":"New Name","status":"Active"}'
+              ></textarea>
+              <div style="margin-top: 12px">
+                <button class="btn primary" onclick="aqeOwnerExecute()">
+                  Execute owner action</button
+                ><button
+                  class="btn"
+                  style="margin-left: 8px"
+                  onclick="aqeOwnerClear()"
+                >
+                  Clear
+                </button>
+              </div>
+            </div>
+          </section>
+          <section id="settings" class="page">
+            <div class="title">Global Settings & System Control</div>
+            <div class="sub">
+              System Owner / Administrator — full prototype view and edit
+              control over ecosystem configuration, naming, categories,
+              services, membership rules and payment receiving details.
+            </div>
+            <div class="notice" style="margin: 18px 0">
+              Changes made here are saved to this browser's prototype
+              configuration and are reflected immediately in the demo.
+              Production enforcement must move these controls to protected
+              server-side settings with audit logging.
+            </div>
+            <div class="grid g2">
+              <div class="card">
+                <h3 style="margin-bottom: 12px">System identity</h3>
+                <div class="formgrid">
+                  <label
+                    >System name<input
+                      id="sysName"
+                      class="input"
+                      style="width: 100%" /></label
+                  ><label
+                    >Public brand<input
+                      id="sysBrand"
+                      class="input"
+                      style="width: 100%" /></label
+                  ><label class="full"
+                    >Tagline<input
+                      id="sysTagline"
+                      class="input"
+                      style="width: 100%"
+                  /></label>
+                </div>
+              </div>
+              <div class="card">
+                <h3 style="margin-bottom: 12px">Payment receiving details</h3>
+                <div class="formgrid">
+                  <label
+                    >MTN receiving number<input
+                      id="payMtnNumber"
+                      class="input"
+                      style="width: 100%" /></label
+                  ><label
+                    >MTN receiving name<input
+                      id="payMtnName"
+                      class="input"
+                      style="width: 100%" /></label
+                  ><label
+                    >Airtel receiving number<input
+                      id="payAirtelNumber"
+                      class="input"
+                      style="width: 100%" /></label
+                  ><label
+                    >Airtel receiving name<input
+                      id="payAirtelName"
+                      class="input"
+                      style="width: 100%"
+                  /></label>
+                </div>
+              </div>
+              <div class="card">
+                <h3 style="margin-bottom: 12px">Profile categories</h3>
+                <p class="label" style="margin-bottom: 8px">
+                  Edit the values shown throughout registration and profile
+                  management.
+                </p>
+                <textarea
+                  id="sysProfileCategories"
+                  class="input"
+                  style="width: 100%; min-height: 120px; box-sizing: border-box"
+                ></textarea>
+              </div>
+              <div class="card">
+                <h3 style="margin-bottom: 12px">Content categories</h3>
+                <p class="label" style="margin-bottom: 8px">
+                  Edit registration content-category checklist values.
+                </p>
+                <textarea
+                  id="sysContentCategories"
+                  class="input"
+                  style="width: 100%; min-height: 120px; box-sizing: border-box"
+                ></textarea>
+              </div>
+              <div class="card">
+                <h3 style="margin-bottom: 12px">Creator services checklist</h3>
+                <p class="label" style="margin-bottom: 8px">
+                  Edit creator service checklist labels available to independent
+                  profiles.
+                </p>
+                <textarea
+                  id="sysCreatorServices"
+                  class="input"
+                  style="width: 100%; min-height: 150px; box-sizing: border-box"
+                ></textarea>
+              </div>
+              <div class="card">
+                <h3 style="margin-bottom: 12px">Membership tiers</h3>
+                <p class="label" style="margin-bottom: 8px">
+                  Exactly three membership tiers are supported by this demo.
+                </p>
+                <div class="formgrid">
+                  <label
+                    >Tier 1<input
+                      id="tier1Name"
+                      class="input"
+                      style="width: 100%"
+                      value="Basic" /></label
+                  ><label
+                    >Tier 2<input
+                      id="tier2Name"
+                      class="input"
+                      style="width: 100%"
+                      value="Premium" /></label
+                  ><label
+                    >Tier 3<input
+                      id="tier3Name"
+                      class="input"
+                      style="width: 100%"
+                      value="VIP"
+                  /></label>
+                </div>
+              </div>
+              <div class="card" id="aqeTierFeatureAccess">
+                <h3 style="margin-bottom: 8px">Tier Feature Access</h3>
+                <p class="label" style="margin-bottom: 12px">
+                  System Owner control: choose which membership tiers can access
+                  ecosystem features normally reserved for VIP. Changes are
+                  shared with the customer prototype through the AQE system
+                  configuration.
+                </p>
+                <div id="aqeTierFeatureRows"></div>
+              </div>
+              <div class="card">
+                <h3 style="margin-bottom: 12px">Feature controls</h3>
+                <div class="switch">
+                  <span>Maintenance mode</span
+                  ><button class="toggle" onclick="toggle(this)">
+                    <i></i>
+                  </button>
+                </div>
+                <div class="switch">
+                  <span>New registrations</span
+                  ><button class="toggle on" onclick="toggle(this)">
+                    <i></i>
+                  </button>
+                </div>
+                <div class="switch">
+                  <span>Marketplace</span
+                  ><button class="toggle on" onclick="toggle(this)">
+                    <i></i>
+                  </button>
+                </div>
+                <div class="switch">
+                  <span>Booking queue</span
+                  ><button class="toggle on" onclick="toggle(this)">
+                    <i></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div class="card" style="margin-top: 14px">
+              <h3 style="margin-bottom: 8px">
+                Full system naming / configuration
+              </h3>
+              <p class="label">
+                The System Owner can edit navigation labels, page headings,
+                service names, categories, payment recipient details and other
+                configurable business information from one control surface.
+              </p>
+              <button
+                class="btn primary"
+                style="margin-top: 14px"
+                onclick="saveSystemControl()"
+              >
+                Save all system changes
+              </button>
+              <button
+                class="btn"
+                style="margin-top: 14px"
+                onclick="resetSystemControl()"
+              >
+                Reset demo configuration
+              </button>
+              <button
+                class="btn"
+                style="margin-top: 14px"
+                onclick="aqeResetTierFeatureAccess()"
+              >
+                Reset tier access
+              </button>
+            </div>
+          </section>
+
+          <section id="payments" class="page">
+            <div class="title">Payments & Approvals</div>
+            <div class="sub">
+              MukuruPay collection orders and AQE Manager Direct Deposit
+              requests remain pending until confirmed by the payment provider or
+              an authorized finance/admin action.
+            </div>
+            <div class="grid g4" style="margin-top: 18px">
+              <div class="card">
+                <div class="label">PENDING PAYMENTS</div>
+                <div id="pendingPayCount" class="metric">0</div>
+              </div>
+              <div class="card">
+                <div class="label">PENDING WITHDRAWALS</div>
+                <div id="pendingWdCount" class="metric">0</div>
+              </div>
+              <div class="card">
+                <div class="label">PAYMENT METHODS</div>
+                <div class="metric" style="font-size: 18px">
+                  MukuruPay + AQE Manager
+                </div>
+              </div>
+              <div class="card">
+                <div class="label">APPROVAL MODEL</div>
+                <div class="metric" style="font-size: 18px">Server / Admin</div>
+              </div>
+            </div>
+            <div class="card" style="margin-top: 14px">
+              <table class="table" id="paymentsTable">
+                <thead>
+                  <tr>
+                    <th>Reference</th>
+                    <th>User</th>
+                    <th>Type</th>
+                    <th>Plan</th>
+                    <th>Amount</th>
+                    <th>Method</th>
+                    <th>Sender</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+            <div class="notice" style="margin-top: 14px">
+              AQE Manager Direct Deposit is a manual confirmation method for
+              wallet deposits. The manager must verify that funds were actually
+              received before approving; approval is what credits the customer
+              wallet.
+            </div>
+          </section>
+
+          <section id="tierRules" class="page">
+            <div class="title">Tier Rules</div>
+            <div class="sub">
+              Current commercial rules supplied for the AQE membership
+              structure.
+            </div>
+            <div class="card" style="margin-top: 18px">
+              <table class="table" id="tierRulesTable">
+                <thead>
+                  <tr>
+                    <th>Tier</th>
+                    <th>Initial</th>
+                    <th>12% deduction</th>
+                    <th>Welcome</th>
+                    <th>Renewal</th>
+                    <th>Net referral</th>
+                    <th>VIP salary</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>Basic</td>
+                    <td>UGX 125,000</td>
+                    <td>UGX 15,000</td>
+                    <td>UGX 3,000</td>
+                    <td>UGX 2,500</td>
+                    <td>UGX 104,500</td>
+                    <td>—</td>
+                  </tr>
+                  <tr>
+                    <td>Premium</td>
+                    <td>UGX 250,000</td>
+                    <td>UGX 30,000</td>
+                    <td>UGX 3,000</td>
+                    <td>UGX 5,000</td>
+                    <td>UGX 212,000</td>
+                    <td>—</td>
+                  </tr>
+                  <tr>
+                    <td>VIP</td>
+                    <td>UGX 500,000</td>
+                    <td>UGX 60,000</td>
+                    <td>UGX 3,000</td>
+                    <td>UGX 8,500</td>
+                    <td>UGX 428,500</td>
+                    <td>UGX 10,000 on 20th + UGX 1,000/referral</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="notice" style="margin-top: 14px">
+              Subscribed Basic, Premium and VIP members are exempt from the
+              legacy QC charges. Registered but unupgraded accounts remain
+              subject to those charges.
+            </div>
+          </section>
+
+          <section id="salary" class="page">
+            <div class="title">VIP Salary</div>
+            <div class="sub">
+              VIP monthly salary accrues on the 20th. Each successful referral
+              adds UGX 1,000 to the original UGX 10,000 base.
+            </div>
+            <div class="grid g3" style="margin-top: 18px">
+              <div class="card">
+                <div class="label">TODAY</div>
+                <div id="salaryDay" class="metric">—</div>
+              </div>
+              <div class="card">
+                <div class="label">VIP MEMBERS</div>
+                <div id="salaryVipCount" class="metric">0</div>
+              </div>
+              <div class="card">
+                <div class="label">DUE NOW</div>
+                <div id="salaryDueCount" class="metric">0</div>
+              </div>
+            </div>
+            <div class="card" style="margin-top: 14px">
+              <table class="table" id="salaryTable">
+                <thead>
+                  <tr>
+                    <th>VIP</th>
+                    <th>Referrals</th>
+                    <th>Current Salary</th>
+                    <th>This Month</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </section>
+        </div>
+      </main>
+    </div>
+    <div id="toast" class="toast" style="display: none"></div>
+    <script>
+      const DB_KEY = "aqe_state_v3",
+        MANAGER_KEY = "aqe_manager_audit";
+      function getState() {
+        try {
+          return JSON.parse(localStorage.getItem(DB_KEY) || "{}");
+        } catch (e) {
+          return {};
+        }
+      }
+      function users() {
+        return getState().users || [];
+      }
+      function profiles() {
+        return getState().profiles || [];
+      }
+      function mediaRows() {
+        const ps = profiles(),
+          us = users();
+        return ps.flatMap((p) =>
+          (p.media || []).map((m) => ({
+            p,
+            m,
+            u: us.find((x) => x.id === p.ownerId || x.profileId === p.id) || {},
+          })),
+        );
+      }
+      function page(id, b) {
+        document
+          .querySelectorAll(".page")
+          .forEach((x) => x.classList.remove("active"));
+        const el = document.getElementById(id);
+        if (el) el.classList.add("active");
+        document
+          .querySelectorAll(".nav button")
+          .forEach((x) => x.classList.remove("active"));
+        if (b) b.classList.add("active");
+        refreshAll();
+        scrollTo(0, 0);
+      }
+      function money(v) {
+        return "UGX " + Number(v || 0).toLocaleString();
+      }
+      function renderUsers() {
+        const f = document.getElementById("tierFilter").value;
+        const us = users().filter(
+          (u) =>
+            f === "All tiers" ||
+            (u.tier || "").toLowerCase() === (f || "").toLowerCase(),
+        );
+        document.querySelector("#usersTable tbody").innerHTML =
+          us
+            .map((u, i) => {
+              const id = String(u.id || i);
+              const blocked =
+                String(u.status || "Active").toLowerCase() === "blocked";
+              return `<tr><td><div class="user"><div class="avatar">${(
+                u.name || "?"
+              )
+                .split(" ")
+                .map((x) => x[0])
+                .join("")
+                .slice(
+                  0,
+                  2,
+                )}</div>${escUser(u.name || "Unnamed")}</div></td><td>${escUser(u.type || u.profileType || "—")}</td><td><span class="pill ${u.tier === "vip" ? "blue" : u.tier === "premium" ? "green" : ""}">${escUser(u.tier || "guest")}</span></td><td>${money(u.wallet?.UGX)}</td><td>${Number(u.qc || 0).toLocaleString()}</td><td>${escUser(u.status || "Active")}</td><td><button class="btn" onclick="aqeOwnerEditUser(${JSON.stringify(id)})">Edit</button> <button class="btn" onclick="aqeOwnerToggleUser(${JSON.stringify(id)})">${blocked ? "Unblock" : "Block"}</button> <button class="btn" onclick="aqeOwnerDeleteUser(${JSON.stringify(id)})">Delete</button></td></tr>`;
+            })
+            .join("") ||
+          '<tr><td colspan="7">No users found in the shared AQE state.</td></tr>';
+      }
+      function escUser(v) {
+        return String(v == null ? "" : v).replace(
+          /[&<>'"]/g,
+          (c) =>
+            ({
+              "&": "&amp;",
+              "<": "&lt;",
+              ">": "&gt;",
+              "'": "&#39;",
+              '"': "&quot;",
+            })[c],
+        );
+      }
+      function renderMedia() {
+        let rows = mediaRows();
+        const f = document.getElementById("mediaFilter").value;
+        if (f === "Images") rows = rows.filter((x) => x.m.type === "image");
+        if (f === "Videos") rows = rows.filter((x) => x.m.type === "video");
+        if (f === "Profile photos")
+          rows = rows.filter(
+            (x) => x.p.profilePhotoId === x.m.id || x.m.profilePhoto,
+          );
+        document.querySelector("#mediaTable tbody").innerHTML =
+          rows
+            .map(
+              (x, i) =>
+                `<tr><td>${x.u.name || x.p.name || "Unknown"}</td><td>${x.u.tier || "—"}</td><td>${x.m.type || "image"}</td><td>${x.m.name || "Untitled"}</td><td>${x.p.profilePhotoId === x.m.id || x.m.profilePhoto ? '<span class="pill blue">PROFILE</span>' : "—"}</td><td><button class="btn" onclick="recordManagerAction('Opened media ${String(x.m.id || i)}')">Review</button></td></tr>`,
+            )
+            .join("") ||
+          '<tr><td colspan="6">No profile media found.</td></tr>';
+      }
+      function renderTx() {
+        const tx = getState().transactions || [];
+        document.querySelector("#txTable tbody").innerHTML =
+          tx
+            .slice()
+            .reverse()
+            .slice(0, 100)
+            .map(
+              (t, i) =>
+                `<tr><td>${t.id || "TX-" + i}</td><td>${t.userName || t.userId || "—"}</td><td>${t.type || t.title || t.source || "—"}</td><td>${t.amount != null ? money(t.amount) : "—"}</td><td>${t.qc != null ? t.qc : t.qcAmount != null ? t.qcAmount : "—"}</td><td><span class="pill green">${t.status || "POSTED"}</span></td></tr>`,
+            )
+            .join("") || '<tr><td colspan="6">No transactions found.</td></tr>';
+      }
+      function renderTeam() {
+        const s = getState(),
+          us = users().filter((u) => u.tier === "vip");
+        document.querySelector("#teamTable tbody").innerHTML =
+          us
+            .map((u) => {
+              const r = s.referrals?.[u.id] || {};
+              return `<tr><td>${u.name || u.id}</td><td>${u.referralCode || r.code || "—"}</td><td>${(r.children || []).length}</td><td>${money(r.earnings)}</td><td><button class="btn" onclick="recordManagerAction('Opened team for ${u.id}')">Open</button></td></tr>`;
+            })
+            .join("") ||
+          '<tr><td colspan="5">No VIP team data found.</td></tr>';
+      }
+      function renderRewards() {
+        const ts = getState().tasks || [];
+        document.querySelector("#rewardTable tbody").innerHTML =
+          ts
+            .map(
+              (t) =>
+                `<tr><td>${t.title || t.name || "Task"}</td><td>${t.audience || "VIP"}</td><td><span class="pill blue">${t.status || "ACTIVE"}</span></td><td>${t.reward || t.amount || "—"}</td></tr>`,
+            )
+            .join("") ||
+          '<tr><td colspan="4">No task campaigns found.</td></tr>';
+      }
+      function renderBookings() {
+        const s = getState(),
+          arr = s.bookings || s.requests || [];
+        document.getElementById("dmQ").textContent = arr.filter((x) =>
+          String(x.type || "")
+            .toLowerCase()
+            .includes("dm"),
+        ).length;
+        document.getElementById("contentQ").textContent = arr.filter(
+          (x) =>
+            !String(x.type || "")
+              .toLowerCase()
+              .includes("dm"),
+        ).length;
+        document.getElementById("bookQ").textContent = arr.filter(
+          (x) =>
+            String(x.status || "")
+              .toLowerCase()
+              .includes("active") ||
+            String(x.status || "")
+              .toLowerCase()
+              .includes("processing"),
+        ).length;
+        document.querySelector("#bookingTable").innerHTML =
+          arr
+            .slice(0, 100)
+            .map(
+              (x, i) =>
+                `<tr><td>${x.id || "BK-" + i}</td><td>${x.requesterName || x.requesterId || "—"}</td><td>${x.targetName || x.vipName || x.targetId || "—"}</td><td>${x.type || "Booking"}</td><td><span class="pill amber">${x.status || "PENDING"}</span></td><td><button class="btn" onclick="recordManagerAction('Opened booking ${x.id || i}')">Review</button></td></tr>`,
+            )
+            .join("") ||
+          '<tr><td colspan="6">No booking records found.</td></tr>';
+      }
+      function renderAudit() {
+        let a = [];
+        try {
+          a = JSON.parse(localStorage.getItem(MANAGER_KEY) || "[]");
+        } catch (e) {}
+        document.querySelector("#auditTable tbody").innerHTML =
+          a
+            .slice()
+            .reverse()
+            .map(
+              (x) =>
+                `<tr><td>${x.time}</td><td>${x.actor}</td><td>${x.action}</td><td>${x.target || "—"}</td></tr>`,
+            )
+            .join("") ||
+          '<tr><td colspan="4">No manager actions recorded.</td></tr>';
+      }
+      function refreshAll() {
+        const s = getState(),
+          us = users(),
+          ps = profiles(),
+          mr = mediaRows(),
+          tx = s.transactions || [],
+          con = s.conversations || [];
+        document.getElementById("mUsers").textContent = us.length;
+        document.getElementById("mVip").textContent = us.filter(
+          (u) => u.tier === "vip",
+        ).length;
+        document.getElementById("mMedia").textContent = mr.length;
+        document.getElementById("mTx").textContent = tx.length;
+        document.getElementById("premCount").textContent = us.filter(
+          (u) => u.tier === "premium",
+        ).length;
+        document.getElementById("vipCount").textContent = us.filter(
+          (u) => u.tier === "vip",
+        ).length;
+        document.getElementById("convCount").textContent = con.length;
+        document.getElementById("msgCount").textContent = con.reduce(
+          (n, c) => n + (c.messages || []).length,
+          0,
+        );
+        document.getElementById("authCount").textContent = (
+          s.dmAuthorizations ||
+          s.authorizedDMs ||
+          []
+        ).length;
+        document.getElementById("productCount").textContent = (
+          s.products || []
+        ).length;
+        document.getElementById("storeCount").textContent = us.filter(
+          (u) => u.tier === "vip" && u.store,
+        ).length;
+        document.getElementById("assetCount").textContent = (
+          s.assetRoom?.assets ||
+          s.assetRoom?.items ||
+          []
+        ).length;
+        document.getElementById("vaultCount").textContent = (
+          s.assetRoom?.savingsVaults || []
+        ).length;
+        document.getElementById("assetEvents").textContent = (
+          s.assetRoom?.accessEvents || []
+        ).length;
+        document.getElementById("raffleTickets").textContent = us.reduce(
+          (n, u) => n + Number(u.raffleTickets || 0),
+          0,
+        );
+        document.getElementById("raffleUsers").textContent = us.filter(
+          (u) => Number(u.raffleTickets || 0) > 0,
+        ).length;
+        document.getElementById("liveActivity").innerHTML =
+          tx
+            .slice()
+            .reverse()
+            .slice(0, 6)
+            .map(
+              (t) =>
+                `<div class="activity"><i class="dot"></i><div><b>${t.title || t.type || "Transaction"}</b><div class="label">${t.userName || t.userId || "User"} · ${t.id || ""}</div></div></div>`,
+            )
+            .join("") ||
+          '<div class="label">No live activity in shared state.</div>';
+        document.getElementById("queues").innerHTML =
+          `<div class="queue"><span>Users</span><b>${us.length}</b></div><div class="queue"><span>Profile media</span><b>${mr.length}</b></div><div class="queue"><span>Conversations</span><b>${con.length}</b></div><div class="queue"><span>Transactions</span><b>${tx.length}</b></div>`;
+        renderUsers();
+        renderMedia();
+        renderTx();
+        renderTeam();
+        renderRewards();
+        renderBookings();
+        renderAudit();
+      }
+      function recordManagerAction(action, target = "system") {
+        let a = [];
+        try {
+          a = JSON.parse(localStorage.getItem(MANAGER_KEY) || "[]");
+        } catch (e) {}
+        a.push({
+          time: new Date().toLocaleString(),
+          actor: "admin-01",
+          action,
+          target,
+        });
+        localStorage.setItem(MANAGER_KEY, JSON.stringify(a));
+        toast(action + " — audit event recorded");
+        renderAudit();
+      }
+      function toast(t) {
+        const e = document.getElementById("toast");
+        e.textContent = t;
+        e.style.display = "block";
+        setTimeout(() => (e.style.display = "none"), 2200);
+      }
+      function toggle(b) {
+        b.classList.toggle("on");
+        recordManagerAction("Setting changed");
+      }
+      function filterRows(input, id) {
+        const q = input.value.toLowerCase();
+        document
+          .querySelectorAll("#" + id + " tbody tr")
+          .forEach(
+            (r) =>
+              (r.style.display = r.innerText.toLowerCase().includes(q)
+                ? ""
+                : "none"),
+          );
+      }
+      window.addEventListener("storage", (e) => {
+        if (e.key === DB_KEY) refreshAll();
+      });
+      setInterval(refreshAll, 3000);
+      refreshAll();
+    </script>
+    <script id="aqe-manager-production-patch">
+      (function () {
+        "use strict";
+        const DB_KEY_PROD = "aqe_state_v3";
+        const AUDIT_KEY = "aqe_manager_audit";
+        const RULES = {
+          basic: {
+            initial: 125000,
+            deduction: 15000,
+            welcome: 3000,
+            renewal: 2500,
+            net: 104500,
+          },
+          premium: {
+            initial: 250000,
+            deduction: 30000,
+            welcome: 3000,
+            renewal: 5000,
+            net: 212000,
+          },
+          vip: {
+            initial: 500000,
+            deduction: 60000,
+            welcome: 3000,
+            renewal: 8500,
+            net: 428500,
+          },
+        };
+        function st() {
+          try {
+            return JSON.parse(localStorage.getItem(DB_KEY_PROD) || "{}");
+          } catch (e) {
+            return {};
+          }
+        }
+        function save(s) {
+          localStorage.setItem(DB_KEY_PROD, JSON.stringify(s));
+        }
+        function money(n) {
+          return "UGX " + Number(n || 0).toLocaleString();
+        }
+        function uid(p) {
+          return (
+            p + "_" + Date.now() + "_" + Math.random().toString(36).slice(2, 7)
+          );
+        }
+        function iso() {
+          return new Date().toISOString();
+        }
+        function monthKey(d = new Date()) {
+          return (
+            d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0")
+          );
+        }
+        function escM(v) {
+          return String(v == null ? "" : v).replace(
+            /[&<>'"]/g,
+            (c) =>
+              ({
+                "&": "&amp;",
+                "<": "&lt;",
+                ">": "&gt;",
+                "'": "&#39;",
+                '"': "&quot;",
+              })[c],
+          );
+        }
+        function pill(s) {
+          const x = String(s || "").toLowerCase();
+          return (
+            '<span class="pill ' +
+            (x === "approved" || x === "active" || x === "completed"
+              ? "green"
+              : x === "pending"
+                ? "amber"
+                : "red") +
+            '">' +
+            escM(String(s || "").toUpperCase()) +
+            "</span>"
+          );
+        }
+        function audit(action, target = "system") {
+          let a = [];
+          try {
+            a = JSON.parse(localStorage.getItem(AUDIT_KEY) || "[]");
+          } catch (e) {}
+          a.push({
+            time: new Date().toLocaleString(),
+            actor: "admin-01",
+            action,
+            target,
+          });
+          localStorage.setItem(AUDIT_KEY, JSON.stringify(a));
+        }
+        function users(s) {
+          return s.users || [];
+        }
+        function normalize(s) {
+          s.users = Array.isArray(s.users) ? s.users : [];
+          s.transactions = Array.isArray(s.transactions) ? s.transactions : [];
+          s.paymentOrders = Array.isArray(s.paymentOrders)
+            ? s.paymentOrders
+            : [];
+          s.withdrawalRequests = Array.isArray(s.withdrawalRequests)
+            ? s.withdrawalRequests
+            : [];
+          s.referrals = s.referrals || {};
+          s.vipSalaryLedger = Array.isArray(s.vipSalaryLedger)
+            ? s.vipSalaryLedger
+            : [];
+          s.users.forEach((u) => {
+            u.wallet = u.wallet || { UGX: 0, USD: 0, USDT: 0 };
+            if (typeof u.successfulReferrals !== "number")
+              u.successfulReferrals = 0;
+            u.vipSalary = u.vipSalary || {
+              base: 10000,
+              current: 10000,
+              lastPaidMonth: null,
+            };
+            if (u.tier === "vip")
+              u.vipSalary.current =
+                10000 + (Number(u.successfulReferrals) || 0) * 1000;
+          });
+          return s;
+        }
+        function applySubscription(s, o) {
+          const u = s.users.find((x) => x.id === o.userId);
+          if (!u) return false;
+          const plan = RULES[o.plan];
+          if (!plan) return false;
+          const isInitial = o.type === "subscription";
+          u.wallet = u.wallet || { UGX: 0, USD: 0, USDT: 0 };
+          u.tier = o.plan;
+          u.subscriptionStatus = "active";
+          const started = u.subscription?.startedAt || iso();
+          const next = new Date();
+          next.setMonth(next.getMonth() + 1);
+          u.subscription = {
+            plan: o.plan,
+            status: "active",
+            startedAt: started,
+            nextRenewal: next.toISOString(),
+            lastPaymentId: o.id,
+          };
+          u.vipSalary = u.vipSalary || {
+            base: 10000,
+            current: 10000,
+            lastPaidMonth: null,
+          };
+          u.vipSalary.current =
+            10000 + (Number(u.successfulReferrals) || 0) * 1000;
+          if (isInitial && u.referredBy) {
+            const ref = s.users.find((x) => x.referralCode === u.referredBy);
+            if (ref) {
+              ref.wallet = ref.wallet || { UGX: 0, USD: 0, USDT: 0 };
+              ref.wallet.UGX = (Number(ref.wallet.UGX) || 0) + plan.net;
+              ref.successfulReferrals =
+                Number(ref.successfulReferrals || 0) + 1;
+              ref.vipSalary = ref.vipSalary || {
+                base: 10000,
+                current: 10000,
+                lastPaidMonth: null,
+              };
+              ref.vipSalary.current =
+                10000 + (Number(ref.successfulReferrals) || 0) * 1000;
+              s.referrals[ref.id] = s.referrals[ref.id] || {
+                code: ref.referralCode,
+                earnings: 0,
+                children: [],
+              };
+              s.referrals[ref.id].earnings =
+                Number(s.referrals[ref.id].earnings || 0) + plan.net;
+              s.transactions.push({
+                id: uid("ref"),
+                type: "referral_earning",
+                amount: plan.net,
+                status: "posted",
+                userId: ref.id,
+                userName: ref.name,
+                sourceUserId: u.id,
+                sourceUserName: u.name,
+                plan: o.plan,
+                date: iso(),
+              });
+            }
+          }
+          s.transactions.push({
+            id: uid("sub"),
+            type: o.type,
+            amount: o.amount,
+            status: "completed",
+            userId: u.id,
+            userName: u.name,
+            plan: o.plan,
+            provider: o.provider,
+            reference: o.reference,
+            date: iso(),
+          });
+          return true;
+        }
+        function approvePayment(id) {
+          const s = normalize(st()),
+            o = s.paymentOrders.find((x) => x.id === id);
+          if (!o || o.status !== "pending") {
+            return;
+          }
+          if (o.type === "subscription" || o.type === "renewal") {
+            if (o.provider !== "MukuruPay") {
+              toast(
+                "Membership payments must be confirmed through MukuruPay in this prototype.",
+              );
+              return;
+            }
+            if (!applySubscription(s, o)) {
+              alert("Could not apply subscription.");
+              return;
+            }
+          } else if (o.type === "wallet_deposit") {
+            const u = s.users.find((x) => x.id === o.userId);
+            if (!u) return;
+            if (
+              o.provider === "AQE_MANAGER" &&
+              !String(o.source || "").includes("customer")
+            ) {
+              o.source = "manager_confirmed";
+            }
+            u.wallet = u.wallet || { UGX: 0, USD: 0, USDT: 0 };
+            u.wallet.UGX = (Number(u.wallet.UGX) || 0) + Number(o.amount || 0);
+            s.transactions.push({
+              id: uid("dep"),
+              type: "wallet_deposit",
+              amount: o.amount,
+              status: "completed",
+              userId: u.id,
+              userName: u.name,
+              provider: o.provider,
+              reference: o.reference,
+              date: iso(),
+              senderName: o.senderName || "",
+              phone: o.phone || "",
+            });
+          }
+          o.status = "approved";
+          o.providerStatus =
+            o.provider === "AQE_MANAGER" ? "manager_confirmed" : "confirmed";
+          o.approvedAt = iso();
+          o.approvedBy = "admin-01";
+          save(s);
+          audit(
+            (o.provider === "AQE_MANAGER"
+              ? "Confirmed AQE manager deposit "
+              : "Approved payment ") + o.reference,
+            o.id,
+          );
+          refreshProduction();
+          toast(
+            o.provider === "AQE_MANAGER"
+              ? "Manager deposit confirmed and wallet credited."
+              : "Payment approved and entitlement updated.",
+          );
+        }
+        function rejectPayment(id) {
+          const s = normalize(st()),
+            o = s.paymentOrders.find((x) => x.id === id);
+          if (!o || o.status !== "pending") return;
+          const reason =
+            prompt(
+              "Reason for rejection:",
+              "Payment could not be confirmed.",
+            ) || "Payment could not be confirmed.";
+          o.status = "rejected";
+          o.providerStatus = "rejected";
+          o.rejectedAt = iso();
+          o.rejectedBy = "admin-01";
+          o.rejectionReason = reason;
+          save(s);
+          audit("Rejected payment " + o.reference, o.id);
+          refreshProduction();
+          toast("Payment rejected.");
+        }
+        function approveWithdrawal(id) {
+          const s = normalize(st()),
+            w = s.withdrawalRequests.find((x) => x.id === id);
+          if (!w || w.status !== "pending") return;
+          const u = s.users.find((x) => x.id === w.userId);
+          if (!u) return;
+          if (u.tier === "vip" && new Date().getDate() < 20) {
+            toast("VIP withdrawal is locked until the 20th.");
+            return;
+          }
+          if (Number(u.wallet?.UGX || 0) < Number(w.amount || 0)) {
+            toast("Insufficient balance at approval time.");
+            return;
+          }
+          u.wallet.UGX = Number(u.wallet.UGX || 0) - Number(w.amount);
+          w.status = "approved";
+          w.approvedAt = iso();
+          w.approvedBy = "admin-01";
+          s.transactions.push({
+            id: uid("wdp"),
+            type: "withdrawal_completed",
+            amount: -Number(w.amount),
+            status: "completed",
+            userId: u.id,
+            userName: u.name,
+            provider: "MukuruPay",
+            reference: w.id,
+            date: iso(),
+          });
+          save(s);
+          audit("Approved withdrawal " + w.id, w.id);
+          refreshProduction();
+          toast("Withdrawal approved.");
+        }
+        function rejectWithdrawal(id) {
+          const s = normalize(st()),
+            w = s.withdrawalRequests.find((x) => x.id === id);
+          if (!w || w.status !== "pending") return;
+          w.status = "rejected";
+          w.rejectedAt = iso();
+          w.rejectedBy = "admin-01";
+          save(s);
+          audit("Rejected withdrawal " + w.id, w.id);
+          refreshProduction();
+          toast("Withdrawal rejected.");
+        }
+        function accrueVipSalary(s) {
+          const today = new Date(),
+            mk = monthKey(today);
+          if (today.getDate() !== 20) return 0;
+          let count = 0;
+          s.users
+            .filter((u) => u.tier === "vip")
+            .forEach((u) => {
+              u.vipSalary = u.vipSalary || {
+                base: 10000,
+                current: 10000,
+                lastPaidMonth: null,
+              };
+              u.vipSalary.current =
+                10000 + (Number(u.successfulReferrals) || 0) * 1000;
+              if (u.vipSalary.lastPaidMonth === mk) return;
+              u.wallet = u.wallet || { UGX: 0, USD: 0, USDT: 0 };
+              u.wallet.UGX = (Number(u.wallet.UGX) || 0) + u.vipSalary.current;
+              u.vipSalary.lastPaidMonth = mk;
+              s.vipSalaryLedger.push({
+                id: uid("salary"),
+                userId: u.id,
+                userName: u.name,
+                month: mk,
+                amount: u.vipSalary.current,
+                paidAt: iso(),
+              });
+              s.transactions.push({
+                id: uid("salarytx"),
+                type: "vip_salary",
+                amount: u.vipSalary.current,
+                status: "completed",
+                userId: u.id,
+                userName: u.name,
+                date: iso(),
+                month: mk,
+              });
+              count++;
+            });
+          if (count) save(s);
+          return count;
+        }
+        function renderPaymentsProduction() {
+          const s = normalize(st()),
+            rows = [...(s.paymentOrders || [])].reverse();
+          const p = document.querySelector("#paymentsTable tbody");
+          if (!p) return;
+          p.innerHTML = rows.length
+            ? rows
+                .map(
+                  (o) =>
+                    `<tr><td>${escM(o.reference)}</td><td>${escM(o.userName || s.users.find((u) => u.id === o.userId)?.name || o.userId)}</td><td>${escM(o.type)}</td><td>${escM(o.plan || "—")}</td><td>${money(o.amount)}</td><td>${escM(o.provider || "MukuruPay")}</td><td>${escM((o.senderName || "—") + " · " + (o.phone || "—"))}</td><td>${pill(o.status)}</td><td>${o.status === "pending" ? `<button class="btn green" onclick="aqeManagerApprovePayment('${o.id}')">${o.provider === "AQE_MANAGER" ? "Confirm" : "Approve"}</button> <button class="btn danger" onclick="aqeManagerRejectPayment('${o.id}')">Reject</button>` : "—"}</td></tr>`,
+                )
+                .join("")
+            : '<tr><td colspan="9">No payment orders.</td></tr>';
+        }
+        function renderWithdrawalsProduction() {
+          const s = normalize(st()),
+            rows = [...(s.withdrawalRequests || [])].reverse();
+          const p = document.querySelector("#withdrawalsTableProd tbody");
+          if (!p) return;
+          p.innerHTML = rows.length
+            ? rows
+                .map(
+                  (w) =>
+                    `<tr><td>${escM(w.id)}</td><td>${escM(w.userName || w.userId)}</td><td>${money(w.amount)}</td><td>${escM(w.phone || "—")}</td><td>${escM(w.provider || "MukuruPay")}</td><td>${pill(w.status)}</td><td>${w.status === "pending" ? `<button class="btn green" onclick="aqeManagerApproveWithdrawal('${w.id}')">Approve</button> <button class="btn danger" onclick="aqeManagerRejectWithdrawal('${w.id}')">Reject</button>` : "—"}</td></tr>`,
+                )
+                .join("")
+            : '<tr><td colspan="7">No withdrawal requests.</td></tr>';
+        }
+        function renderSalaryProduction() {
+          const s = normalize(st()),
+            today = new Date(),
+            mk = monthKey(today),
+            v = s.users.filter((u) => u.tier === "vip");
+          document.getElementById("salaryDay").textContent = today.getDate();
+          document.getElementById("salaryVipCount").textContent = v.length;
+          document.getElementById("salaryDueCount").textContent =
+            today.getDate() === 20
+              ? v.filter((u) => u.vipSalary?.lastPaidMonth !== mk).length
+              : 0;
+          const p = document.querySelector("#salaryTable tbody");
+          p.innerHTML = v.length
+            ? v
+                .map((u) => {
+                  const sal =
+                    10000 + (Number(u.successfulReferrals) || 0) * 1000;
+                  return `<tr><td>${escM(u.name || u.id)}</td><td>${Number(u.successfulReferrals || 0)}</td><td>${money(sal)}</td><td>${u.vipSalary?.lastPaidMonth === mk ? money(sal) : "DUE ON 20TH"}</td><td>${pill(u.vipSalary?.lastPaidMonth === mk ? "PAID" : "PENDING")}</td></tr>`;
+                })
+                .join("")
+            : '<tr><td colspan="5">No active VIP members.</td></tr>';
+        }
+        function renderTierProduction() {
+          /* table is static by design; rules are source-of-truth in this prototype. */
+        }
+        function refreshProduction() {
+          const s = normalize(st());
+          const paid = accrueVipSalary(s);
+          const pendingP = s.paymentOrders.filter(
+            (x) => x.status === "pending",
+          ).length;
+          const pendingW = s.withdrawalRequests.filter(
+            (x) => x.status === "pending",
+          ).length;
+          const a = document.getElementById("pendingPayCount");
+          if (a) a.textContent = pendingP;
+          const b = document.getElementById("pendingWdCount");
+          if (b) b.textContent = pendingW;
+          const oldWd = document.getElementById("withdrawals");
+          if (oldWd) {
+            let card = oldWd.querySelector("#withdrawalsTableProd");
+            if (!card) {
+              oldWd.querySelector(".card").innerHTML =
+                '<table class="table" id="withdrawalsTableProd"><thead><tr><th>ID</th><th>User</th><th>Amount</th><th>Payout</th><th>Provider</th><th>Status</th><th>Action</th></tr></thead><tbody></tbody></table>';
+            }
+          }
+          renderPaymentsProduction();
+          renderWithdrawalsProduction();
+          renderSalaryProduction();
+          renderUsers();
+          renderTx();
+          renderTeam();
+          renderRewards();
+          renderBookings();
+          renderAudit();
+        }
+        window.aqeManagerApprovePayment = approvePayment;
+        window.aqeManagerRejectPayment = rejectPayment;
+        window.aqeManagerApproveWithdrawal = approveWithdrawal;
+        window.aqeManagerRejectWithdrawal = rejectWithdrawal;
+        const oldRefresh = window.refreshAll;
+        window.refreshAll = function () {
+          try {
+            refreshProduction();
+          } catch (e) {
+            console.error(e);
+            if (oldRefresh) oldRefresh();
+          }
+        };
+        window.addEventListener("storage", (e) => {
+          if (e.key === DB_KEY_PROD) refreshProduction();
+        });
+        setInterval(() => {
+          try {
+            refreshProduction();
+          } catch (e) {}
+        }, 3000);
+        setTimeout(() => {
+          try {
+            refreshProduction();
+          } catch (e) {}
+        }, 80);
+      })();
+    </script>
+
+    <style id="aqe-manager-phase11">
+      .booking-kpis {
+        display: grid;
+        grid-template-columns: repeat(7, minmax(110px, 1fr));
+        gap: 10px;
+      }
+      .booking-kpi {
+        background: #101018;
+        border: 1px solid #29293a;
+        border-radius: 14px;
+        padding: 12px;
+      }
+      .booking-kpi b {
+        display: block;
+        font-size: 22px;
+        margin-top: 5px;
+      }
+      .booking-filter {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin: 14px 0;
+      }
+      .booking-filter button {
+        border: 1px solid #29293a;
+        background: #171724;
+        color: #f5f5f7;
+        border-radius: 10px;
+        padding: 8px 12px;
+        cursor: pointer;
+      }
+      .booking-filter button.on {
+        border-color: #d4af37;
+        color: #d4af37;
+      }
+      .booking-row {
+        padding: 12px 0;
+        border-bottom: 1px solid #29293a;
+      }
+      .badge-book {
+        display: inline-flex;
+        border-radius: 999px;
+        padding: 4px 8px;
+        font-size: 11px;
+        font-weight: 800;
+      }
+      .badge-book.requested {
+        background: #f59e0b22;
+        color: #fbbf24;
+      }
+      .badge-book.pending {
+        background: #3b82f622;
+        color: #60a5fa;
+      }
+      .badge-book.accepted,
+      .badge-book.confirmed {
+        background: #22c55e22;
+        color: #4ade80;
+      }
+      .badge-book.completed {
+        background: #8b5cf622;
+        color: #a78bfa;
+      }
+      .badge-book.cancelled,
+      .badge-book.declined {
+        background: #ef444422;
+        color: #f87171;
+      }
+      @media (max-width: 900px) {
+        .booking-kpis {
+          grid-template-columns: repeat(2, 1fr);
+        }
+      }
+    </style>
+    <script id="aqe-manager-phase11">
+      (function () {
+        "use strict";
+        function esc(v) {
+          return String(v == null ? "" : v).replace(/[&<>'"]/g, function (c) {
+            return {
+              "&": "&amp;",
+              "<": "&lt;",
+              ">": "&gt;",
+              "'": "&#39;",
+              '\"': "&quot;",
+            }[c];
+          });
+        }
+        function getState() {
+          try {
+            var raw = localStorage.getItem("aqe_state_v3");
+            return raw ? JSON.parse(raw) : {};
+          } catch (e) {
+            return {};
+          }
+        }
+        function saveState(st) {
+          try {
+            localStorage.setItem("aqe_state_v3", JSON.stringify(st));
+          } catch (e) {}
+        }
+        function renderBookingCommand() {
+          var sec = document.getElementById("bookings");
+          if (!sec) return;
+          var st = getState();
+          var bs = Array.isArray(st.bookings) ? st.bookings : [];
+          var profiles = Array.isArray(st.profiles) ? st.profiles : [];
+          var statuses = [
+            "REQUESTED",
+            "PENDING",
+            "ACCEPTED",
+            "CONFIRMED",
+            "COMPLETED",
+            "CANCELLED",
+            "DISPUTED",
+          ];
+          var counts = {};
+          statuses.forEach(function (x) {
+            counts[x] = bs.filter(function (b) {
+              return b.status === x;
+            }).length;
+          });
+          var today = new Date().toISOString().slice(0, 10);
+          sec.innerHTML =
+            '<div class="title">Booking Command Center</div><div class="sub">Operational oversight for lawful appointments, creator sessions and scheduled events. Booking access is available to Basic, Premium and VIP members.</div><div class="booking-kpis" style="margin-top:18px">' +
+            [
+              ["REQUESTED", "New Requests"],
+              ["PENDING", "Pending"],
+              ["ACCEPTED", "Accepted"],
+              ["CONFIRMED", "Confirmed"],
+              ["TODAY", "Today"],
+              ["COMPLETED", "Completed"],
+              ["DISPUTED", "Disputed"],
+            ]
+              .map(function (x) {
+                var n =
+                  x[0] === "TODAY"
+                    ? bs.filter(function (b) {
+                        return (
+                          b.requestedDate === today && b.status !== "CANCELLED"
+                        );
+                      }).length
+                    : counts[x[0]];
+                return (
+                  '<div class="booking-kpi"><div class="label">' +
+                  x[1].toUpperCase() +
+                  "</div><b>" +
+                  n +
+                  "</b></div>"
+                );
+              })
+              .join("") +
+            '</div><div class="booking-filter" id="bookingFilters"><button class="on" data-status="ALL">All</button>' +
+            statuses
+              .map(function (x) {
+                return '<button data-status="' + x + '">' + x + "</button>";
+              })
+              .join("") +
+            '</div><div class="card"><div id="bookingRows"></div></div>';
+          function draw(filter) {
+            var rows =
+              filter === "ALL"
+                ? bs
+                : bs.filter(function (b) {
+                    return b.status === filter;
+                  });
+            var box = document.getElementById("bookingRows");
+            if (!box) return;
+            box.innerHTML = rows.length
+              ? rows
+                  .map(function (b) {
+                    var p = profiles.find(function (x) {
+                      return String(x.id) === String(b.profileId);
+                    });
+                    return (
+                      '<div class="booking-row"><div style="display:grid;grid-template-columns:1.2fr 1.2fr 1fr 1fr 1fr auto;gap:12px;align-items:center"><div><b>' +
+                      esc(b.id) +
+                      '</b><div class="label">Client ' +
+                      esc(b.clientId || "protected") +
+                      "</div></div><div><b>" +
+                      esc(p ? p.name : "Profile") +
+                      '</b><div class="label">' +
+                      esc((p && p.category) || "Creator") +
+                      " · " +
+                      esc(String((p && p.tier) || "basic").toUpperCase()) +
+                      "</div></div><div>" +
+                      esc(b.requestedDate || "—") +
+                      '<div class="label">' +
+                      esc(b.requestedTime || "—") +
+                      "</div></div><div>" +
+                      esc(b.locationArea || "General") +
+                      '<div class="label">' +
+                      esc(b.durationMinutes || 60) +
+                      ' min</div></div><div><span class="badge-book ' +
+                      String(b.status || "REQUESTED").toLowerCase() +
+                      '">' +
+                      esc(b.status || "REQUESTED") +
+                      '</span></div><div><button class="btn" onclick="aqeManagerAdvanceBooking(' +
+                      JSON.stringify(b.id) +
+                      ')">Advance</button></div></div></div>'
+                    );
+                  })
+                  .join("")
+              : '<div style="padding:24px;text-align:center;color:#9292a8">No booking records for this filter.</div>';
+          }
+          draw("ALL");
+          document
+            .querySelectorAll("#bookingFilters button")
+            .forEach(function (btn) {
+              btn.onclick = function () {
+                document
+                  .querySelectorAll("#bookingFilters button")
+                  .forEach(function (x) {
+                    x.classList.remove("on");
+                  });
+                btn.classList.add("on");
+                draw(btn.dataset.status);
+              };
+            });
+          window.aqeManagerAdvanceBooking = function (id) {
+            var st = getState();
+            var b = (st.bookings || []).find(function (x) {
+              return x.id === id;
+            });
+            if (!b) return;
+            var flow = {
+              REQUESTED: "PENDING",
+              PENDING: "ACCEPTED",
+              ACCEPTED: "CONFIRMED",
+              CONFIRMED: "COMPLETED",
+            };
+            if (!flow[b.status]) {
+              alert("No automatic transition for " + b.status);
+              return;
+            }
+            var old = b.status;
+            b.status = flow[b.status];
+            b.updatedAt = new Date().toISOString();
+            st.auditLogs = Array.isArray(st.auditLogs) ? st.auditLogs : [];
+            st.auditLogs.unshift({
+              id: "audit_" + Date.now(),
+              action: "Booking status changed",
+              bookingId: id,
+              oldStatus: old,
+              newStatus: b.status,
+              actor: "Administrator",
+              createdAt: new Date().toISOString(),
+            });
+            saveState(st);
+            renderBookingCommand();
+            if (typeof toast === "function")
+              toast("Booking " + id + " moved to " + b.status);
+          };
+        }
+        var oldPage = window.page;
+        if (oldPage && !oldPage.__p11) {
+          window.page = function (id, btn) {
+            var r = oldPage.apply(this, arguments);
+            if (id === "bookings") setTimeout(renderBookingCommand, 20);
+            return r;
+          };
+          window.page.__p11 = true;
+        }
+        if (document.readyState === "loading")
+          document.addEventListener("DOMContentLoaded", function () {
+            setTimeout(renderBookingCommand, 100);
+          });
+        else setTimeout(renderBookingCommand, 100);
+      })();
+    </script>
+
+    <script id="aqe-manager-system-owner-control">
+      (function () {
+        const KEY = "aqe_system_owner_config_v1";
+        const DEFAULT = {
+          systemName: "AQE Ecosystem",
+          brand: "Afriqueerescorts",
+          tagline: "PRIVATE DIRECTORY · VERIFIED PROFILES · AFRICA",
+          mtnNumber: "0772 123 456",
+          mtnName: "YOUR MTN BUSINESS NAME",
+          airtelNumber: "0757279113",
+          airtelName: "DIANA AKELLO",
+          profileCategories: ["Client", "Independent Profile"],
+          contentCategories: [
+            "Independent",
+            "Premium Profile",
+            "VIP Profile",
+            "Agency",
+            "Creator",
+            "Professional",
+          ],
+          creatorServices: [
+            "Fan subscriptions",
+            "Pay-per-view content",
+            "Live creator sessions",
+            "Fan messaging",
+            "Custom content requests",
+            "Exclusive feed",
+            "Exclusive content drops",
+            "Creator chat",
+          ],
+          tiers: ["Basic", "Premium", "VIP"],
+        };
+        function load() {
+          try {
+            return Object.assign(
+              {},
+              DEFAULT,
+              JSON.parse(localStorage.getItem(KEY) || "{}"),
+            );
+          } catch (e) {
+            return Object.assign({}, DEFAULT);
+          }
+        }
+        function save(c) {
+          localStorage.setItem(KEY, JSON.stringify(c));
+        }
+        function by(id) {
+          return document.getElementById(id);
+        }
+        function csv(v) {
+          return String(v || "")
+            .split(/\\n|,|;/)
+            .map((x) => x.trim())
+            .filter(Boolean);
+        }
+        function fill() {
+          const c = load();
+          if (by("sysName")) by("sysName").value = c.systemName;
+          if (by("sysBrand")) by("sysBrand").value = c.brand;
+          if (by("sysTagline")) by("sysTagline").value = c.tagline;
+          if (by("payMtnNumber")) by("payMtnNumber").value = c.mtnNumber;
+          if (by("payMtnName")) by("payMtnName").value = c.mtnName;
+          if (by("payAirtelNumber"))
+            by("payAirtelNumber").value = c.airtelNumber;
+          if (by("payAirtelName")) by("payAirtelName").value = c.airtelName;
+          if (by("sysProfileCategories"))
+            by("sysProfileCategories").value = c.profileCategories.join("\n");
+          if (by("sysContentCategories"))
+            by("sysContentCategories").value = c.contentCategories.join("\n");
+          if (by("sysCreatorServices"))
+            by("sysCreatorServices").value = c.creatorServices.join("\n");
+          ["tier1Name", "tier2Name", "tier3Name"].forEach((id, i) => {
+            if (by(id)) by(id).value = c.tiers[i] || DEFAULT.tiers[i];
+          });
+        }
+        window.saveSystemControl = function () {
+          const c = {
+            systemName: by("sysName").value.trim(),
+            brand: by("sysBrand").value.trim(),
+            tagline: by("sysTagline").value.trim(),
+            mtnNumber: by("payMtnNumber").value.trim(),
+            mtnName: by("payMtnName").value.trim(),
+            airtelNumber: by("payAirtelNumber").value.trim(),
+            airtelName: by("payAirtelName").value.trim(),
+            profileCategories: csv(by("sysProfileCategories").value),
+            contentCategories: csv(by("sysContentCategories").value),
+            creatorServices: csv(by("sysCreatorServices").value),
+            tiers: [
+              by("tier1Name").value.trim(),
+              by("tier2Name").value.trim(),
+              by("tier3Name").value.trim(),
+            ],
+          };
+          save(c);
+          if (typeof recordManagerAction === "function")
+            recordManagerAction(
+              "Updated global system configuration",
+              "system-settings",
+            );
+          if (typeof toast === "function")
+            toast("System configuration saved — full-control changes recorded");
+        };
+        window.resetSystemControl = function () {
+          save(DEFAULT);
+          fill();
+          if (typeof recordManagerAction === "function")
+            recordManagerAction(
+              "Reset system configuration to demo defaults",
+              "system-settings",
+            );
+          if (typeof toast === "function") toast("Demo configuration reset");
+        };
+        window.aqeSystemOwner = {
+          role: "System Owner / Administrator",
+          fullView: true,
+          fullEdit: true,
+          canEditSystemNames: true,
+          canEditCategories: true,
+          canEditServices: true,
+          canEditPaymentRecipients: true,
+        };
+        const oldPage = window.page;
+        if (oldPage && !oldPage.__owner) {
+          window.page = function (id, b) {
+            oldPage.apply(this, arguments);
+            if (id === "settings") setTimeout(fill, 0);
+          };
+          window.page.__owner = true;
+        }
+        if (document.readyState === "loading")
+          document.addEventListener("DOMContentLoaded", () =>
+            setTimeout(fill, 80),
+          );
+        else setTimeout(fill, 80);
+      })();
+    </script>
+    <script id="aqe-manager-tier-feature-access">
+      (function () {
+        "use strict";
+        const KEY = "aqe_system_owner_config_v1";
+        const FEATURES = [
+          ["screen-vip", "VIP Hub"],
+          ["screen-queue", "Booking Queue"],
+          ["screen-vault", "Media Vault / Asset Room"],
+          ["screen-store", "Store"],
+          ["screen-groups", "Groups + Voice"],
+          ["screen-team", "My Team / Referrals"],
+          ["screen-tasks", "VIP Tasks"],
+          ["screen-rewards", "Rewards"],
+          ["screen-raffle", "Raffle"],
+          ["screen-aqe-campaigns", "Campaigns"],
+          ["screen-aqe-prizes", "Prizes"],
+          ["screen-aqe-referrals", "Invites & Referrals"],
+        ];
+        const DEFAULT_ACCESS = {
+          basic: [],
+          premium: [],
+          vip: FEATURES.map((x) => x[0]),
+        };
+        function load() {
+          try {
+            return Object.assign(
+              {},
+              {},
+              JSON.parse(localStorage.getItem(KEY) || "{}"),
+            );
+          } catch (e) {
+            return {};
+          }
+        }
+        function save(c) {
+          localStorage.setItem(KEY, JSON.stringify(c));
+        }
+        function ensure(c) {
+          c.tierFeatureAccess = c.tierFeatureAccess || {};
+          ["basic", "premium", "vip"].forEach((t) => {
+            if (!Array.isArray(c.tierFeatureAccess[t]))
+              c.tierFeatureAccess[t] = DEFAULT_ACCESS[t].slice();
+          });
+          return c;
+        }
+        function esc(v) {
+          return String(v == null ? "" : v).replace(/[&<>'"]/g, function (ch) {
+            return {
+              "&": "&amp;",
+              "<": "&lt;",
+              ">": "&gt;",
+              "'": "&#39;",
+              '"': "&quot;",
+            }[ch];
+          });
+        }
+        function render() {
+          const box = document.getElementById("aqeTierFeatureRows");
+          if (!box) return;
+          const c = ensure(load());
+          box.innerHTML =
+            '<div style="overflow:auto"><table class="table" style="min-width:680px"><thead><tr><th>Feature</th><th>Basic</th><th>Premium</th><th>VIP</th></tr></thead><tbody>' +
+            FEATURES.map(function (f) {
+              return (
+                "<tr><td><b>" +
+                esc(f[1]) +
+                '</b><div class="label">' +
+                esc(f[0]) +
+                "</div></td>" +
+                ["basic", "premium", "vip"]
+                  .map(function (t) {
+                    const on = c.tierFeatureAccess[t].indexOf(f[0]) > -1;
+                    return (
+                      '<td><button type="button" class="toggle ' +
+                      (on ? "on" : "") +
+                      '" data-tier="' +
+                      t +
+                      '" data-feature="' +
+                      f[0] +
+                      '" onclick="aqeToggleTierFeature(this)"><i></i></button><span class="label" style="margin-left:8px">' +
+                      (on ? "Enabled" : "Disabled") +
+                      "</span></td>"
+                    );
+                  })
+                  .join("") +
+                "</tr>"
+              );
+            }).join("") +
+            '</tbody></table></div><div class="label" style="margin-top:10px">VIP remains enabled for every VIP ecosystem feature by default. You can temporarily grant selected features to Basic or Premium without changing their membership tier.</div>';
+        }
+        window.aqeToggleTierFeature = function (btn) {
+          const c = ensure(load()),
+            t = btn.dataset.tier,
+            f = btn.dataset.feature;
+          if (t === "vip") {
+            if (c.tierFeatureAccess.vip.indexOf(f) < 0)
+              c.tierFeatureAccess.vip.push(f);
+          } else {
+            const a = c.tierFeatureAccess[t],
+              i = a.indexOf(f);
+            if (i < 0) a.push(f);
+            else a.splice(i, 1);
+          }
+          save(c);
+          render();
+          if (typeof recordManagerAction === "function")
+            recordManagerAction(
+              (c.tierFeatureAccess[t].indexOf(f) > -1
+                ? "Enabled "
+                : "Disabled ") +
+                f +
+                " for " +
+                t.toUpperCase(),
+              "tier-feature-access",
+            );
+          if (typeof toast === "function")
+            toast(
+              (c.tierFeatureAccess[t].indexOf(f) > -1
+                ? "Enabled "
+                : "Disabled ") +
+                f +
+                " for " +
+                t.toUpperCase(),
+            );
+        };
+        window.aqeResetTierFeatureAccess = function () {
+          const c = ensure(load());
+          c.tierFeatureAccess = {
+            basic: [],
+            premium: [],
+            vip: FEATURES.map((x) => x[0]),
+          };
+          save(c);
+          render();
+          if (typeof recordManagerAction === "function")
+            recordManagerAction(
+              "Reset tier feature access to defaults",
+              "tier-feature-access",
+            );
+          if (typeof toast === "function") toast("Tier feature access reset");
+        };
+        const oldSave = window.saveSystemControl;
+        window.saveSystemControl = function () {
+          if (typeof oldSave === "function") oldSave.apply(this, arguments);
+          const c = ensure(load());
+          save(c);
+          render();
+        };
+        const oldReset = window.resetSystemControl;
+        window.resetSystemControl = function () {
+          if (typeof oldReset === "function") oldReset.apply(this, arguments);
+          const c = ensure(load());
+          c.tierFeatureAccess = {
+            basic: [],
+            premium: [],
+            vip: FEATURES.map((x) => x[0]),
+          };
+          save(c);
+          render();
+        };
+        function boot() {
+          const c = ensure(load());
+          save(c);
+          render();
+        }
+        if (document.readyState === "loading")
+          document.addEventListener("DOMContentLoaded", function () {
+            setTimeout(boot, 120);
+          });
+        else setTimeout(boot, 120);
+        const oldPage = window.page;
+        if (oldPage && !oldPage.__tierFeatureAccess) {
+          window.page = function (id, b) {
+            const r = oldPage.apply(this, arguments);
+            if (id === "settings") setTimeout(render, 30);
+            return r;
+          };
+          window.page.__tierFeatureAccess = true;
+        }
+      })();
+    </script>
+    <style id="aqe-manager-owner-style">
+      #settings label {
+        display: block;
+        font-size: 11px;
+        color: #a5a5b7;
+      }
+      #settings textarea {
+        font: inherit;
+        color: #fff;
+        background: #171722;
+        border: 1px solid #2a2a3a;
+        border-radius: 10px;
+        padding: 10px 12px;
+        outline: 0;
+        resize: vertical;
+      }
+      #settings h3 {
+        font-size: 14px;
+      }
+    </style>
+
+    <script id="aqe-manager-phase13-owner-actions">
+      (function () {
+        "use strict";
+        function st() {
+          try {
+            return JSON.parse(localStorage.getItem("aqe_state_v3") || "{}");
+          } catch (e) {
+            return {};
+          }
+        }
+        function put(x) {
+          localStorage.setItem("aqe_state_v3", JSON.stringify(x));
+        }
+        function audit(a, t) {
+          if (typeof recordManagerAction === "function")
+            recordManagerAction(a, t);
+        }
+        function esc(v) {
+          return String(v == null ? "" : v).replace(/[&<>'"]/g, function (c) {
+            return {
+              "&": "&amp;",
+              "<": "&lt;",
+              ">": "&gt;",
+              "'": "&#39;",
+              '"': "&quot;",
+            }[c];
+          });
+        }
+        window.aqeOwnerEditUser = function (id) {
+          var s = st(),
+            u = (s.users || []).find((x) => String(x.id) === String(id));
+          if (!u) return;
+          var name = prompt("Display name:", u.name || "");
+          if (name === null) return;
+          u.name = name.trim() || u.name;
+          var status = prompt(
+            "Status (Active / Blocked):",
+            u.status || "Active",
+          );
+          if (status !== null) u.status = status.trim() || "Active";
+          put(s);
+          audit("Updated user " + id, "user:" + id);
+          refreshAll();
+        };
+        window.aqeOwnerToggleUser = function (id) {
+          var s = st(),
+            u = (s.users || []).find((x) => String(x.id) === String(id));
+          if (!u) return;
+          u.status =
+            String(u.status || "Active").toLowerCase() === "blocked"
+              ? "Active"
+              : "Blocked";
+          put(s);
+          audit(
+            (u.status === "Blocked" ? "Blocked " : "Unblocked ") + id,
+            "user:" + id,
+          );
+          refreshAll();
+        };
+        window.aqeOwnerDeleteUser = function (id) {
+          if (!confirm("Delete this demo account and its profile?")) return;
+          var s = st();
+          s.users = (s.users || []).filter((x) => String(x.id) !== String(id));
+          s.profiles = (s.profiles || []).filter(
+            (x) => String(x.ownerId) !== String(id),
+          );
+          put(s);
+          audit("Deleted user and owned profile " + id, "user:" + id);
+          refreshAll();
+        };
+        window.aqeOwnerAddUser = function () {
+          var s = st();
+          var name = prompt("New user display name:", "New User");
+          if (!name) return;
+          var email = prompt("Email:", "new@example.com") || "";
+          var id = "usr_" + Date.now();
+          s.users = s.users || [];
+          s.users.push({
+            id: id,
+            name: name,
+            email: email,
+            type: "client",
+            profileType: "Client",
+            tier: "guest",
+            status: "Active",
+            wallet: { UGX: 0 },
+            qc: 0,
+          });
+          put(s);
+          audit("Added user " + id, "user:" + id);
+          refreshAll();
+        };
+        window.aqeOwnerExecute = function () {
+          var target = document.getElementById("ownerTarget").value,
+            action = document.getElementById("ownerAction").value,
+            id = document.getElementById("ownerRecordId").value.trim(),
+            raw = document.getElementById("ownerPayload").value.trim(),
+            data = {};
+          if (raw) {
+            try {
+              data = JSON.parse(raw);
+            } catch (e) {
+              alert("Payload must be valid JSON.");
+              return;
+            }
+          }
+          var s = st(),
+            arrKey =
+              target === "user"
+                ? "users"
+                : target === "profile"
+                  ? "profiles"
+                  : "products";
+          s[arrKey] = Array.isArray(s[arrKey]) ? s[arrKey] : [];
+          if (action === "add") {
+            var nid =
+              id ||
+              (target === "user"
+                ? "usr_"
+                : target === "profile"
+                  ? "pr_"
+                  : "prod_") + Date.now();
+            data.id = nid;
+            s[arrKey].push(data);
+            audit("Added " + target + " " + nid, target + ":" + nid);
+          } else {
+            var idx = s[arrKey].findIndex((x) => String(x.id) === String(id));
+            if (idx < 0) {
+              alert("Record not found: " + id);
+              return;
+            }
+            if (action === "update") {
+              s[arrKey][idx] = Object.assign({}, s[arrKey][idx], data);
+              audit("Updated " + target + " " + id, target + ":" + id);
+            } else if (action === "block" || action === "unblock") {
+              s[arrKey][idx].status = action === "block" ? "Blocked" : "Active";
+              audit(
+                (action === "block" ? "Blocked " : "Unblocked ") +
+                  target +
+                  " " +
+                  id,
+                target + ":" + id,
+              );
+            } else if (action === "delete") {
+              if (!confirm("Delete " + target + " " + id + "?")) return;
+              s[arrKey].splice(idx, 1);
+              audit("Deleted " + target + " " + id, target + ":" + id);
+            }
+          }
+          put(s);
+          refreshAll();
+          aqeOwnerClear();
+        };
+        window.aqeOwnerClear = function () {
+          ["ownerRecordId", "ownerPayload"].forEach(function (id) {
+            var e = document.getElementById(id);
+            if (e) e.value = "";
+          });
+        };
+        var oldRenderUsers = window.renderUsers;
+        window.renderUsers = function () {
+          if (oldRenderUsers) oldRenderUsers();
+          document
+            .querySelectorAll("#usersTable tbody tr")
+            .forEach(function (row) {
+              var btn = row.querySelector("button");
+              if (!btn) return;
+              var m = btn.getAttribute("onclick") || "";
+              var id = (m.match(/user ['"]?([^'"]+)/) || [])[1];
+              if (!id) return;
+              var u = (st().users || []).find(
+                (x) => String(x.id) === String(id),
+              );
+              if (!u) return;
+              btn.outerHTML =
+                '<button class="btn" onclick="aqeOwnerEditUser(' +
+                JSON.stringify(id) +
+                ')">Edit</button> <button class="btn" onclick="aqeOwnerToggleUser(' +
+                JSON.stringify(id) +
+                ')">' +
+                (String(u.status || "Active").toLowerCase() === "blocked"
+                  ? "Unblock"
+                  : "Block") +
+                '</button> <button class="btn" onclick="aqeOwnerDeleteUser(' +
+                JSON.stringify(id) +
+                ')">Delete</button>';
+            });
+        };
+        setTimeout(function () {
+          try {
+            window.renderUsers();
+          } catch (e) {}
+        }, 100);
+        setInterval(function () {
+          try {
+            window.renderUsers();
+          } catch (e) {}
+        }, 3000);
+      })();
+    </script>
+    <style id="aqe-manager-phase13-owner-style">
+      #ownerControl textarea {
+        font: inherit;
+        color: #fff;
+        background: #171722;
+        border: 1px solid #2a2a3a;
+        border-radius: 10px;
+        padding: 10px 12px;
+        outline: 0;
+        resize: vertical;
+      }
+    </style>
+  </body>
+</html>

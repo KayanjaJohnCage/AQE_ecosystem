@@ -4,7 +4,7 @@ AQE is a greenfield MVP ecosystem for customer, manager, VIP, and wallet workflo
 
 ## Stack
 
-- Next.js 14
+- Next.js 16
 - TypeScript
 - Supabase Auth + PostgreSQL + Storage
 - Vitest
@@ -18,7 +18,7 @@ The application foundation and server-side business workflows are implemented. T
 
 1. Install dependencies with `npm install`.
 2. Copy `.env.example` to `.env.local` and fill all three Supabase values.
-3. Apply migrations `0001` through `0012` in filename order.
+3. Apply `supabase/migrations/001_aqe_foundation.sql` first, then apply root `migrations/0001_init.sql` through `migrations/0012_audit_rls.sql` in filename order.
 4. Run `npm test` and `npm run typecheck`.
 5. Start the app with `npm run dev`.
 6. Check `http://localhost:3000/api/health`.
@@ -31,6 +31,12 @@ The application foundation and server-side business workflows are implemented. T
 - `NEXT_PUBLIC_APP_ENV`: `development`, `staging`, or `production`.
 
 Blank Supabase values enable limited demo mode. Persistent workflows require Supabase configuration and applied migrations.
+
+### Applying migrations
+
+The foundation migration lives in `supabase/migrations/` and the follow-up migrations currently live in the root `migrations/` folder. In Supabase Dashboard, open SQL Editor and run the foundation file first, followed by `migrations/0001_init.sql` through `migrations/0012_audit_rls.sql` in order. Do not run them out of order.
+
+The root migration files are not automatically discovered by `supabase db push`. If using the Supabase CLI, move or consolidate the follow-up files into `supabase/migrations/` with unique timestamp prefixes before running `supabase db push`; do not keep and apply duplicate copies.
 
 ## Important rules
 
