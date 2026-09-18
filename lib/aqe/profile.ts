@@ -1,3 +1,4 @@
+import { normalizeTier } from "./auth";
 import { createServerSupabaseClient } from "../supabaseServer";
 
 export type ProfileTier = "basic" | "premium" | "vip";
@@ -193,7 +194,8 @@ export function sanitizeProfilePayload(input: Record<string, unknown>) {
     services: Array.isArray(input.services)
       ? input.services.filter((item) => typeof item === "string")
       : undefined,
-    tier:
-      input.tier === "premium" || input.tier === "vip" ? input.tier : "basic",
+    tier: normalizeTier(
+      typeof input.tier === "string" ? input.tier : undefined,
+    ),
   };
 }

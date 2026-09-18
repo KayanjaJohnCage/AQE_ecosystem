@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { createVipWithdrawalRequest } from '../../lib/aqe/vip'
+import { readStoredSession } from '../../lib/clientSession'
 
 const schedule = [
   { dayOfWeek: 1, isWithdrawalDay: true },
@@ -16,10 +17,14 @@ export default function VipPage() {
   const handleRequest = async () => {
     setLoading(true)
     try {
+      const { session, user } = readStoredSession()
+      const headers: HeadersInit = { 'Content-Type': 'application/json' }
+      if (session.access_token) headers.authorization = `Bearer ${session.access_token}`
+      if (user.id) headers['x-user-id'] = user.id
       const response = await fetch('/api/vip/withdrawals', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: 'demo-vip-user', amount: 500, schedule })
+        headers,
+        body: JSON.stringify({ amount: 500, schedule })
       })
 
       const data = await response.json()

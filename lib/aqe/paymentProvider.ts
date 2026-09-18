@@ -22,7 +22,7 @@ export function createPaymentProvider(env: Record<string, string | undefined>) {
 
       return {
         ok: true,
-        provider: "aqe-payment-provider",
+        provider: "MukuruPay",
         mode,
         userId,
         amount,
@@ -30,10 +30,15 @@ export function createPaymentProvider(env: Record<string, string | undefined>) {
         qcPackageId,
         metadata,
         reference: `AQE-${Date.now()}`,
+        redirectUrl:
+          env.MUKURU_SEND_MONEY_URL ||
+          env.NEXT_PUBLIC_MUKURU_SEND_MONEY_URL ||
+          "https://www.mukuru.com/send-money/",
+        status: "initiated" as const,
         message:
           mode === "mock"
-            ? "Mock payment initialization (configure provider keys to enable live flow)."
-            : "Payment provider initialized.",
+            ? "Mukuru payment reference created. Complete payment on Mukuru, then wait for AQE confirmation."
+            : "Mukuru payment reference created. Complete payment on Mukuru, then wait for AQE confirmation.",
       };
     },
   };

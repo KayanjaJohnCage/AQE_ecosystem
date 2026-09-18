@@ -1,5 +1,8 @@
 import { NextResponse } from "next/server";
-import { resolveMutationUserId } from "../../../../lib/aqe/auth";
+import {
+  normalizeTier,
+  resolveMutationUserId,
+} from "../../../../lib/aqe/auth";
 import { getVipFeatureAccess } from "../../../../lib/aqe/featureFlags";
 import { createServerSupabaseClient } from "../../../../lib/supabaseServer";
 
@@ -44,9 +47,7 @@ export async function POST(request: Request) {
         .select("tier")
         .eq("user_id", identity.userId)
         .maybeSingle();
-      tier = profile?.tier ?? "basic";
-    } else if (body.tier === "premium" || body.tier === "vip") {
-      tier = body.tier;
+      tier = normalizeTier(profile?.tier ?? "basic");
     }
 
     const access = getVipFeatureAccess(

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { resolveMutationUserId } from "../../../lib/aqe/auth";
 import {
   createProfileRecord,
   persistProfileRecord,
@@ -8,14 +9,23 @@ import {
 export async function POST(request: Request) {
   try {
     const body = await request.json().catch(() => ({}));
+    const identity = await resolveMutationUserId(
+      request,
+      typeof body.userId === "string" ? body.userId : undefined,
+    );
+
+    if (!identity.ok) {
+      return NextResponse.json(
+        { ok: false, reason: identity.reason },
+        { status: 401 },
+      );
+    }
+
     const sanitized = sanitizeProfilePayload(body);
-    const tier =
-      sanitized.tier === "premium" || sanitized.tier === "vip"
-        ? sanitized.tier
-        : "basic";
+    const tier = "basic";
 
     const result = createProfileRecord({
-      userId: String(body.userId ?? "demo-user"),
+      userId: identity.userId,
       displayName: sanitized.displayName || "AQE User",
       tier,
       verificationStatus: "pending",

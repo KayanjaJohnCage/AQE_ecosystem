@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   getSessionFromRequest,
   normalizeRole,
+  normalizeTier,
   resolveRoleFromClaims,
   resolveRoleFromToken,
 } from "../lib/aqe/auth";
@@ -55,5 +56,12 @@ describe("AQE auth", () => {
       userId: "user-99",
       role: "admin",
     });
+  });
+
+  it("normalizes and sanitizes AQE tiers before they are used for access checks", () => {
+    expect(normalizeTier("VIP")).toBe("vip");
+    expect(normalizeTier("Premium")).toBe("premium");
+    expect(normalizeTier("diamond")).toBe("basic");
+    expect(normalizeTier("basic")).toBe("basic");
   });
 });

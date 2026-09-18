@@ -8,6 +8,7 @@ export async function GET(request: Request) {
   try {
     const session = await resolveAuthenticatedSession(request);
     const authHeader = request.headers.get("authorization") ?? "";
+    const cookieHeader = request.headers.get("cookie") ?? "";
     const claimsHeader = request.headers.get("x-user-claims") ?? "";
 
     let resolvedRole = session.role;
@@ -27,7 +28,7 @@ export async function GET(request: Request) {
         userId: session.userId,
         email: session.email,
         role: resolvedRole,
-        hasToken: Boolean(authHeader),
+        hasToken: Boolean(authHeader || cookieHeader),
       },
     });
   } catch (error) {

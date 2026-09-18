@@ -15,6 +15,8 @@ export type AqeSession = {
 
 export const AQE_ROLES: AqeRole[] = ["customer", "manager", "admin"];
 
+export type AqeTier = "basic" | "premium" | "vip";
+
 export function normalizeRole(value?: string | null): AqeRole | null {
   const candidate = String(value ?? "")
     .trim()
@@ -32,6 +34,26 @@ export function normalizeRole(value?: string | null): AqeRole | null {
     return "customer";
 
   return null;
+}
+
+export function normalizeTier(value?: string | null): AqeTier {
+  const candidate = String(value ?? "")
+    .trim()
+    .toLowerCase();
+
+  if (!candidate) return "basic";
+
+  const compact = candidate.replace(/[_\-\s]+/g, "");
+
+  if (["vip", "viptier", "vipmember"].includes(compact)) {
+    return "vip";
+  }
+
+  if (["premium", "pro", "plus"].includes(compact)) {
+    return "premium";
+  }
+
+  return "basic";
 }
 
 export function resolveRoleFromClaims(
@@ -119,15 +141,33 @@ export function getSessionFromRequest(request: Request): AqeSession {
     request.headers.get("x-role") ??
     request.headers.get("role") ??
     "";
-  const tokenRole = resolveRoleFromToken(bearerToken);
-  const role = normalizeRole(roleHeader) ?? tokenRole ?? "customer";
+  const cookies = request.headers.get("cookie") ?? "";
+  const cookieValues = Object.fromEntries(
+    cookies.split(";").flatMap((entry) => {
+      const separator = entry.indexOf("=");
+      if (separator < 0) return [];
+      return [[
+        entry.slice(0, separator).trim(),
+        decodeURIComponent(entry.slice(separator + 1).trim()),
+      ]];
+    }),
+  );
+  const cookieToken =
+    cookieValues["sb-access-token"] ||
+    cookieValues["supabase-auth-token"] ||
+    cookieValues["aqe-access-token"] ||
+    "";
+  const resolvedBearerToken = bearerToken || cookieToken;
+  const tokenRole = resolveRoleFromToken(resolvedBearerToken);
+  const cookieRole = resolveRoleFromToken(cookieToken);
+  const role = normalizeRole(roleHeader) ?? tokenRole ?? cookieRole ?? "customer";
 
   return {
-    authenticated: Boolean(bearerToken || userId),
+    authenticated: Boolean(resolvedBearerToken || userId),
     userId: userId || undefined,
     email: email || undefined,
     role,
-    token: bearerToken || undefined,
+    token: resolvedBearerToken || undefined,
   };
 }
 

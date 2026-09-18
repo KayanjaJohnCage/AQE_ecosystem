@@ -1,5 +1,8 @@
 import { NextResponse } from "next/server";
-import { resolveMutationUserId } from "../../../../lib/aqe/auth";
+import {
+  normalizeTier,
+  resolveMutationUserId,
+} from "../../../../lib/aqe/auth";
 import {
   chargeChatQcFromDatabase,
   chargeChatQcServer,
@@ -40,13 +43,13 @@ export async function POST(request: Request) {
       });
     }
 
-    const tier = String(body.tier ?? "basic");
+    const tier = normalizeTier(typeof body.tier === "string" ? body.tier : "basic");
     const dailyUsed = Number(body.dailyUsed ?? 0);
     const globalBalance = Number(body.globalBalance ?? 0);
     const messageCount = Number(body.messageCount ?? 1);
 
     const result = await chargeChatQcServer({
-      tier: tier === "premium" || tier === "vip" ? tier : "basic",
+      tier,
       dailyUsed,
       globalBalance,
       messageCount,

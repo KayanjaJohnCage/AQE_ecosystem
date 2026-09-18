@@ -17,7 +17,7 @@ export async function POST(request: Request) {
     const client = createAnonSupabaseClient();
 
     if (!client) {
-      return NextResponse.json({
+      const response = NextResponse.json({
         ok: true,
         mode: "mock",
         user: { email, role: "customer" },
@@ -26,6 +26,13 @@ export async function POST(request: Request) {
           refresh_token: "mock-refresh-token",
         },
       });
+      response.cookies.set("aqe-access-token", "mock-session-token", {
+        httpOnly: true,
+        sameSite: "lax",
+        secure: process.env.NODE_ENV === "production",
+        path: "/",
+      });
+      return response;
     }
 
     const { data, error } = await client.auth.signInWithPassword({
@@ -40,12 +47,20 @@ export async function POST(request: Request) {
       );
     }
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       ok: true,
       mode: "supabase",
       user: data.user,
       session: data.session,
     });
+    response.cookies.set("aqe-access-token", data.session.access_token, {
+      httpOnly: true,
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
+      path: "/",
+      maxAge: data.session.expires_in ?? 3600,
+    });
+    return response;
   } catch (error) {
     return NextResponse.json(
       {

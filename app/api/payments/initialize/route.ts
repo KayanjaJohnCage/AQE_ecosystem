@@ -50,6 +50,8 @@ export async function POST(request: Request) {
       metadata: {
         source: "aqe-payment-init",
         origin: "server",
+        requestedTier:
+          body.tier === "vip" || body.tier === "premium" ? body.tier : "premium",
       },
     });
 
@@ -66,6 +68,9 @@ export async function POST(request: Request) {
       ...order,
       ...persisted,
       mode: order.mode === "mock" ? "mock" : "configured",
+      status: "initiated",
+      paymentInstruction:
+        "Open Mukuru Send Money, complete the transfer using the AQE reference, then wait for manager/provider confirmation.",
     });
   } catch (error) {
     return NextResponse.json(

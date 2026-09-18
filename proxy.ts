@@ -15,6 +15,7 @@ export function proxy(request: NextRequest) {
   }
 
   const hasSessionCookie = Boolean(
+    request.cookies.get("aqe-access-token") ||
     request.cookies.get("sb-access-token") ||
     request.cookies.get("supabase-auth-token") ||
     request.cookies.get("sb-refresh-token"),

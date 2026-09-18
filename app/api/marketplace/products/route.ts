@@ -4,6 +4,39 @@ import {
   createMarketplaceProduct,
   persistMarketplaceProduct,
 } from "../../../../lib/aqe/marketplace";
+import { createServerSupabaseClient } from "../../../../lib/supabaseServer";
+
+export async function GET() {
+  try {
+    const client = createServerSupabaseClient();
+    if (!client) {
+      return NextResponse.json({ ok: true, source: "demo", products: [] });
+    }
+
+    const { data, error } = await client
+      .from("marketplace_products")
+      .select("id, seller_id, title, price, currency, inventory, status, created_at")
+      .eq("status", "active")
+      .gt("inventory", 0)
+      .order("created_at", { ascending: false })
+      .limit(50);
+
+    if (error) {
+      return NextResponse.json({ ok: false, reason: error.message }, { status: 500 });
+    }
+
+    return NextResponse.json({
+      ok: true,
+      source: "supabase",
+      products: data ?? [],
+    });
+  } catch (error) {
+    return NextResponse.json(
+      { ok: false, reason: error instanceof Error ? error.message : "Marketplace unavailable." },
+      { status: 500 },
+    );
+  }
+}
 
 export async function POST(request: Request) {
   try {

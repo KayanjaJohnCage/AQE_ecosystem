@@ -1,9 +1,13 @@
 import { NextResponse } from "next/server";
-import { resolveMutationUserId } from "../../../lib/aqe/auth";
+import {
+  normalizeTier,
+  resolveMutationUserId,
+} from "../../../lib/aqe/auth";
 import {
   createSubscription,
   persistSubscription,
 } from "../../../lib/aqe/subscription";
+import { createServerSupabaseClient } from "../../../lib/supabaseServer";
 
 export async function POST(request: Request) {
   try {
@@ -20,8 +24,21 @@ export async function POST(request: Request) {
       );
     }
 
-    const tier =
-      body.tier === "premium" || body.tier === "vip" ? body.tier : "basic";
+    const client = createServerSupabaseClient();
+    let tier: "basic" | "premium" | "vip" = "basic";
+
+    if (client) {
+      const { data: profile } = await client
+        .from("profiles")
+        .select("tier")
+        .eq("user_id", identity.userId)
+        .maybeSingle();
+      tier = normalizeTier(profile?.tier ?? "basic") as
+        | "basic"
+        | "premium"
+        | "vip";
+    }
+
     const amount = Number(body.amount ?? 0);
     const currency = String(body.currency ?? "USD")
       .trim()

@@ -18,7 +18,7 @@ The application foundation and server-side business workflows are implemented. T
 
 1. Install dependencies with `npm install`.
 2. Copy `.env.example` to `.env.local` and fill all three Supabase values.
-3. Apply `supabase/migrations/001_aqe_foundation.sql` first, then apply root `migrations/0001_init.sql` through `migrations/0012_audit_rls.sql` in filename order.
+3. Apply `supabase/migrations/001_aqe_foundation.sql` first, then apply root `migrations/0001_init.sql` through `migrations/0013_payment_receiver_settings.sql` in filename order.
 4. Run `npm test` and `npm run typecheck`.
 5. Start the app with `npm run dev`.
 6. Check `http://localhost:3000/api/health`.
@@ -34,7 +34,7 @@ Blank Supabase values enable limited demo mode. Persistent workflows require Sup
 
 ### Applying migrations
 
-The foundation migration lives in `supabase/migrations/` and the follow-up migrations currently live in the root `migrations/` folder. In Supabase Dashboard, open SQL Editor and run the foundation file first, followed by `migrations/0001_init.sql` through `migrations/0012_audit_rls.sql` in order. Do not run them out of order.
+The foundation migration lives in `supabase/migrations/` and the follow-up migrations currently live in the root `migrations/` folder. In Supabase Dashboard, open SQL Editor and run the foundation file first, followed by `migrations/0001_init.sql` through `migrations/0013_payment_receiver_settings.sql` in order. Do not run them out of order.
 
 The root migration files are not automatically discovered by `supabase db push`. If using the Supabase CLI, move or consolidate the follow-up files into `supabase/migrations/` with unique timestamp prefixes before running `supabase db push`; do not keep and apply duplicate copies.
 

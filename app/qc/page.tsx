@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { readStoredSession } from '../../lib/clientSession'
 
 export default function QcPage() {
   const [isLoading, setIsLoading] = useState(false)
@@ -9,10 +10,14 @@ export default function QcPage() {
   const handleClaim = async () => {
     setIsLoading(true)
     try {
+      const { session, user } = readStoredSession()
+      const headers: HeadersInit = { 'Content-Type': 'application/json' }
+      if (session.access_token) headers.authorization = `Bearer ${session.access_token}`
+      if (user.id) headers['x-user-id'] = user.id
       const response = await fetch('/api/qc/daily-claim', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: 'demo-user' })
+        headers,
+        body: JSON.stringify({})
       })
 
       const data = await response.json()
