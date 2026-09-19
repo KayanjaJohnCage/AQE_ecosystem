@@ -23,8 +23,27 @@ export default function PaymentsPage() {
       "Use the receiver details below on the Mukuru Send Money page.",
   });
   const [copyMessage, setCopyMessage] = useState("");
+  const [settings, setSettings] = useState({
+    tierPrices: { basic: 125000, premium: 250000, vip: 500000 },
+    renewalPrices: { basic: 2500, premium: 5000, vip: 8500 },
+    walletCurrency: "UGX",
+    qcExchangeRate: 1000,
+    referralRates: { direct: 0.1, indirect: 0.05 },
+    about: "",
+    contact: "",
+  });
 
   useEffect(() => {
+    fetch("/api/settings")
+      .then(async (response) => {
+        if (!response.ok) return;
+        const payload = await response.json();
+        if (payload.settings) {
+          setSettings(payload.settings);
+          setCurrency(payload.settings.walletCurrency || "UGX");
+        }
+      })
+      .catch(() => undefined);
     fetch("/api/payments/receiver")
       .then(async (response) => {
         if (!response.ok) return;
@@ -79,6 +98,11 @@ export default function PaymentsPage() {
     }
   };
 
+  const tierPrice =
+    requestedTier === "vip"
+      ? settings.tierPrices.vip
+      : settings.tierPrices.premium;
+
   return (
     <main style={{ padding: 24, maxWidth: 980, margin: "0 auto" }}>
       <h1>Recharge QC</h1>
@@ -106,6 +130,7 @@ export default function PaymentsPage() {
               min="1"
               required
             />
+            <small>Configured {requestedTier} price: {settings.walletCurrency} {tierPrice.toLocaleString()}</small>
           </label>
           <label>
             Currency
@@ -138,6 +163,12 @@ export default function PaymentsPage() {
               <option value="vip">VIP</option>
             </select>
           </label>
+          <div style={{ display: "grid", gap: 4, padding: 10, border: "1px solid #29364d", borderRadius: 10 }}>
+            <strong>Tier pricing</strong>
+            <span>Basic: {settings.walletCurrency} {settings.tierPrices.basic.toLocaleString()}</span>
+            <span>Premium: {settings.walletCurrency} {settings.tierPrices.premium.toLocaleString()}</span>
+            <span>VIP: {settings.walletCurrency} {settings.tierPrices.vip.toLocaleString()}</span>
+          </div>
           <label>
             Payment method
             <select

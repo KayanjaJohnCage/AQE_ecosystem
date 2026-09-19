@@ -6,6 +6,7 @@ import {
 import { createPaymentStateTransition } from "../../../../lib/aqe/financial";
 import { persistPaymentOrder } from "../../../../lib/aqe/paymentProvider";
 import { createServerSupabaseClient } from "../../../../lib/supabaseServer";
+import { normalizeTier } from "../../../../lib/aqe/auth";
 
 export async function POST(request: Request) {
   try {
@@ -23,6 +24,9 @@ export async function POST(request: Request) {
     const reference = String(
       body.reference ?? `AQE-MANAGER-${Date.now()}`,
     ).trim();
+    const requestedTier = normalizeTier(
+      typeof body.tier === "string" ? body.tier : "basic",
+    );
     if (
       !Number.isFinite(amount) ||
       amount <= 0 ||
@@ -38,6 +42,37 @@ export async function POST(request: Request) {
       );
     }
 
+    if (requestedTier !== "basic") {
+      const client = createServerSupabaseClient();
+      const configured = client
+        ? await client
+            .from("platform_settings")
+            .select("settings")
+            .eq("id", 1)
+            .maybeSingle()
+        : { data: null };
+      const prices = configured.data?.settings?.tierPrices ?? {
+        premium: 250000,
+        vip: 500000,
+      };
+      const expectedCurrency =
+        String(configured.data?.settings?.walletCurrency ?? "UGX").toUpperCase();
+      const expectedPrice = Number(prices[requestedTier]);
+      if (
+        !Number.isFinite(expectedPrice) ||
+        amount !== expectedPrice ||
+        currency !== expectedCurrency
+      ) {
+        return NextResponse.json(
+          {
+            ok: false,
+            reason: `The ${requestedTier} upgrade must use ${expectedCurrency} ${expectedPrice.toLocaleString()}.`,
+          },
+          { status: 400 },
+        );
+      }
+    }
+
     const order = await persistPaymentOrder({
       userId: identity.userId,
       amount,
@@ -49,10 +84,7 @@ export async function POST(request: Request) {
       metadata: {
         paymentMethod: "AQE_MANAGER",
         senderDetails: body.senderDetails ?? null,
-        requestedTier:
-          body.tier === "vip" || body.tier === "premium"
-            ? body.tier
-            : "premium",
+        requestedTier,
       },
     });
     if (!order.ok) return NextResponse.json(order, { status: 500 });
@@ -169,6 +201,25 @@ export async function PATCH(request: Request) {
         },
         { status: 404 },
       );
+    if (nextState === "confirmed") {
+      const atomic = await client.rpc("confirm_payment_order_atomic", {
+        p_order_id: orderId,
+        p_actor_id: access.session.userId,
+      });
+      if (atomic.error) {
+        return NextResponse.json(
+          { ok: false, reason: atomic.error.message },
+          { status: 500 },
+        );
+      }
+      return NextResponse.json({
+        ok: true,
+        saved: true,
+        payment: atomic.data,
+        upgradedTier: atomic.data?.upgradedTier ?? null,
+      });
+    }
+
     const transition = createPaymentStateTransition({
       currentState: current.data.status,
       nextState: nextState as any,
@@ -186,30 +237,7 @@ export async function PATCH(request: Request) {
         { status: 500 },
       );
 
-    let upgradedTier: string | null = null;
-    if (nextState === "confirmed") {
-      const requestedTier =
-        current.data.metadata && typeof current.data.metadata === "object"
-          ? (current.data.metadata as { requestedTier?: string }).requestedTier
-          : undefined;
-      upgradedTier = requestedTier === "vip" ? "vip" : "premium";
-      const profile = await client
-        .from("profiles")
-        .update({ tier: upgradedTier, updated_at: new Date().toISOString() })
-        .eq("user_id", current.data.user_id);
-      if (profile.error)
-        return NextResponse.json(
-          { ok: false, reason: profile.error.message },
-          { status: 500 },
-        );
-    }
-
-    return NextResponse.json({
-      ok: true,
-      saved: true,
-      payment: updated.data,
-      upgradedTier,
-    });
+    return NextResponse.json({ ok: true, saved: true, payment: updated.data });
   } catch (error) {
     return NextResponse.json(
       {

@@ -6,7 +6,19 @@ import {
   readStoredSession,
 } from "../../lib/clientSession";
 
-type CustomerView = "home" | "discover" | "messages" | "bookings" | "me";
+type CustomerView =
+  | "home"
+  | "discover"
+  | "messages"
+  | "bookings"
+  | "me"
+  | "wallet"
+  | "premium"
+  | "vip"
+  | "rewards"
+  | "referrals"
+  | "raffle"
+  | "settings";
 
 type ProfileCard = {
   id?: string;
@@ -92,6 +104,7 @@ const productRows: ProductRow[] = [
 
 export default function CustomerPage() {
   const [data, setData] = useState({
+    walletBalance: 0,
     qcBalance: 0,
     tier: "basic",
     bookings: 0,
@@ -102,6 +115,14 @@ export default function CustomerPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [age, setAge] = useState("");
+  const [country, setCountry] = useState("Uganda");
+  const [city, setCity] = useState("");
+  const [profileCategory, setProfileCategory] = useState("client");
+  const [bio, setBio] = useState("");
+  const [contactPreference, setContactPreference] = useState("in_app");
+  const [registrationTier, setRegistrationTier] = useState<"basic" | "premium" | "vip">("basic");
   const [message, setMessage] = useState("");
   const [view, setView] = useState<CustomerView>("home");
   const [accountName, setAccountName] = useState("Guest account");
@@ -117,11 +138,35 @@ export default function CustomerPage() {
   const [messages, setMessages] = useState<MessageRow[]>(messageRows);
   const [bookings, setBookings] = useState<BookingRow[]>(bookingRows);
   const [products, setProducts] = useState<ProductRow[]>(productRows);
+  const [platformSettings, setPlatformSettings] = useState({
+    walletCurrency: "UGX",
+    qcExchangeRate: 1000,
+    about: "",
+    contact: "",
+  });
+  const [referral, setReferral] = useState({
+    referralCode: "",
+    referralLink: "",
+    directCount: 0,
+    indirectCount: 0,
+    directEarnings: 0,
+    indirectEarnings: 0,
+    currency: "UGX",
+  });
+  const [referralCode, setReferralCode] = useState("");
   const [profileQuery, setProfileQuery] = useState("");
+  const [homeFilter, setHomeFilter] = useState("All");
   const [isBooting, setIsBooting] = useState(true);
   const [ageConfirmed, setAgeConfirmed] = useState(false);
+  const [birthDay, setBirthDay] = useState("");
+  const [birthMonth, setBirthMonth] = useState("");
+  const [birthYear, setBirthYear] = useState("");
+  const [ageError, setAgeError] = useState("");
 
   useEffect(() => {
+    setReferralCode(
+      new URLSearchParams(window.location.search).get("ref") || "",
+    );
     const timer = window.setTimeout(() => setIsBooting(false), 650);
     setAgeConfirmed(localStorage.getItem("aqe-age-confirmed") === "true");
     return () => window.clearTimeout(timer);
@@ -151,6 +196,14 @@ export default function CustomerPage() {
       })
       .catch(() => undefined);
 
+    fetch("/api/settings")
+      .then(async (response) => {
+        if (!response.ok) return;
+        const payload = await response.json();
+        if (payload.settings) setPlatformSettings(payload.settings);
+      })
+      .catch(() => undefined);
+
     fetch("/api/profiles")
       .then(async (response) => {
         if (!response.ok) return;
@@ -162,6 +215,14 @@ export default function CustomerPage() {
       .catch(() => undefined);
 
     if (session.access_token || user.id) {
+      fetch("/api/referrals", { headers })
+        .then(async (response) => {
+          if (!response.ok) return;
+          const payload = await response.json();
+          if (payload.ok) setReferral(payload);
+        })
+        .catch(() => undefined);
+
       fetch("/api/messages", { headers })
         .then(async (response) => {
           if (!response.ok) return;
@@ -213,7 +274,20 @@ export default function CustomerPage() {
     const body =
       authMode === "login"
         ? { email, password }
-        : { email, password, displayName };
+        : {
+            email,
+            password,
+            displayName,
+            phone,
+            age: Number(age),
+            country,
+            city,
+            category: profileCategory,
+            bio,
+            contactPreference,
+            requestedTier: registrationTier,
+            referralCode,
+          };
 
     const response = await fetch(endpoint, {
       method: "POST",
@@ -222,7 +296,11 @@ export default function CustomerPage() {
     });
     const payload = await response.json();
     setMessage(
-      payload.ok ? "Request completed." : payload.reason || "Request failed.",
+      payload.ok
+        ? payload.upgradeRequired
+          ? `${payload.requestedTier?.toUpperCase() || "PAID"} selected. Complete payment before the upgrade activates.`
+          : "Basic account created."
+        : payload.reason || "Request failed.",
     );
 
     persistStoredSession({
@@ -274,6 +352,11 @@ export default function CustomerPage() {
         String((payload.user as { email?: string }).email || "member@aqe.test"),
       );
       setAuthenticated(true);
+      if (payload.upgradeRequired) {
+        setAccountSubtitle(
+          `${payload.requestedTier?.toUpperCase() || "PAID"} selected · payment required`,
+        );
+      }
     }
 
     if (payload.ok) setAuthOpen(false);
@@ -286,10 +369,33 @@ export default function CustomerPage() {
     setAuthenticated(false);
     setAccountName("Guest account");
     setAccountSubtitle("Sign in to manage your profile");
-    setData({ qcBalance: 0, tier: "basic", bookings: 0, earnings: 0 });
+    setData({
+      walletBalance: 0,
+      qcBalance: 0,
+      tier: "basic",
+      bookings: 0,
+      earnings: 0,
+    });
   }
 
   function confirmAge() {
+    const birthDate = new Date(
+      Number(birthYear),
+      Number(birthMonth) - 1,
+      Number(birthDay),
+    );
+    const today = new Date();
+    let calculatedAge = today.getFullYear() - birthDate.getFullYear();
+    const beforeBirthday =
+      today.getMonth() < birthDate.getMonth() ||
+      (today.getMonth() === birthDate.getMonth() &&
+        today.getDate() < birthDate.getDate());
+    if (beforeBirthday) calculatedAge -= 1;
+    if (!birthDay || !birthMonth || !birthYear || calculatedAge < 18) {
+      setAgeError("You must be 18 or older to enter AQE.");
+      return;
+    }
+    setAgeError("");
     localStorage.setItem("aqe-age-confirmed", "true");
     setAgeConfirmed(true);
   }
@@ -351,6 +457,11 @@ export default function CustomerPage() {
       .toLowerCase()
       .includes(query);
   });
+  const featuredProfiles = profiles.filter((profile) => {
+    if (homeFilter === "All") return true;
+    const haystack = `${profile.name} ${profile.city} ${profile.tag} ${profile.status} ${profile.tier}`.toLowerCase();
+    return haystack.includes(homeFilter.toLowerCase());
+  });
 
   if (isBooting) {
     return (
@@ -372,9 +483,26 @@ export default function CustomerPage() {
             You must be 18 or older to enter. Please confirm your age to
             continue.
           </p>
-          <button className="primary-button" type="button" onClick={confirmAge}>
-            I am 18 or older <span>→</span>
-          </button>
+          <div className="age-gate-actions">
+            <button className="primary-button" type="button" onClick={confirmAge}>
+              I am 18 or older <span>→</span>
+            </button>
+          <div className="age-date-grid">
+            <select value={birthDay} onChange={(event) => setBirthDay(event.target.value)} aria-label="Birth day">
+              <option value="">Day</option>
+              {Array.from({ length: 31 }, (_, index) => <option key={index + 1} value={index + 1}>{index + 1}</option>)}
+            </select>
+            <select value={birthMonth} onChange={(event) => setBirthMonth(event.target.value)} aria-label="Birth month">
+              <option value="">Month</option>
+              {Array.from({ length: 12 }, (_, index) => <option key={index + 1} value={index + 1}>{index + 1}</option>)}
+            </select>
+            <select value={birthYear} onChange={(event) => setBirthYear(event.target.value)} aria-label="Birth year">
+              <option value="">Year</option>
+              {Array.from({ length: 83 }, (_, index) => { const year = new Date().getFullYear() - 18 - index; return <option key={year} value={year}>{year}</option>; })}
+            </select>
+          </div>
+          {ageError ? <span className="age-error">{ageError}</span> : null}
+          </div>
           <a className="age-exit-link" href="https://www.google.com">
             Leave this page
           </a>
@@ -385,6 +513,35 @@ export default function CustomerPage() {
 
   return (
     <main className="aqe-client" id="app">
+      <aside className="client-desktop-nav" aria-label="AQE ecosystem navigation">
+        <div className="client-desktop-brand">AQE ECOSYSTEM</div>
+        <span className="client-desktop-label">Discover</span>
+        {[
+          ["Home", "⌂", "home"],
+          ["Explore", "⌕", "discover"],
+          ["Shop", "▤", "home"],
+          ["Messages", "✉", "messages"],
+          ["Bookings", "◫", "bookings"],
+          ["Wallet", "₣", "wallet"],
+        ].map(([label, icon, target]) => (
+          <button
+            type="button"
+            key={label}
+            className={view === target ? "active" : ""}
+            onClick={() => setView(target as CustomerView)}
+          >
+            <span>{icon}</span>{label}
+          </button>
+        ))}
+        <span className="client-desktop-label">Account</span>
+        <button type="button" className={view === "me" ? "active" : ""} onClick={() => setView("me")}><span>◉</span>My profile</button>
+        <button type="button" className={view === "premium" ? "active" : ""} onClick={() => setView("premium")}><span>★</span>Premium Hub</button>
+        <button type="button" className={view === "vip" ? "active" : ""} onClick={() => setView("vip")}><span>♢</span>VIP Hub</button>
+        <button type="button" className={view === "rewards" ? "active" : ""} onClick={() => setView("rewards")}><span>✦</span>Rewards</button>
+        <button type="button" className={view === "referrals" ? "active" : ""} onClick={() => setView("referrals")}><span>♟</span>My Team</button>
+        <button type="button" className={view === "raffle" ? "active" : ""} onClick={() => setView("raffle")}><span>🎟</span>Raffle</button>
+        <button type="button" className={view === "settings" ? "active" : ""} onClick={() => setView("settings")}><span>⚙</span>Settings</button>
+      </aside>
       <header className="client-header">
         <div>
           <div className="client-mark">AQE</div>
@@ -405,15 +562,14 @@ export default function CustomerPage() {
 
       <section className="client-content">
         <div className="client-hero">
-          <div className="hero-kicker">WELCOME TO YOUR ECOSYSTEM</div>
+          <div className="hero-kicker">VERIFIED PROFESSIONALS · SECURE PAYMENTS · DISCREET EXPERIENCE</div>
           <h1>
-            Find your people.
+            Discover
             <br />
-            <em>Build your world.</em>
+            <em>Independence</em>
           </h1>
           <p>
-            Explore profiles, connect with community, and unlock your next
-            chapter.
+            Verified professionals. Secure payments. Discreet experience.
           </p>
           <button
             className="primary-button"
@@ -451,7 +607,11 @@ export default function CustomerPage() {
 
           <div className="metric-grid">
             <div className="metric-card">
-              <span>WALLET</span>
+              <span>WALLET CASH</span>
+              <strong>{platformSettings.walletCurrency} {data.walletBalance || 0}</strong>
+            </div>
+            <div className="metric-card">
+              <span>QC CREDITS</span>
               <strong>{data.qcBalance} QC</strong>
             </div>
             <div className="metric-card">
@@ -463,7 +623,7 @@ export default function CustomerPage() {
               <strong>{data.bookings}</strong>
             </div>
             <div className="metric-card">
-              <span>EARNINGS</span>
+              <span>EARNINGS CASH</span>
               <strong>UGX {data.earnings}</strong>
             </div>
           </div>
@@ -485,6 +645,22 @@ export default function CustomerPage() {
           </div>
 
           {view === "home" && (
+            <>
+            <div className="prototype-filter-pills">
+              {["All", "Available", "VIP", "Premium", "Kampala", "Entebbe", "Female", "Male", "Lesbian"].map((filter) => (
+                <button type="button" className={homeFilter === filter ? "active" : ""} key={filter} onClick={() => setHomeFilter(filter)}>{filter}</button>
+              ))}
+            </div>
+            <div className="featured-heading"><h2>Featured Profiles</h2><button type="button" onClick={() => setView("discover")}>See All →</button></div>
+            <div className="prototype-profile-grid">
+              {featuredProfiles.slice(0, 4).map((profile) => (
+                <button type="button" className="prototype-profile-card" key={profile.name} onClick={() => setSelectedProfile(profile)}>
+                  <div className="prototype-profile-image"><div className="prototype-profile-avatar">{profile.name.charAt(0)}</div><span>{profile.city} · 22</span><b>✓ Verified</b></div>
+                  <strong>{profile.name}</strong><small>{profile.tag} · {profile.city}</small><div><em>{profile.status}</em><label>{(profile.tier || "basic").toUpperCase()}</label></div>
+                </button>
+              ))}
+            </div>
+            {featuredProfiles.length === 0 ? <div className="empty-panel">No featured profiles match this filter.</div> : null}
             <div className="explore-grid">
               {[
                 "Directory",
@@ -503,9 +679,9 @@ export default function CustomerPage() {
                       0: "discover",
                       1: "bookings",
                       2: "messages",
-                      3: "home",
+                      3: "rewards",
                       4: "home",
-                      5: "home",
+                      5: "vip",
                     };
                     setView(routeMap[index] ?? "home");
                   }}
@@ -515,6 +691,7 @@ export default function CustomerPage() {
                 </button>
               ))}
             </div>
+            </>
           )}
 
           {view === "discover" && (
@@ -607,24 +784,80 @@ export default function CustomerPage() {
                 <div className="status-pill">{data.tier}</div>
               </article>
 
-              <article className="content-panel compact">
+              <button className="content-panel compact content-panel-button" type="button" onClick={() => setView("wallet")}>
                 <div className="mini-avatar gold">Q</div>
                 <div className="panel-copy">
                   <strong>Wallet</strong>
                   <span>{data.qcBalance} QC balance</span>
                 </div>
                 <small>UGX {data.earnings}</small>
-              </article>
+              </button>
 
-              <article className="content-panel compact">
+              <button className="content-panel compact content-panel-button" type="button" onClick={() => setView("vip")}>
                 <div className="mini-avatar alt">V</div>
                 <div className="panel-copy">
                   <strong>VIP access</strong>
                   <span>Upgrades and private rooms</span>
                 </div>
                 <small>{data.tier}</small>
-              </article>
+              </button>
+
+              <button className="content-panel compact content-panel-button" type="button" onClick={() => setView("referrals")}>
+                <div className="mini-avatar">R</div>
+                <div className="panel-copy">
+                  <strong>Referral earnings</strong>
+                  <span>{referral.directCount} direct • {referral.indirectCount} indirect</span>
+                </div>
+                <small>{referral.currency} {(referral.directEarnings + referral.indirectEarnings).toLocaleString()}</small>
+              </button>
             </div>
+          )}
+
+          {view === "wallet" && (
+            <div className="prototype-screen-stack">
+              <article className="prototype-hero-card wallet-hero">
+                <span className="eyebrow">AQE MONEY ACCOUNT</span>
+                <h2>Wallet cash</h2>
+                <strong>{platformSettings.walletCurrency} {data.walletBalance.toLocaleString()}</strong>
+                <p>Cash deposits and referral earnings are separate from QC credits.</p>
+              </article>
+              <div className="prototype-action-grid">
+                <button type="button" onClick={() => { window.location.href = "/payments"; }}>Deposit cash <span>→</span></button>
+                <button type="button" onClick={() => setView("referrals")}>View earnings <span>→</span></button>
+                <button type="button" onClick={() => { window.location.href = "/qc"; }}>Recharge QC <span>→</span></button>
+              </div>
+              <article className="content-panel compact"><div className="mini-avatar gold">Q</div><div className="panel-copy"><strong>QC balance</strong><span>Usage credits, not cash</span></div><small>{data.qcBalance} QC</small></article>
+            </div>
+          )}
+
+          {view === "premium" && (
+            <div className="prototype-screen-stack">
+              <article className="prototype-hero-card premium-hero"><span className="eyebrow">PREMIUM HUB</span><h2>Build your independent profile.</h2><p>Premium unlocks profile tools, messaging, comments, and daily chat allowance.</p><button type="button" onClick={() => { window.location.href = "/payments"; }}>Upgrade to Premium <span>→</span></button></article>
+              <div className="feature-list"><div><strong>Independent profile</strong><span>Present your work and services.</span></div><div><strong>Profile media</strong><span>Upload and manage your public profile.</span></div><div><strong>Daily chat allowance</strong><span>Connect with the AQE community.</span></div></div>
+            </div>
+          )}
+
+          {view === "vip" && (
+            <div className="prototype-screen-stack">
+              <article className="prototype-hero-card vip-hero"><span className="eyebrow">VIP ECOSYSTEM</span><h2>Everything in one private room.</h2><p>Unlock asset room, store, groups, referral earnings, rewards, and VIP booking tools.</p><button type="button" onClick={() => { window.location.href = "/payments"; }}>Upgrade to VIP <span>→</span></button></article>
+              <div className="prototype-action-grid"><button type="button" onClick={() => setView("referrals")}>My team <span>→</span></button><button type="button" onClick={() => setView("rewards")}>VIP rewards <span>→</span></button><button type="button" onClick={() => { window.location.href = "/vip"; }}>Withdrawals <span>→</span></button></div>
+            </div>
+          )}
+
+          {view === "rewards" && (
+            <div className="prototype-screen-stack"><div className="section-heading"><div><span className="eyebrow">VIP ECOSYSTEM</span><h2>Rewards</h2></div><span className="status-pill">{data.qcBalance} QC</span></div><div className="feature-list"><div><strong>Daily claim</strong><span>Collect your daily QC reward.</span><button type="button" onClick={() => { window.location.href = "/qc"; }}>Claim QC</button></div><div><strong>1 Week VIP</strong><span>Redeem rewards after eligibility.</span><button type="button" onClick={() => setView("vip")}>View VIP</button></div><div><strong>Raffle</strong><span>Use QC for the active draw.</span><button type="button" onClick={() => setView("raffle")}>Open raffle</button></div></div></div>
+          )}
+
+          {view === "referrals" && (
+            <div className="prototype-screen-stack"><article className="prototype-hero-card referral-hero"><span className="eyebrow">MY TEAM / REFERRALS</span><h2>{referral.currency} {(referral.directEarnings + referral.indirectEarnings).toLocaleString()}</h2><p>Real earnings credited after referred-member payment confirmation.</p>{referral.referralLink ? <button type="button" onClick={() => navigator.clipboard.writeText(`${window.location.origin}${referral.referralLink}`)}>Copy referral link <span>→</span></button> : <small>Sign in to receive your unique referral link.</small>}</article><div className="metric-grid"><div className="metric-card"><span>DIRECT</span><strong>{referral.directCount}</strong></div><div className="metric-card"><span>INDIRECT</span><strong>{referral.indirectCount}</strong></div><div className="metric-card"><span>DIRECT EARNINGS</span><strong>{referral.currency} {referral.directEarnings.toLocaleString()}</strong></div><div className="metric-card"><span>INDIRECT EARNINGS</span><strong>{referral.currency} {referral.indirectEarnings.toLocaleString()}</strong></div></div></div>
+          )}
+
+          {view === "raffle" && (
+            <div className="prototype-screen-stack"><article className="prototype-hero-card raffle-hero"><span className="eyebrow">RAFFLE</span><h2>Join the next draw.</h2><p>Tickets use QC credits. Your cash wallet is never used for raffle entry.</p><button type="button" onClick={() => { window.location.href = "/qc"; }}>View QC and rewards <span>→</span></button></article><div className="feature-list"><div><strong>Ticket price</strong><span>Manager-controlled QC amount</span></div><div><strong>Eligibility</strong><span>Available to eligible AQE members.</span></div></div></div>
+          )}
+
+          {view === "settings" && (
+            <div className="prototype-screen-stack"><article className="content-panel"><div className="mini-avatar">{accountName.charAt(0).toUpperCase()}</div><div className="panel-copy"><strong>{accountName}</strong><span>{accountSubtitle}</span></div><button type="button" className="text-button" onClick={signOut}>Sign out</button></article><div className="feature-list"><div><strong>About AQE</strong><span>{platformSettings.about || "Community, profiles, bookings, and trusted creator tools."}</span></div><div><strong>Contact</strong><span>{platformSettings.contact || "Contact an AQE manager for support."}</span></div><div><strong>Privacy and safety</strong><span>Account, payment, and age-gate controls are active.</span></div></div></div>
           )}
 
           {view === "home" && (
@@ -801,12 +1034,105 @@ export default function CustomerPage() {
             </p>
             <form onSubmit={submitAuth}>
               {authMode === "register" ? (
-                <input
-                  className="auth-input"
-                  value={displayName}
-                  onChange={(event) => setDisplayName(event.target.value)}
-                  placeholder="Display name"
-                />
+                <div className="registration-fields">
+                  <input
+                    className="auth-input"
+                    value={displayName}
+                    onChange={(event) => setDisplayName(event.target.value)}
+                    placeholder="Full display name"
+                    required
+                  />
+                  <div className="registration-grid">
+                    <input
+                      className="auth-input"
+                      value={phone}
+                      onChange={(event) => setPhone(event.target.value)}
+                      placeholder="Phone number"
+                      required
+                    />
+                    <input
+                      className="auth-input"
+                      type="number"
+                      min="18"
+                      value={age}
+                      onChange={(event) => setAge(event.target.value)}
+                      placeholder="Age 18+"
+                      required
+                    />
+                  </div>
+                  <div className="registration-grid">
+                    <input
+                      className="auth-input"
+                      value={country}
+                      onChange={(event) => setCountry(event.target.value)}
+                      placeholder="Country"
+                      required
+                    />
+                    <input
+                      className="auth-input"
+                      value={city}
+                      onChange={(event) => setCity(event.target.value)}
+                      placeholder="City / region"
+                      required
+                    />
+                  </div>
+                  <select
+                    className="auth-input"
+                    value={profileCategory}
+                    onChange={(event) => setProfileCategory(event.target.value)}
+                  >
+                    <option value="client">Client account</option>
+                    <option value="independent">Independent profile</option>
+                  </select>
+                  <div className="registration-tier-block">
+                    <div className="registration-field-label">Membership tier</div>
+                    <div className="registration-tier-grid">
+                      {[
+                        ["basic", "Basic", "Public exploration and account access"],
+                        ["premium", "Premium", "Independent profile and messaging"],
+                        ["vip", "VIP", "Full ecosystem, store, groups and rewards"],
+                      ].map(([value, label, description]) => (
+                        <button
+                          type="button"
+                          key={value}
+                          className={registrationTier === value ? "registration-tier active" : "registration-tier"}
+                          onClick={() => setRegistrationTier(value as "basic" | "premium" | "vip")}
+                        >
+                          <strong>{label}</strong>
+                          <span>{description}</span>
+                          {value !== "basic" ? <small>Payment required after registration</small> : <small>Selected by default</small>}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <textarea
+                    className="auth-input registration-bio"
+                    value={bio}
+                    onChange={(event) => setBio(event.target.value)}
+                    placeholder="About you, your interests, or your professional presence"
+                    rows={3}
+                  />
+                  <select
+                    className="auth-input"
+                    value={contactPreference}
+                    onChange={(event) => setContactPreference(event.target.value)}
+                  >
+                    <option value="in_app">AQE messages</option>
+                    <option value="phone">Phone</option>
+                    <option value="whatsapp">WhatsApp</option>
+                    <option value="email">Email</option>
+                  </select>
+                  <input
+                    className="auth-input"
+                    value={referralCode}
+                    onChange={(event) => setReferralCode(event.target.value.toUpperCase())}
+                    placeholder="Referral code (optional)"
+                  />
+                  <label className="registration-consent">
+                    <input type="checkbox" required />
+                    <span>I confirm I am 18+ and agree to the AQE terms and privacy policy.</span>
+                  </label>
+                </div>
               ) : null}
               <input
                 className="auth-input"

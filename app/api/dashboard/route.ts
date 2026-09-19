@@ -23,7 +23,13 @@ export async function GET(request: Request) {
       return NextResponse.json({
         ok: true,
         source: "demo",
-        customer: { qcBalance: 0, tier: "basic", bookings: 0, earnings: 0 },
+        customer: {
+          walletBalance: 0,
+          qcBalance: 0,
+          tier: "basic",
+          bookings: 0,
+          earnings: 0,
+        },
         manager: {
           users: 0,
           vip: 0,
@@ -55,11 +61,25 @@ export async function GET(request: Request) {
       .select("balance")
       .eq("user_id", session.userId)
       .maybeSingle();
+    const cashWallet = await client
+      .from("cash_wallet")
+      .select("available_balance")
+      .eq("user_id", session.userId)
+      .maybeSingle();
     const customerBookings = await countRows(
       client,
       "bookings",
       "customer_id",
       session.userId,
+    );
+    const referralEarnings = await client
+      .from("referral_earnings")
+      .select("amount")
+      .eq("beneficiary_user_id", session.userId)
+      .eq("status", "CREDITED");
+    const earnings = (referralEarnings.data ?? []).reduce(
+      (sum, row) => sum + Number(row.amount ?? 0),
+      0,
     );
 
     if (session.role === "manager" || session.role === "admin") {
@@ -89,10 +109,11 @@ export async function GET(request: Request) {
         ok: true,
         source: "supabase",
         customer: {
+          walletBalance: cashWallet.data?.available_balance ?? 0,
           qcBalance: wallet.data?.balance ?? 0,
           tier: profile.data?.tier ?? "basic",
           bookings: customerBookings,
-          earnings: 0,
+          earnings,
         },
         manager: {
           users,
@@ -112,10 +133,11 @@ export async function GET(request: Request) {
       ok: true,
       source: "supabase",
       customer: {
+        walletBalance: cashWallet.data?.available_balance ?? 0,
         qcBalance: wallet.data?.balance ?? 0,
         tier: profile.data?.tier ?? "basic",
         bookings: customerBookings,
-        earnings: 0,
+        earnings,
       },
       manager: null,
     });

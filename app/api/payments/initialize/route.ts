@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
-import { resolveMutationUserId } from "../../../../lib/aqe/auth";
+import { normalizeTier, resolveMutationUserId } from "../../../../lib/aqe/auth";
 import {
   createPaymentProvider,
   persistPaymentOrder,
 } from "../../../../lib/aqe/paymentProvider";
+import { createServerSupabaseClient } from "../../../../lib/supabaseServer";
 
 export async function POST(request: Request) {
   try {
@@ -25,6 +26,9 @@ export async function POST(request: Request) {
       .trim()
       .toUpperCase();
     const qcPackageId = String(body.qcPackageId ?? "default").trim();
+    const requestedTier = normalizeTier(
+      typeof body.tier === "string" ? body.tier : "basic",
+    );
 
     if (!Number.isFinite(amount) || amount <= 0) {
       return NextResponse.json(
@@ -40,6 +44,37 @@ export async function POST(request: Request) {
       );
     }
 
+    if (requestedTier !== "basic") {
+      const client = createServerSupabaseClient();
+      const configured = client
+        ? await client
+            .from("platform_settings")
+            .select("settings")
+            .eq("id", 1)
+            .maybeSingle()
+        : { data: null };
+      const prices = configured.data?.settings?.tierPrices ?? {
+        premium: 250000,
+        vip: 500000,
+      };
+      const expectedCurrency =
+        String(configured.data?.settings?.walletCurrency ?? "UGX").toUpperCase();
+      const expectedPrice = Number(prices[requestedTier]);
+      if (
+        !Number.isFinite(expectedPrice) ||
+        amount !== expectedPrice ||
+        currency !== expectedCurrency
+      ) {
+        return NextResponse.json(
+          {
+            ok: false,
+            reason: `The ${requestedTier} upgrade must use ${expectedCurrency} ${expectedPrice.toLocaleString()}.`,
+          },
+          { status: 400 },
+        );
+      }
+    }
+
     const provider = createPaymentProvider(process.env);
 
     const order = await provider.createPaymentOrder({
@@ -50,10 +85,7 @@ export async function POST(request: Request) {
       metadata: {
         source: "aqe-payment-init",
         origin: "server",
-        requestedTier:
-          body.tier === "vip" || body.tier === "premium"
-            ? body.tier
-            : "premium",
+        requestedTier,
       },
     });
 

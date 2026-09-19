@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+import { randomUUID } from "node:crypto";
+import { normalizeTier } from "../../../../lib/aqe/auth";
 import {
   createProfileRecord,
   persistProfileRecord,
@@ -12,6 +14,15 @@ export async function POST(request: Request) {
     const password = String(body.password ?? "");
     const displayName =
       String(body.displayName ?? body.name ?? "").trim() || email.split("@")[0];
+    const referralCode = String(body.referralCode ?? "").trim().toUpperCase();
+    const phone = String(body.phone ?? "").trim();
+    const country = String(body.country ?? "").trim();
+    const city = String(body.city ?? "").trim();
+    const bio = String(body.bio ?? "").trim();
+    const category = String(body.category ?? "client").trim();
+    const requestedTier = normalizeTier(
+      typeof body.requestedTier === "string" ? body.requestedTier : "basic",
+    );
 
     if (!email || !password) {
       return NextResponse.json(
@@ -26,6 +37,11 @@ export async function POST(request: Request) {
       const profileRecord = createProfileRecord({
         userId: `demo-${Date.now()}`,
         displayName,
+        phone,
+        country,
+        location: city,
+        bio,
+        category,
         tier: "basic",
         verificationStatus: "pending",
       });
@@ -37,7 +53,26 @@ export async function POST(request: Request) {
         mode: "mock",
         user: { email, role: "customer" },
         profile: persisted.profile ?? profileRecord.profile,
+        tier: "basic",
+        requestedTier,
+        upgradeRequired: requestedTier !== "basic",
       });
+    }
+
+    let referredBy: string | null = null;
+    if (referralCode) {
+      const referrer = await client
+        .from("profiles")
+        .select("user_id")
+        .eq("referral_code", referralCode)
+        .maybeSingle();
+      if (referrer.error || !referrer.data) {
+        return NextResponse.json(
+          { ok: false, reason: "Referral link is invalid or expired." },
+          { status: 400 },
+        );
+      }
+      referredBy = referrer.data.user_id;
     }
 
     const { data, error } = await client.auth.admin.createUser({
@@ -60,17 +95,46 @@ export async function POST(request: Request) {
     const profileRecord = createProfileRecord({
       userId: data.user?.id ?? `user-${Date.now()}`,
       displayName,
+      phone,
+      country,
+      location: city,
+      bio,
+      category,
       tier: "basic",
       verificationStatus: "pending",
     });
 
     const persisted = await persistProfileRecord(profileRecord.profile!);
 
+    if (persisted.ok && data.user?.id) {
+      const generatedReferralCode = `AQE-${randomUUID().replace(/-/g, "").slice(0, 12).toUpperCase()}`;
+      if (referredBy === data.user.id) {
+        return NextResponse.json(
+          { ok: false, reason: "You cannot use your own referral link." },
+          { status: 400 },
+        );
+      }
+
+      const referralUpdate = await client
+        .from("profiles")
+        .update({ referral_code: generatedReferralCode, referred_by: referredBy })
+        .eq("user_id", data.user.id);
+      if (referralUpdate.error) {
+        return NextResponse.json(
+          { ok: false, reason: referralUpdate.error.message },
+          { status: 500 },
+        );
+      }
+    }
+
     return NextResponse.json({
       ok: true,
       mode: "supabase",
       user: data.user,
       profile: persisted.profile ?? profileRecord.profile,
+      tier: "basic",
+      requestedTier,
+      upgradeRequired: requestedTier !== "basic",
     });
   } catch (error) {
     return NextResponse.json(

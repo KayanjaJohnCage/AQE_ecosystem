@@ -32,6 +32,16 @@ type ReceiverDetails = {
   instructions: string;
 };
 
+type PlatformSettings = {
+  tierPrices: { basic: number; premium: number; vip: number };
+  renewalPrices: { basic: number; premium: number; vip: number };
+  walletCurrency: string;
+  qcExchangeRate: number;
+  referralRates: { direct: number; indirect: number };
+  about: string;
+  contact: string;
+};
+
 const navGroups = [
   {
     title: "Operations",
@@ -154,6 +164,15 @@ export default function ManagerPage() {
     receiverPhone: "",
     receiverCard: "",
     instructions: "",
+  });
+  const [settings, setSettings] = useState<PlatformSettings>({
+    tierPrices: { basic: 125000, premium: 250000, vip: 500000 },
+    renewalPrices: { basic: 2500, premium: 5000, vip: 8500 },
+    walletCurrency: "UGX",
+    qcExchangeRate: 1000,
+    referralRates: { direct: 0.1, indirect: 0.05 },
+    about: "",
+    contact: "",
   });
 
   useEffect(() => {
@@ -344,6 +363,14 @@ export default function ManagerPage() {
         if (payload.receiver) setReceiver(payload.receiver);
       })
       .catch(() => undefined);
+
+    fetch("/api/settings")
+      .then(async (response) => {
+        if (!response.ok) return;
+        const payload = await response.json();
+        if (payload.settings) setSettings(payload.settings);
+      })
+      .catch(() => undefined);
   }, []);
 
   const filteredProfiles = profiles.filter((profile) => {
@@ -461,6 +488,22 @@ export default function ManagerPage() {
     if (payload.receiver) setReceiver(payload.receiver);
   }
 
+  async function saveSettings(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const { session, user } = readStoredSession();
+    const headers: HeadersInit = { "Content-Type": "application/json" };
+    if (session.access_token) headers.authorization = `Bearer ${session.access_token}`;
+    if (user.id) headers["x-user-id"] = user.id;
+    const response = await fetch("/api/settings", {
+      method: "PATCH",
+      headers,
+      body: JSON.stringify(settings),
+    });
+    const payload = await response.json().catch(() => ({}));
+    setReviewMessage(payload.ok ? "Platform settings saved." : payload.reason || "Platform settings could not be saved.");
+    if (payload.settings) setSettings(payload.settings);
+  }
+
   return (
     <div className="manager-prototype">
       <aside className="manager-prototype-sidebar">
@@ -550,6 +593,32 @@ export default function ManagerPage() {
                 </section>
               </div>
             </>
+          ) : active === "Global Settings" ? (
+            <section className="manager-card manager-detail">
+              <div className="manager-table-header">
+                <h3>Platform settings</h3>
+                <span className="status-pill">Manager controlled</span>
+              </div>
+              <p className="manager-subtitle">These values control customer-facing tier prices, renewal prices, public copy, and the QC conversion rate. Wallet cash and QC remain separate balances.</p>
+              <form className="manager-settings-form" onSubmit={saveSettings}>
+                <strong>One-time tier prices ({settings.walletCurrency})</strong>
+                {(["basic", "premium", "vip"] as const).map((tier) => (
+                  <label key={`tier-${tier}`}>{tier.toUpperCase()} price<input type="number" min="0" value={settings.tierPrices[tier]} onChange={(event) => setSettings({ ...settings, tierPrices: { ...settings.tierPrices, [tier]: Number(event.target.value) } })} required /></label>
+                ))}
+                <strong>Monthly renewal prices ({settings.walletCurrency})</strong>
+                {(["basic", "premium", "vip"] as const).map((tier) => (
+                  <label key={`renewal-${tier}`}>{tier.toUpperCase()} renewal<input type="number" min="0" value={settings.renewalPrices[tier]} onChange={(event) => setSettings({ ...settings, renewalPrices: { ...settings.renewalPrices, [tier]: Number(event.target.value) } })} required /></label>
+                ))}
+                <label>Wallet currency<input value={settings.walletCurrency} onChange={(event) => setSettings({ ...settings, walletCurrency: event.target.value.toUpperCase() })} maxLength={3} required /></label>
+                <label>UGX per QC<input type="number" min="1" value={settings.qcExchangeRate} onChange={(event) => setSettings({ ...settings, qcExchangeRate: Number(event.target.value) })} required /></label>
+                <label>Direct referral rate (0-1)<input type="number" min="0" max="1" step="0.01" value={settings.referralRates.direct} onChange={(event) => setSettings({ ...settings, referralRates: { ...settings.referralRates, direct: Number(event.target.value) } })} required /></label>
+                <label>Indirect referral rate (0-1)<input type="number" min="0" max="1" step="0.01" value={settings.referralRates.indirect} onChange={(event) => setSettings({ ...settings, referralRates: { ...settings.referralRates, indirect: Number(event.target.value) } })} required /></label>
+                <label>About AQE<textarea value={settings.about} onChange={(event) => setSettings({ ...settings, about: event.target.value })} rows={3} /></label>
+                <label>Contact instructions<textarea value={settings.contact} onChange={(event) => setSettings({ ...settings, contact: event.target.value })} rows={3} /></label>
+                <button type="submit" className="manager-action-button">Save platform settings</button>
+              </form>
+              {reviewMessage ? <div className="manager-review-message">{reviewMessage}</div> : null}
+            </section>
           ) : active === "Payments & Approvals" ? (
             <>
               <section className="manager-card manager-detail">

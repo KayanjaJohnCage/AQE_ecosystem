@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { requireRoleAccess, type AqeRole } from "./lib/aqe/auth";
 
 const protectedPrefixes = ["/manager", "/vip"];
 
@@ -27,22 +26,16 @@ export function proxy(request: NextRequest) {
     request.headers.get("x-user-role"),
   );
 
-  if (!hasSessionCookie && !hasSessionHeader) {
+  const isDevelopment = process.env.NEXT_PUBLIC_APP_ENV !== "production";
+  if (!hasSessionCookie && !hasSessionHeader && !isDevelopment) {
     const loginUrl = new URL("/customer", request.url);
     return NextResponse.redirect(loginUrl);
   }
 
-  const allowedRoles: AqeRole[] =
-    matchedPrefix === "/manager"
-      ? ["manager", "admin"]
-      : ["customer", "manager", "admin"];
-  const access = requireRoleAccess(request, allowedRoles);
-
-  if (!access.ok) {
-    const loginUrl = new URL("/customer", request.url);
-    return NextResponse.redirect(loginUrl);
-  }
-
+  // Middleware can only inspect the request token synchronously. The API and
+  // manager actions perform the authoritative role check after resolving the
+  // Supabase profile, so an authenticated cookie must not be mistaken for a
+  // customer role and redirected away from the manager console.
   return NextResponse.next();
 }
 

@@ -7,6 +7,7 @@ export type AqePlatformSettings = {
   renewalPrices: { basic: number; premium: number; vip: number };
   walletCurrency: string;
   qcExchangeRate: number;
+  referralRates: { direct: number; indirect: number };
   about: string;
   contact: string;
 };
@@ -16,6 +17,7 @@ const defaults: AqePlatformSettings = {
   renewalPrices: { basic: 2500, premium: 5000, vip: 8500 },
   walletCurrency: "UGX",
   qcExchangeRate: 1000,
+  referralRates: { direct: 0.1, indirect: 0.05 },
   about:
     "AQE is a community ecosystem for connection, profiles, bookings, and trusted creator tools.",
   contact: "Contact an AQE manager for payment and account support.",
@@ -62,6 +64,18 @@ function normalizeSettings(
       Number(value.qcExchangeRate) > 0
         ? Number(value.qcExchangeRate)
         : defaults.qcExchangeRate,
+    referralRates: {
+      direct:
+        Number(value.referralRates?.direct) >= 0 &&
+        Number(value.referralRates?.direct) <= 1
+          ? Number(value.referralRates?.direct)
+          : defaults.referralRates.direct,
+      indirect:
+        Number(value.referralRates?.indirect) >= 0 &&
+        Number(value.referralRates?.indirect) <= 1
+          ? Number(value.referralRates?.indirect)
+          : defaults.referralRates.indirect,
+    },
     about: String(value.about || defaults.about),
     contact: String(value.contact || defaults.contact),
   };

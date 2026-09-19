@@ -30,11 +30,21 @@ export function createProfileRecord({
   displayName,
   tier = "basic",
   verificationStatus = "pending",
+  bio,
+  phone,
+  country,
+  location,
+  category,
 }: {
   userId: string;
   displayName: string;
   tier?: ProfileTier;
   verificationStatus?: ProfileRecord["verificationStatus"];
+  bio?: string;
+  phone?: string;
+  country?: string;
+  location?: string;
+  category?: string;
 }): { ok: boolean; profile?: ProfileRecord; reason?: string } {
   if (!userId || !displayName) {
     return { ok: false, reason: "User ID and display name are required." };
@@ -48,6 +58,11 @@ export function createProfileRecord({
       id: `profile-${Date.now()}`,
       userId,
       displayName,
+      bio,
+      phone,
+      country,
+      location,
+      category,
       tier,
       verificationStatus,
       createdAt: now,
