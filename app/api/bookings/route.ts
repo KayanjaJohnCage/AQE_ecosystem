@@ -39,13 +39,18 @@ export async function GET(request: Request) {
 
     const { data, error } = await client
       .from("bookings")
-      .select("id, customer_id, provider_id, service, amount, currency, status, notes, created_at")
+      .select(
+        "id, customer_id, provider_id, service, amount, currency, status, notes, created_at",
+      )
       .eq("customer_id", identity.userId)
       .order("created_at", { ascending: false })
       .limit(50);
 
     if (error) {
-      return NextResponse.json({ ok: false, reason: error.message }, { status: 500 });
+      return NextResponse.json(
+        { ok: false, reason: error.message },
+        { status: 500 },
+      );
     }
 
     return NextResponse.json({
@@ -67,7 +72,11 @@ export async function GET(request: Request) {
     });
   } catch (error) {
     return NextResponse.json(
-      { ok: false, reason: error instanceof Error ? error.message : "Bookings unavailable." },
+      {
+        ok: false,
+        reason:
+          error instanceof Error ? error.message : "Bookings unavailable.",
+      },
       { status: 500 },
     );
   }
@@ -132,21 +141,41 @@ export async function POST(request: Request) {
 
 export async function PATCH(request: Request) {
   try {
-    const access = await requireAuthenticatedRoleAccess(request, ["manager", "admin"]);
+    const access = await requireAuthenticatedRoleAccess(request, [
+      "manager",
+      "admin",
+    ]);
     if (!access.ok) {
-      return NextResponse.json({ ok: false, reason: access.reason }, { status: 403 });
+      return NextResponse.json(
+        { ok: false, reason: access.reason },
+        { status: 403 },
+      );
     }
 
     const body = await request.json().catch(() => ({}));
     const bookingId = String(body.bookingId ?? "").trim();
     const nextStatus = String(body.status ?? "").trim();
-    if (!bookingId || !["accepted", "rejected", "cancelled", "completed", "disputed"].includes(nextStatus)) {
-      return NextResponse.json({ ok: false, reason: "Booking ID and valid next status are required." }, { status: 400 });
+    if (
+      !bookingId ||
+      !["accepted", "rejected", "cancelled", "completed", "disputed"].includes(
+        nextStatus,
+      )
+    ) {
+      return NextResponse.json(
+        { ok: false, reason: "Booking ID and valid next status are required." },
+        { status: 400 },
+      );
     }
 
     const client = createServerSupabaseClient();
     if (!client) {
-      return NextResponse.json({ ok: true, saved: false, source: "memory", bookingId, status: nextStatus });
+      return NextResponse.json({
+        ok: true,
+        saved: false,
+        source: "memory",
+        bookingId,
+        status: nextStatus,
+      });
     }
 
     const current = await client
@@ -155,10 +184,16 @@ export async function PATCH(request: Request) {
       .eq("id", bookingId)
       .maybeSingle();
     if (current.error || !current.data) {
-      return NextResponse.json({ ok: false, reason: current.error?.message ?? "Booking not found." }, { status: 404 });
+      return NextResponse.json(
+        { ok: false, reason: current.error?.message ?? "Booking not found." },
+        { status: 404 },
+      );
     }
 
-    const transition = transitionBookingStatus(current.data.status, nextStatus as any);
+    const transition = transitionBookingStatus(
+      current.data.status,
+      nextStatus as any,
+    );
     if (!transition.ok) return NextResponse.json(transition, { status: 409 });
 
     const updated = await client
@@ -167,9 +202,25 @@ export async function PATCH(request: Request) {
       .eq("id", bookingId)
       .select("id, status, updated_at")
       .single();
-    if (updated.error) return NextResponse.json({ ok: false, reason: updated.error.message }, { status: 500 });
-    return NextResponse.json({ ok: true, saved: true, source: "supabase", booking: updated.data });
+    if (updated.error)
+      return NextResponse.json(
+        { ok: false, reason: updated.error.message },
+        { status: 500 },
+      );
+    return NextResponse.json({
+      ok: true,
+      saved: true,
+      source: "supabase",
+      booking: updated.data,
+    });
   } catch (error) {
-    return NextResponse.json({ ok: false, reason: error instanceof Error ? error.message : "Booking review failed." }, { status: 400 });
+    return NextResponse.json(
+      {
+        ok: false,
+        reason:
+          error instanceof Error ? error.message : "Booking review failed.",
+      },
+      { status: 400 },
+    );
   }
 }

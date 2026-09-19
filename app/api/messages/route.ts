@@ -38,7 +38,10 @@ export async function GET(request: Request) {
       .limit(50);
 
     if (error) {
-      return NextResponse.json({ ok: false, reason: error.message }, { status: 500 });
+      return NextResponse.json(
+        { ok: false, reason: error.message },
+        { status: 500 },
+      );
     }
 
     return NextResponse.json({
@@ -60,7 +63,11 @@ export async function GET(request: Request) {
     });
   } catch (error) {
     return NextResponse.json(
-      { ok: false, reason: error instanceof Error ? error.message : "Messages unavailable." },
+      {
+        ok: false,
+        reason:
+          error instanceof Error ? error.message : "Messages unavailable.",
+      },
       { status: 500 },
     );
   }

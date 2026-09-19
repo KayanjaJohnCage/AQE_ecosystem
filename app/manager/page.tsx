@@ -90,7 +90,11 @@ const tableSeeds: Record<string, ManagerRow[]> = {
   "Bookings & Requests": [
     { title: "Brand discovery session", meta: "Kampala", value: "Confirmed" },
     { title: "Media kit planning", meta: "Nairobi", value: "Pending" },
-    { title: "Community room access", meta: "Kigali", value: "Awaiting approval" },
+    {
+      title: "Community room access",
+      meta: "Kigali",
+      value: "Awaiting approval",
+    },
   ],
   "Messages & DM": [
     { title: "Support check-in", meta: "2 new replies", value: "Unresolved" },
@@ -98,16 +102,24 @@ const tableSeeds: Record<string, ManagerRow[]> = {
     { title: "VIP concierge", meta: "Priority queue", value: "Responding" },
   ],
   "Marketplace & Stores": [
-    { title: "Premium spotlight bundle", meta: "Vendor: Atelier", value: "Live" },
+    {
+      title: "Premium spotlight bundle",
+      meta: "Vendor: Atelier",
+      value: "Live",
+    },
     { title: "Travel pass", meta: "Vendor: NEO", value: "50 sold" },
-    { title: "Community event ticket", meta: "Vendor: AQE", value: "Needs restock" },
+    {
+      title: "Community event ticket",
+      meta: "Vendor: AQE",
+      value: "Needs restock",
+    },
   ],
   "Customer Support": [
     { title: "Payment dispute", meta: "High priority", value: "Open" },
     { title: "Verification appeal", meta: "Escalated", value: "In review" },
     { title: "Account issue", meta: "Low priority", value: "Resolved" },
   ],
-  "Withdrawals": [
+  Withdrawals: [
     { title: "VIP payout batch", meta: "UGX 3.1M", value: "Queued" },
     { title: "Creator payout", meta: "UGX 820K", value: "Approved" },
     { title: "Commission transfer", meta: "UGX 480K", value: "Processing" },
@@ -147,7 +159,8 @@ export default function ManagerPage() {
   useEffect(() => {
     const { session, user } = readStoredSession();
     const headers: HeadersInit = {};
-    if (session.access_token) headers.authorization = `Bearer ${session.access_token}`;
+    if (session.access_token)
+      headers.authorization = `Bearer ${session.access_token}`;
     if (user.id) headers["x-user-id"] = user.id;
 
     if (user.email) {
@@ -181,77 +194,147 @@ export default function ManagerPage() {
       fetch("/api/vip/withdrawals", { headers }),
       fetch("/api/payments/manager-direct", { headers }),
     ])
-      .then(async ([bookingsResponse, messagesResponse, productsResponse, supportResponse, withdrawalsResponse, paymentsResponse]) => {
-        const [bookings, messages, products, support, withdrawals, payments] = await Promise.all([
-          bookingsResponse.ok ? bookingsResponse.json() : Promise.resolve({}),
-          messagesResponse.ok ? messagesResponse.json() : Promise.resolve({}),
-          productsResponse.ok ? productsResponse.json() : Promise.resolve({}),
-          supportResponse.ok ? supportResponse.json() : Promise.resolve({}),
-          withdrawalsResponse.ok ? withdrawalsResponse.json() : Promise.resolve({}),
-          paymentsResponse.ok ? paymentsResponse.json() : Promise.resolve({}),
-        ]);
+      .then(
+        async ([
+          bookingsResponse,
+          messagesResponse,
+          productsResponse,
+          supportResponse,
+          withdrawalsResponse,
+          paymentsResponse,
+        ]) => {
+          const [bookings, messages, products, support, withdrawals, payments] =
+            await Promise.all([
+              bookingsResponse.ok
+                ? bookingsResponse.json()
+                : Promise.resolve({}),
+              messagesResponse.ok
+                ? messagesResponse.json()
+                : Promise.resolve({}),
+              productsResponse.ok
+                ? productsResponse.json()
+                : Promise.resolve({}),
+              supportResponse.ok ? supportResponse.json() : Promise.resolve({}),
+              withdrawalsResponse.ok
+                ? withdrawalsResponse.json()
+                : Promise.resolve({}),
+              paymentsResponse.ok
+                ? paymentsResponse.json()
+                : Promise.resolve({}),
+            ]);
 
-        const nextRows: Record<string, ManagerRow[]> = {};
-        if (Array.isArray(bookings.bookings) && bookings.bookings.length > 0) {
-          nextRows["Bookings & Requests"] = bookings.bookings.map(
-            (booking: { title?: string; date?: string; amount?: string; status?: string }) => ({
-              id: (booking as { id?: string }).id,
-              title: booking.title || "Booking request",
-              meta: booking.date || "Date pending",
-              value: booking.status || booking.amount || "Pending",
-            }),
-          );
-        }
-        if (Array.isArray(messages.messages) && messages.messages.length > 0) {
-          nextRows["Messages & DM"] = messages.messages.map(
-            (message: { userId?: string; preview?: string; time?: string; read?: boolean }) => ({
-              title: message.userId || "Community member",
-              meta: message.preview || "No message preview",
-              value: message.read ? "Read" : "Unread",
-            }),
-          );
-        }
-        if (Array.isArray(products.products) && products.products.length > 0) {
-          nextRows["Marketplace & Stores"] = products.products.map(
-            (product: { title?: string; seller_id?: string; price?: number; currency?: string; inventory?: number }) => ({
-              title: product.title || "Marketplace product",
-              meta: `Seller: ${product.seller_id || "AQE"}`,
-              value: `${product.currency || "USD"} ${product.price ?? 0} • ${product.inventory ?? 0} left`,
-            }),
-          );
-        }
-        if (Array.isArray(support.tickets) && support.tickets.length > 0) {
-          nextRows["Customer Support"] = support.tickets.map(
-            (ticket: { id?: string; subject?: string; category?: string; priority?: string; status?: string }) => ({
-              id: ticket.id,
-              title: ticket.subject || "Support ticket",
-              meta: `${ticket.category || "OTHER"} • ${ticket.priority || "MEDIUM"}`,
-              value: ticket.status || "OPEN",
-            }),
-          );
-        }
-        if (Array.isArray(withdrawals.withdrawals) && withdrawals.withdrawals.length > 0) {
-          nextRows["Withdrawals"] = withdrawals.withdrawals.map(
-            (withdrawal: { id?: string; user_id?: string; amount?: number; status?: string }) => ({
-              id: withdrawal.id,
-              title: `VIP payout ${withdrawal.user_id || "member"}`,
-              meta: `UGX ${withdrawal.amount ?? 0}`,
-              value: withdrawal.status || "PENDING",
-            }),
-          );
-        }
-        if (Array.isArray(payments.payments) && payments.payments.length > 0) {
-          nextRows["Payments & Approvals"] = payments.payments.map(
-            (payment: { id?: string; user_id?: string; amount?: number; currency?: string; reference?: string; metadata?: { requestedTier?: string }; status?: string }) => ({
-              id: payment.id,
-              title: `${payment.currency || "UGX"} ${payment.amount ?? 0} • ${payment.user_id || "member"}`,
-              meta: `${payment.reference || "No reference"} • Upgrade: ${(payment.metadata?.requestedTier || "premium").toUpperCase()}`,
-              value: payment.status || "pending",
-            }),
-          );
-        }
-        setLiveRows(nextRows);
-      })
+          const nextRows: Record<string, ManagerRow[]> = {};
+          if (
+            Array.isArray(bookings.bookings) &&
+            bookings.bookings.length > 0
+          ) {
+            nextRows["Bookings & Requests"] = bookings.bookings.map(
+              (booking: {
+                title?: string;
+                date?: string;
+                amount?: string;
+                status?: string;
+              }) => ({
+                id: (booking as { id?: string }).id,
+                title: booking.title || "Booking request",
+                meta: booking.date || "Date pending",
+                value: booking.status || booking.amount || "Pending",
+              }),
+            );
+          }
+          if (
+            Array.isArray(messages.messages) &&
+            messages.messages.length > 0
+          ) {
+            nextRows["Messages & DM"] = messages.messages.map(
+              (message: {
+                userId?: string;
+                preview?: string;
+                time?: string;
+                read?: boolean;
+              }) => ({
+                title: message.userId || "Community member",
+                meta: message.preview || "No message preview",
+                value: message.read ? "Read" : "Unread",
+              }),
+            );
+          }
+          if (
+            Array.isArray(products.products) &&
+            products.products.length > 0
+          ) {
+            nextRows["Marketplace & Stores"] = products.products.map(
+              (product: {
+                title?: string;
+                seller_id?: string;
+                price?: number;
+                currency?: string;
+                inventory?: number;
+              }) => ({
+                title: product.title || "Marketplace product",
+                meta: `Seller: ${product.seller_id || "AQE"}`,
+                value: `${product.currency || "USD"} ${product.price ?? 0} • ${product.inventory ?? 0} left`,
+              }),
+            );
+          }
+          if (Array.isArray(support.tickets) && support.tickets.length > 0) {
+            nextRows["Customer Support"] = support.tickets.map(
+              (ticket: {
+                id?: string;
+                subject?: string;
+                category?: string;
+                priority?: string;
+                status?: string;
+              }) => ({
+                id: ticket.id,
+                title: ticket.subject || "Support ticket",
+                meta: `${ticket.category || "OTHER"} • ${ticket.priority || "MEDIUM"}`,
+                value: ticket.status || "OPEN",
+              }),
+            );
+          }
+          if (
+            Array.isArray(withdrawals.withdrawals) &&
+            withdrawals.withdrawals.length > 0
+          ) {
+            nextRows["Withdrawals"] = withdrawals.withdrawals.map(
+              (withdrawal: {
+                id?: string;
+                user_id?: string;
+                amount?: number;
+                status?: string;
+              }) => ({
+                id: withdrawal.id,
+                title: `VIP payout ${withdrawal.user_id || "member"}`,
+                meta: `UGX ${withdrawal.amount ?? 0}`,
+                value: withdrawal.status || "PENDING",
+              }),
+            );
+          }
+          if (
+            Array.isArray(payments.payments) &&
+            payments.payments.length > 0
+          ) {
+            nextRows["Payments & Approvals"] = payments.payments.map(
+              (payment: {
+                id?: string;
+                user_id?: string;
+                amount?: number;
+                currency?: string;
+                reference?: string;
+                metadata?: { requestedTier?: string };
+                status?: string;
+              }) => ({
+                id: payment.id,
+                title: `${payment.currency || "UGX"} ${payment.amount ?? 0} • ${payment.user_id || "member"}`,
+                meta: `${payment.reference || "No reference"} • Upgrade: ${(payment.metadata?.requestedTier || "premium").toUpperCase()}`,
+                value: payment.status || "pending",
+              }),
+            );
+          }
+          setLiveRows(nextRows);
+        },
+      )
       .catch(() => undefined);
 
     fetch("/api/payments/receiver")
@@ -280,15 +363,23 @@ export default function ManagerPage() {
       ? profileRows
       : liveRows[active]?.length
         ? liveRows[active]
-        : tableSeeds[active] ?? [
-            { title: "Operational queue", meta: "Awaiting sync", value: "Ready" },
-          ];
+        : (tableSeeds[active] ?? [
+            {
+              title: "Operational queue",
+              meta: "Awaiting sync",
+              value: "Ready",
+            },
+          ]);
   const paymentRows: ManagerRow[] = liveRows["Payments & Approvals"] ?? [];
 
-  async function reviewBooking(bookingId: string, status: "accepted" | "rejected") {
+  async function reviewBooking(
+    bookingId: string,
+    status: "accepted" | "rejected",
+  ) {
     const { session, user } = readStoredSession();
     const headers: HeadersInit = { "Content-Type": "application/json" };
-    if (session.access_token) headers.authorization = `Bearer ${session.access_token}`;
+    if (session.access_token)
+      headers.authorization = `Bearer ${session.access_token}`;
     if (user.id) headers["x-user-id"] = user.id;
     const response = await fetch("/api/bookings", {
       method: "PATCH",
@@ -303,10 +394,14 @@ export default function ManagerPage() {
     );
   }
 
-  async function reviewWithdrawal(requestId: string, status: "APPROVED" | "REJECTED") {
+  async function reviewWithdrawal(
+    requestId: string,
+    status: "APPROVED" | "REJECTED",
+  ) {
     const { session, user } = readStoredSession();
     const headers: HeadersInit = { "Content-Type": "application/json" };
-    if (session.access_token) headers.authorization = `Bearer ${session.access_token}`;
+    if (session.access_token)
+      headers.authorization = `Bearer ${session.access_token}`;
     if (user.id) headers["x-user-id"] = user.id;
     const response = await fetch("/api/vip/withdrawals", {
       method: "PATCH",
@@ -314,13 +409,21 @@ export default function ManagerPage() {
       body: JSON.stringify({ requestId, status }),
     });
     const payload = await response.json().catch(() => ({}));
-    setReviewMessage(payload.ok ? `Withdrawal ${status.toLowerCase()}.` : payload.reason || "Withdrawal review failed.");
+    setReviewMessage(
+      payload.ok
+        ? `Withdrawal ${status.toLowerCase()}.`
+        : payload.reason || "Withdrawal review failed.",
+    );
   }
 
-  async function reviewPayment(orderId: string, status: "confirmed" | "rejected") {
+  async function reviewPayment(
+    orderId: string,
+    status: "confirmed" | "rejected",
+  ) {
     const { session, user } = readStoredSession();
     const headers: HeadersInit = { "Content-Type": "application/json" };
-    if (session.access_token) headers.authorization = `Bearer ${session.access_token}`;
+    if (session.access_token)
+      headers.authorization = `Bearer ${session.access_token}`;
     if (user.id) headers["x-user-id"] = user.id;
     const response = await fetch("/api/payments/manager-direct", {
       method: "PATCH",
@@ -341,7 +444,8 @@ export default function ManagerPage() {
     event.preventDefault();
     const { session, user } = readStoredSession();
     const headers: HeadersInit = { "Content-Type": "application/json" };
-    if (session.access_token) headers.authorization = `Bearer ${session.access_token}`;
+    if (session.access_token)
+      headers.authorization = `Bearer ${session.access_token}`;
     if (user.id) headers["x-user-id"] = user.id;
     const response = await fetch("/api/payments/receiver", {
       method: "PATCH",
@@ -349,7 +453,11 @@ export default function ManagerPage() {
       body: JSON.stringify(receiver),
     });
     const payload = await response.json().catch(() => ({}));
-    setReviewMessage(payload.ok ? "Mukuru receiver details saved." : payload.reason || "Receiver details could not be saved.");
+    setReviewMessage(
+      payload.ok
+        ? "Mukuru receiver details saved."
+        : payload.reason || "Receiver details could not be saved.",
+    );
     if (payload.receiver) setReceiver(payload.receiver);
   }
 
@@ -368,7 +476,11 @@ export default function ManagerPage() {
                   key={item}
                   onClick={() => setActive(item)}
                 >
-                  <span className="manager-nav-icon">{["▣", "♙", "▧", "✓", "◆", "◫", "✉", "▤", "♢"].at(group.items.indexOf(item) % 9)}</span>
+                  <span className="manager-nav-icon">
+                    {["▣", "♙", "▧", "✓", "◆", "◫", "✉", "▤", "♢"].at(
+                      group.items.indexOf(item) % 9,
+                    )}
+                  </span>
                   <span>{item}</span>
                 </button>
               ))}
@@ -384,14 +496,18 @@ export default function ManagerPage() {
             <span>Live ecosystem oversight & operational control</span>
           </div>
           <div className="manager-user">
-            <div className="manager-avatar">{managerLabel.slice(0, 2).toUpperCase()}</div>
+            <div className="manager-avatar">
+              {managerLabel.slice(0, 2).toUpperCase()}
+            </div>
             <span>{managerLabel}</span>
             <button type="button">⌄</button>
           </div>
         </header>
 
         <div className="manager-prototype-content">
-          <div className="manager-title">{active === "Dashboard" ? "Command Center" : active}</div>
+          <div className="manager-title">
+            {active === "Dashboard" ? "Command Center" : active}
+          </div>
           <p className="manager-subtitle">
             {active === "Dashboard"
               ? "Activity overview sourced from the AQE ecosystem state."
@@ -441,23 +557,106 @@ export default function ManagerPage() {
                   <h3>Mukuru receiver details</h3>
                   <span className="status-pill">Manager controlled</span>
                 </div>
-                <p className="manager-subtitle">Customers see these details and use them on Mukuru to send payment. They never edit the receiver account.</p>
+                <p className="manager-subtitle">
+                  Customers see these details and use them on Mukuru to send
+                  payment. They never edit the receiver account.
+                </p>
                 <form className="manager-settings-form" onSubmit={saveReceiver}>
-                  <label>Receiver name<input value={receiver.receiverName} onChange={(event) => setReceiver({ ...receiver, receiverName: event.target.value })} required /></label>
-                  <label>Receiver phone number<input value={receiver.receiverPhone} onChange={(event) => setReceiver({ ...receiver, receiverPhone: event.target.value })} required /></label>
-                  <label>Receiver card / account<input value={receiver.receiverCard} onChange={(event) => setReceiver({ ...receiver, receiverCard: event.target.value })} required /></label>
-                  <label>Customer instructions<textarea value={receiver.instructions} onChange={(event) => setReceiver({ ...receiver, instructions: event.target.value })} rows={3} /></label>
-                  <button type="submit" className="manager-action-button">Save receiver details</button>
+                  <label>
+                    Receiver name
+                    <input
+                      value={receiver.receiverName}
+                      onChange={(event) =>
+                        setReceiver({
+                          ...receiver,
+                          receiverName: event.target.value,
+                        })
+                      }
+                      required
+                    />
+                  </label>
+                  <label>
+                    Receiver phone number
+                    <input
+                      value={receiver.receiverPhone}
+                      onChange={(event) =>
+                        setReceiver({
+                          ...receiver,
+                          receiverPhone: event.target.value,
+                        })
+                      }
+                      required
+                    />
+                  </label>
+                  <label>
+                    Receiver card / account
+                    <input
+                      value={receiver.receiverCard}
+                      onChange={(event) =>
+                        setReceiver({
+                          ...receiver,
+                          receiverCard: event.target.value,
+                        })
+                      }
+                      required
+                    />
+                  </label>
+                  <label>
+                    Customer instructions
+                    <textarea
+                      value={receiver.instructions}
+                      onChange={(event) =>
+                        setReceiver({
+                          ...receiver,
+                          instructions: event.target.value,
+                        })
+                      }
+                      rows={3}
+                    />
+                  </label>
+                  <button type="submit" className="manager-action-button">
+                    Save receiver details
+                  </button>
                 </form>
               </section>
               <section className="manager-card manager-detail">
-                <div className="manager-table-header"><h3>Payment approvals</h3></div>
-                {reviewMessage ? <div className="manager-review-message">{reviewMessage}</div> : null}
+                <div className="manager-table-header">
+                  <h3>Payment approvals</h3>
+                </div>
+                {reviewMessage ? (
+                  <div className="manager-review-message">{reviewMessage}</div>
+                ) : null}
                 <div className="manager-list-table">
                   {paymentRows.map((row: ManagerRow) => (
-                    <div key={`${active}-${row.id || row.title}`} className="manager-row">
-                      <div><strong>{row.title}</strong><span>{row.meta}</span></div>
-                      <div className="manager-row-actions"><em>{row.value}</em>{row.id ? <><button type="button" onClick={() => reviewPayment(row.id!, "confirmed")}>Confirm & upgrade</button><button type="button" onClick={() => reviewPayment(row.id!, "rejected")}>Reject</button></> : null}</div>
+                    <div
+                      key={`${active}-${row.id || row.title}`}
+                      className="manager-row"
+                    >
+                      <div>
+                        <strong>{row.title}</strong>
+                        <span>{row.meta}</span>
+                      </div>
+                      <div className="manager-row-actions">
+                        <em>{row.value}</em>
+                        {row.id ? (
+                          <>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                reviewPayment(row.id!, "confirmed")
+                              }
+                            >
+                              Confirm & upgrade
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => reviewPayment(row.id!, "rejected")}
+                            >
+                              Reject
+                            </button>
+                          </>
+                        ) : null}
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -479,12 +678,16 @@ export default function ManagerPage() {
                 <button
                   type="button"
                   className="manager-action-button"
-                  onClick={() => setReviewMessage(`${active} review queue opened.`)}
+                  onClick={() =>
+                    setReviewMessage(`${active} review queue opened.`)
+                  }
                 >
                   Review
                 </button>
               </div>
-              {reviewMessage ? <div className="manager-review-message">{reviewMessage}</div> : null}
+              {reviewMessage ? (
+                <div className="manager-review-message">{reviewMessage}</div>
+              ) : null}
 
               <div className="manager-metrics condensed">
                 <Metric label="BOOKINGS" value={data.bookings} />
@@ -502,16 +705,44 @@ export default function ManagerPage() {
                     </div>
                     <div className="manager-row-actions">
                       <em>{row.value}</em>
-                      {active === "Bookings & Requests" && row.id && /pending/i.test(row.value) ? (
+                      {active === "Bookings & Requests" &&
+                      row.id &&
+                      /pending/i.test(row.value) ? (
                         <>
-                          <button type="button" onClick={() => reviewBooking(row.id!, "accepted")}>Approve</button>
-                          <button type="button" onClick={() => reviewBooking(row.id!, "rejected")}>Reject</button>
+                          <button
+                            type="button"
+                            onClick={() => reviewBooking(row.id!, "accepted")}
+                          >
+                            Approve
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => reviewBooking(row.id!, "rejected")}
+                          >
+                            Reject
+                          </button>
                         </>
                       ) : null}
-                      {active === "Withdrawals" && row.id && /pending/i.test(row.value) ? (
+                      {active === "Withdrawals" &&
+                      row.id &&
+                      /pending/i.test(row.value) ? (
                         <>
-                          <button type="button" onClick={() => reviewWithdrawal(row.id!, "APPROVED")}>Approve</button>
-                          <button type="button" onClick={() => reviewWithdrawal(row.id!, "REJECTED")}>Reject</button>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              reviewWithdrawal(row.id!, "APPROVED")
+                            }
+                          >
+                            Approve
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              reviewWithdrawal(row.id!, "REJECTED")
+                            }
+                          >
+                            Reject
+                          </button>
                         </>
                       ) : null}
                     </div>

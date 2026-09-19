@@ -25,7 +25,8 @@ export async function GET(request: Request) {
         `display_name.ilike.%${query}%,category.ilike.%${query}%,bio.ilike.%${query}%`,
       );
     }
-    if (location) profileQuery = profileQuery.ilike("location", `%${location}%`);
+    if (location)
+      profileQuery = profileQuery.ilike("location", `%${location}%`);
 
     const { data, error } = await profileQuery;
     if (error) {
@@ -49,14 +50,16 @@ export async function GET(request: Request) {
             ? "Verified member"
             : "Profile pending",
         tier: profile.tier || "basic",
-        bio: profile.bio || "Open to meaningful connections and collaborations.",
+        bio:
+          profile.bio || "Open to meaningful connections and collaborations.",
       })),
     });
   } catch (error) {
     return NextResponse.json(
       {
         ok: false,
-        reason: error instanceof Error ? error.message : "Profiles unavailable.",
+        reason:
+          error instanceof Error ? error.message : "Profiles unavailable.",
       },
       { status: 500 },
     );

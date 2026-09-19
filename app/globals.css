@@ -72,8 +72,16 @@ body {
   place-items: center;
   padding: 24px;
   background:
-    radial-gradient(circle at 20% 10%, rgba(225, 29, 72, 0.22), transparent 30%),
-    radial-gradient(circle at 80% 90%, rgba(79, 124, 255, 0.18), transparent 32%),
+    radial-gradient(
+      circle at 20% 10%,
+      rgba(225, 29, 72, 0.22),
+      transparent 30%
+    ),
+    radial-gradient(
+      circle at 80% 90%,
+      rgba(79, 124, 255, 0.18),
+      transparent 32%
+    ),
     #08080d;
   color: #f5f5f7;
 }
@@ -99,7 +107,11 @@ body {
   padding: 34px 28px 28px;
   border: 1px solid rgba(249, 224, 118, 0.28);
   border-radius: 24px;
-  background: linear-gradient(145deg, rgba(25, 16, 24, 0.96), rgba(13, 13, 22, 0.96));
+  background: linear-gradient(
+    145deg,
+    rgba(25, 16, 24, 0.96),
+    rgba(13, 13, 22, 0.96)
+  );
   box-shadow: 0 30px 100px rgba(0, 0, 0, 0.45);
   text-align: center;
 }
@@ -125,8 +137,14 @@ body {
   font-size: 12px;
 }
 @keyframes aqe-entry-fade {
-  from { opacity: 0; transform: scale(0.98); }
-  to { opacity: 1; transform: scale(1); }
+  from {
+    opacity: 0;
+    transform: scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 /* Prototype-aligned AQE client and manager surfaces. */
@@ -452,7 +470,9 @@ body {
 }
 .content-panel-button {
   cursor: pointer;
-  transition: border-color 0.2s ease, transform 0.2s ease;
+  transition:
+    border-color 0.2s ease,
+    transform 0.2s ease;
 }
 .content-panel-button:hover,
 .content-panel-button:focus-visible {
@@ -711,7 +731,11 @@ body {
   position: relative;
   width: min(440px, 100%);
   padding: 26px 22px 20px;
-  background: linear-gradient(135deg, rgba(18, 18, 26, 0.98), rgba(9, 9, 15, 0.98));
+  background: linear-gradient(
+    135deg,
+    rgba(18, 18, 26, 0.98),
+    rgba(9, 9, 15, 0.98)
+  );
   border: 1px solid rgba(249, 224, 118, 0.28);
   border-radius: 22px;
   box-shadow: 0 30px 100px rgba(0, 0, 0, 0.5);
@@ -997,7 +1021,7 @@ body {
   display: grid;
   grid-template-columns: 1fr auto;
   gap: 12px;
-  background: rgba(255,255,255,0.02);
+  background: rgba(255, 255, 255, 0.02);
   border: 1px solid #29293a;
   border-radius: 12px;
   padding: 12px 14px;

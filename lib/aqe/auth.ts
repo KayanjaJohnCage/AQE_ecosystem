@@ -146,10 +146,12 @@ export function getSessionFromRequest(request: Request): AqeSession {
     cookies.split(";").flatMap((entry) => {
       const separator = entry.indexOf("=");
       if (separator < 0) return [];
-      return [[
-        entry.slice(0, separator).trim(),
-        decodeURIComponent(entry.slice(separator + 1).trim()),
-      ]];
+      return [
+        [
+          entry.slice(0, separator).trim(),
+          decodeURIComponent(entry.slice(separator + 1).trim()),
+        ],
+      ];
     }),
   );
   const cookieToken =
@@ -160,7 +162,8 @@ export function getSessionFromRequest(request: Request): AqeSession {
   const resolvedBearerToken = bearerToken || cookieToken;
   const tokenRole = resolveRoleFromToken(resolvedBearerToken);
   const cookieRole = resolveRoleFromToken(cookieToken);
-  const role = normalizeRole(roleHeader) ?? tokenRole ?? cookieRole ?? "customer";
+  const role =
+    normalizeRole(roleHeader) ?? tokenRole ?? cookieRole ?? "customer";
 
   return {
     authenticated: Boolean(resolvedBearerToken || userId),

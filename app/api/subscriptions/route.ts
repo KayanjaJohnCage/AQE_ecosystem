@@ -1,8 +1,5 @@
 import { NextResponse } from "next/server";
-import {
-  normalizeTier,
-  resolveMutationUserId,
-} from "../../../lib/aqe/auth";
+import { normalizeTier, resolveMutationUserId } from "../../../lib/aqe/auth";
 import {
   createSubscription,
   persistSubscription,

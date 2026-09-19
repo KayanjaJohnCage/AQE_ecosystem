@@ -15,14 +15,19 @@ export async function GET() {
 
     const { data, error } = await client
       .from("marketplace_products")
-      .select("id, seller_id, title, price, currency, inventory, status, created_at")
+      .select(
+        "id, seller_id, title, price, currency, inventory, status, created_at",
+      )
       .eq("status", "active")
       .gt("inventory", 0)
       .order("created_at", { ascending: false })
       .limit(50);
 
     if (error) {
-      return NextResponse.json({ ok: false, reason: error.message }, { status: 500 });
+      return NextResponse.json(
+        { ok: false, reason: error.message },
+        { status: 500 },
+      );
     }
 
     return NextResponse.json({
@@ -32,7 +37,11 @@ export async function GET() {
     });
   } catch (error) {
     return NextResponse.json(
-      { ok: false, reason: error instanceof Error ? error.message : "Marketplace unavailable." },
+      {
+        ok: false,
+        reason:
+          error instanceof Error ? error.message : "Marketplace unavailable.",
+      },
       { status: 500 },
     );
   }

@@ -51,7 +51,9 @@ export async function POST(request: Request) {
         source: "aqe-payment-init",
         origin: "server",
         requestedTier:
-          body.tier === "vip" || body.tier === "premium" ? body.tier : "premium",
+          body.tier === "vip" || body.tier === "premium"
+            ? body.tier
+            : "premium",
       },
     });
 

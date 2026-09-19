@@ -1,7 +1,10 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
-import { persistStoredSession, readStoredSession } from "../../lib/clientSession";
+import {
+  persistStoredSession,
+  readStoredSession,
+} from "../../lib/clientSession";
 
 type CustomerView = "home" | "discover" | "messages" | "bookings" | "me";
 
@@ -71,8 +74,20 @@ const bookingRows = [
 ];
 
 const productRows: ProductRow[] = [
-  { id: "demo-1", title: "Premium spotlight bundle", price: 45, currency: "USD", inventory: 8 },
-  { id: "demo-2", title: "Community event ticket", price: 30, currency: "USD", inventory: 24 },
+  {
+    id: "demo-1",
+    title: "Premium spotlight bundle",
+    price: 45,
+    currency: "USD",
+    inventory: 8,
+  },
+  {
+    id: "demo-2",
+    title: "Community event ticket",
+    price: 30,
+    currency: "USD",
+    inventory: 24,
+  },
 ];
 
 export default function CustomerPage() {
@@ -115,7 +130,8 @@ export default function CustomerPage() {
   useEffect(() => {
     const { session, user } = readStoredSession();
     const headers: HeadersInit = {};
-    if (session.access_token) headers.authorization = `Bearer ${session.access_token}`;
+    if (session.access_token)
+      headers.authorization = `Bearer ${session.access_token}`;
     if (user.id) headers["x-user-id"] = user.id;
     setAuthenticated(Boolean(session.access_token || user.id));
 
@@ -152,11 +168,17 @@ export default function CustomerPage() {
           const payload = await response.json();
           if (Array.isArray(payload.messages) && payload.messages.length > 0) {
             setMessages(
-              payload.messages.map((item: { userId?: string; preview?: string; time?: string }) => ({
-                user: item.userId || "AQE member",
-                preview: item.preview || "New message",
-                time: item.time || "Now",
-              })),
+              payload.messages.map(
+                (item: {
+                  userId?: string;
+                  preview?: string;
+                  time?: string;
+                }) => ({
+                  user: item.userId || "AQE member",
+                  preview: item.preview || "New message",
+                  time: item.time || "Now",
+                }),
+              ),
             );
           }
         })
@@ -186,7 +208,8 @@ export default function CustomerPage() {
 
   async function submitAuth(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const endpoint = authMode === "login" ? "/api/auth/login" : "/api/auth/register";
+    const endpoint =
+      authMode === "login" ? "/api/auth/login" : "/api/auth/register";
     const body =
       authMode === "login"
         ? { email, password }
@@ -198,7 +221,9 @@ export default function CustomerPage() {
       body: JSON.stringify(body),
     });
     const payload = await response.json();
-    setMessage(payload.ok ? "Request completed." : payload.reason || "Request failed.");
+    setMessage(
+      payload.ok ? "Request completed." : payload.reason || "Request failed.",
+    );
 
     persistStoredSession({
       session: payload.session,
@@ -209,18 +234,44 @@ export default function CustomerPage() {
       const nextUser = {
         ...(payload.user as Record<string, unknown>),
         display_name:
-          (payload.user as { display_name?: string; displayName?: string; name?: string; email?: string }).display_name ||
-          (payload.user as { display_name?: string; displayName?: string; name?: string; email?: string }).displayName ||
-          (payload.user as { display_name?: string; displayName?: string; name?: string; email?: string }).name ||
-          (payload.user as { display_name?: string; displayName?: string; name?: string; email?: string }).email?.split("@")[0] ||
+          (
+            payload.user as {
+              display_name?: string;
+              displayName?: string;
+              name?: string;
+              email?: string;
+            }
+          ).display_name ||
+          (
+            payload.user as {
+              display_name?: string;
+              displayName?: string;
+              name?: string;
+              email?: string;
+            }
+          ).displayName ||
+          (
+            payload.user as {
+              display_name?: string;
+              displayName?: string;
+              name?: string;
+              email?: string;
+            }
+          ).name ||
+          (
+            payload.user as {
+              display_name?: string;
+              displayName?: string;
+              name?: string;
+              email?: string;
+            }
+          ).email?.split("@")[0] ||
           displayName ||
           "AQE Member",
       };
       setAccountName(String(nextUser.display_name));
       setAccountSubtitle(
-        String(
-          (payload.user as { email?: string }).email || "member@aqe.test",
-        ),
+        String((payload.user as { email?: string }).email || "member@aqe.test"),
       );
       setAuthenticated(true);
     }
@@ -245,13 +296,16 @@ export default function CustomerPage() {
 
   async function runProfileAction(action: "message" | "booking") {
     if (!selectedProfile?.userId) {
-      setProfileActionMessage("This demo profile is not connected to a live account yet.");
+      setProfileActionMessage(
+        "This demo profile is not connected to a live account yet.",
+      );
       return;
     }
 
     const { session, user } = readStoredSession();
     const headers: HeadersInit = { "Content-Type": "application/json" };
-    if (session.access_token) headers.authorization = `Bearer ${session.access_token}`;
+    if (session.access_token)
+      headers.authorization = `Bearer ${session.access_token}`;
     if (user.id) headers["x-user-id"] = user.id;
 
     const endpoint = action === "message" ? "/api/messages" : "/api/bookings";
@@ -315,7 +369,8 @@ export default function CustomerPage() {
           <span className="eyebrow">WELCOME TO YOUR ECOSYSTEM</span>
           <h1>A space for adults, community, and connection.</h1>
           <p>
-            You must be 18 or older to enter. Please confirm your age to continue.
+            You must be 18 or older to enter. Please confirm your age to
+            continue.
           </p>
           <button className="primary-button" type="button" onClick={confirmAge}>
             I am 18 or older <span>→</span>
@@ -337,7 +392,12 @@ export default function CustomerPage() {
         </div>
         <div className="header-actions">
           <span className="currency-badge">UGX</span>
-          <button className="icon-button" type="button" onClick={() => setAuthOpen(true)} aria-label="Open account">
+          <button
+            className="icon-button"
+            type="button"
+            onClick={() => setAuthOpen(true)}
+            aria-label="Open account"
+          >
             ◉
           </button>
         </div>
@@ -351,8 +411,15 @@ export default function CustomerPage() {
             <br />
             <em>Build your world.</em>
           </h1>
-          <p>Explore profiles, connect with community, and unlock your next chapter.</p>
-          <button className="primary-button" type="button" onClick={() => setAuthOpen(true)}>
+          <p>
+            Explore profiles, connect with community, and unlock your next
+            chapter.
+          </p>
+          <button
+            className="primary-button"
+            type="button"
+            onClick={() => setAuthOpen(true)}
+          >
             Explore the ecosystem <span>→</span>
           </button>
         </div>
@@ -373,7 +440,9 @@ export default function CustomerPage() {
           </div>
 
           <div className="account-row">
-            <div className="account-avatar">{accountName.charAt(0).toUpperCase()}</div>
+            <div className="account-avatar">
+              {accountName.charAt(0).toUpperCase()}
+            </div>
             <div>
               <strong>{accountName}</strong>
               <span>{accountSubtitle}</span>
@@ -406,7 +475,11 @@ export default function CustomerPage() {
               <span className="eyebrow">DISCOVER</span>
               <h2>Explore AQE</h2>
             </div>
-            <button className="text-button" type="button" onClick={() => setView("discover")}>
+            <button
+              className="text-button"
+              type="button"
+              onClick={() => setView("discover")}
+            >
               View all
             </button>
           </div>
@@ -477,7 +550,9 @@ export default function CustomerPage() {
                 </article>
               ))}
               {visibleProfiles.length === 0 ? (
-                <div className="empty-panel">No profiles match that search.</div>
+                <div className="empty-panel">
+                  No profiles match that search.
+                </div>
               ) : null}
             </div>
           )}
@@ -485,8 +560,13 @@ export default function CustomerPage() {
           {view === "messages" && (
             <div className="stacked-panel-list">
               {messages.map((messageItem) => (
-                <article key={messageItem.user} className="content-panel compact">
-                  <div className="mini-avatar alt">{messageItem.user.charAt(0)}</div>
+                <article
+                  key={messageItem.user}
+                  className="content-panel compact"
+                >
+                  <div className="mini-avatar alt">
+                    {messageItem.user.charAt(0)}
+                  </div>
                   <div className="panel-copy">
                     <strong>{messageItem.user}</strong>
                     <span>{messageItem.preview}</span>
@@ -501,7 +581,9 @@ export default function CustomerPage() {
             <div className="stacked-panel-list">
               {bookings.map((booking) => (
                 <article key={booking.title} className="content-panel compact">
-                  <div className="mini-avatar gold">{booking.title.charAt(0)}</div>
+                  <div className="mini-avatar gold">
+                    {booking.title.charAt(0)}
+                  </div>
                   <div className="panel-copy">
                     <strong>{booking.title}</strong>
                     <span>{booking.date}</span>
@@ -515,7 +597,9 @@ export default function CustomerPage() {
           {view === "me" && (
             <div className="stacked-panel-list">
               <article className="content-panel">
-                <div className="mini-avatar">{accountName.charAt(0).toUpperCase()}</div>
+                <div className="mini-avatar">
+                  {accountName.charAt(0).toUpperCase()}
+                </div>
                 <div className="panel-copy">
                   <strong>{accountName}</strong>
                   <span>{accountSubtitle}</span>
@@ -550,14 +634,18 @@ export default function CustomerPage() {
                   <span className="eyebrow">MARKETPLACE</span>
                   <h2>Featured drops</h2>
                 </div>
-                <span className="marketplace-count">{products.length} live</span>
+                <span className="marketplace-count">
+                  {products.length} live
+                </span>
               </div>
               <div className="marketplace-grid">
                 {products.map((product) => (
                   <article className="marketplace-item" key={product.id}>
                     <div className="marketplace-icon">✦</div>
                     <strong>{product.title}</strong>
-                    <span>{product.currency} {product.price}</span>
+                    <span>
+                      {product.currency} {product.price}
+                    </span>
                     <small>{product.inventory} available</small>
                   </article>
                 ))}
@@ -573,7 +661,9 @@ export default function CustomerPage() {
             <h2>Unlock more of AQE</h2>
             <p>Premium tools, private rooms, and deeper connections.</p>
           </div>
-          <button type="button" aria-label="Open VIP">→</button>
+          <button type="button" aria-label="Open VIP">
+            →
+          </button>
         </section>
       </section>
 
@@ -616,7 +706,9 @@ export default function CustomerPage() {
               ×
             </button>
             <div className="profile-header">
-              <div className="mini-avatar large">{selectedProfile.name.charAt(0)}</div>
+              <div className="mini-avatar large">
+                {selectedProfile.name.charAt(0)}
+              </div>
               <div>
                 <div className="eyebrow">PROFILE</div>
                 <h2>{selectedProfile.name}</h2>
@@ -686,10 +778,18 @@ export default function CustomerPage() {
             </button>
             <div className="auth-brand">AQE</div>
             <div className="auth-tabs">
-              <button type="button" className={authMode === "login" ? "active" : ""} onClick={() => setAuthMode("login")}>
+              <button
+                type="button"
+                className={authMode === "login" ? "active" : ""}
+                onClick={() => setAuthMode("login")}
+              >
                 Login
               </button>
-              <button type="button" className={authMode === "register" ? "active" : ""} onClick={() => setAuthMode("register")}>
+              <button
+                type="button"
+                className={authMode === "register" ? "active" : ""}
+                onClick={() => setAuthMode("register")}
+              >
                 Register
               </button>
             </div>
