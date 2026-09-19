@@ -14,7 +14,9 @@ export async function POST(request: Request) {
     const password = String(body.password ?? "");
     const displayName =
       String(body.displayName ?? body.name ?? "").trim() || email.split("@")[0];
-    const referralCode = String(body.referralCode ?? "").trim().toUpperCase();
+    const referralCode = String(body.referralCode ?? "")
+      .trim()
+      .toUpperCase();
     const phone = String(body.phone ?? "").trim();
     const country = String(body.country ?? "").trim();
     const city = String(body.city ?? "").trim();
@@ -117,7 +119,10 @@ export async function POST(request: Request) {
 
       const referralUpdate = await client
         .from("profiles")
-        .update({ referral_code: generatedReferralCode, referred_by: referredBy })
+        .update({
+          referral_code: generatedReferralCode,
+          referred_by: referredBy,
+        })
         .eq("user_id", data.user.id);
       if (referralUpdate.error) {
         return NextResponse.json(

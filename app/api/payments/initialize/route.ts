@@ -57,8 +57,9 @@ export async function POST(request: Request) {
         premium: 250000,
         vip: 500000,
       };
-      const expectedCurrency =
-        String(configured.data?.settings?.walletCurrency ?? "UGX").toUpperCase();
+      const expectedCurrency = String(
+        configured.data?.settings?.walletCurrency ?? "UGX",
+      ).toUpperCase();
       const expectedPrice = Number(prices[requestedTier]);
       if (
         !Number.isFinite(expectedPrice) ||

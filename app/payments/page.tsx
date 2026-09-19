@@ -130,7 +130,10 @@ export default function PaymentsPage() {
               min="1"
               required
             />
-            <small>Configured {requestedTier} price: {settings.walletCurrency} {tierPrice.toLocaleString()}</small>
+            <small>
+              Configured {requestedTier} price: {settings.walletCurrency}{" "}
+              {tierPrice.toLocaleString()}
+            </small>
           </label>
           <label>
             Currency
@@ -163,11 +166,28 @@ export default function PaymentsPage() {
               <option value="vip">VIP</option>
             </select>
           </label>
-          <div style={{ display: "grid", gap: 4, padding: 10, border: "1px solid #29364d", borderRadius: 10 }}>
+          <div
+            style={{
+              display: "grid",
+              gap: 4,
+              padding: 10,
+              border: "1px solid #29364d",
+              borderRadius: 10,
+            }}
+          >
             <strong>Tier pricing</strong>
-            <span>Basic: {settings.walletCurrency} {settings.tierPrices.basic.toLocaleString()}</span>
-            <span>Premium: {settings.walletCurrency} {settings.tierPrices.premium.toLocaleString()}</span>
-            <span>VIP: {settings.walletCurrency} {settings.tierPrices.vip.toLocaleString()}</span>
+            <span>
+              Basic: {settings.walletCurrency}{" "}
+              {settings.tierPrices.basic.toLocaleString()}
+            </span>
+            <span>
+              Premium: {settings.walletCurrency}{" "}
+              {settings.tierPrices.premium.toLocaleString()}
+            </span>
+            <span>
+              VIP: {settings.walletCurrency}{" "}
+              {settings.tierPrices.vip.toLocaleString()}
+            </span>
           </div>
           <label>
             Payment method

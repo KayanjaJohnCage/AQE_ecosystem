@@ -6,7 +6,10 @@ export async function GET(request: Request) {
   try {
     const session = await resolveAuthenticatedSession(request);
     if (!session.authenticated || !session.userId) {
-      return NextResponse.json({ ok: false, reason: "Authentication required." }, { status: 401 });
+      return NextResponse.json(
+        { ok: false, reason: "Authentication required." },
+        { status: 401 },
+      );
     }
     const client = createServerSupabaseClient();
     if (!client) {
@@ -33,7 +36,10 @@ export async function GET(request: Request) {
       .eq("beneficiary_user_id", session.userId)
       .eq("status", "CREDITED");
     if (earnings.error) {
-      return NextResponse.json({ ok: false, reason: earnings.error.message }, { status: 500 });
+      return NextResponse.json(
+        { ok: false, reason: earnings.error.message },
+        { status: 500 },
+      );
     }
 
     const rows = earnings.data ?? [];
@@ -49,10 +55,20 @@ export async function GET(request: Request) {
       directCount: new Set(direct.map((row) => row.referred_user_id)).size,
       indirectCount: new Set(indirect.map((row) => row.referred_user_id)).size,
       directEarnings: direct.reduce((sum, row) => sum + Number(row.amount), 0),
-      indirectEarnings: indirect.reduce((sum, row) => sum + Number(row.amount), 0),
+      indirectEarnings: indirect.reduce(
+        (sum, row) => sum + Number(row.amount),
+        0,
+      ),
       currency: rows[0]?.currency ?? "UGX",
     });
   } catch (error) {
-    return NextResponse.json({ ok: false, reason: error instanceof Error ? error.message : "Referral data unavailable." }, { status: 500 });
+    return NextResponse.json(
+      {
+        ok: false,
+        reason:
+          error instanceof Error ? error.message : "Referral data unavailable.",
+      },
+      { status: 500 },
+    );
   }
 }

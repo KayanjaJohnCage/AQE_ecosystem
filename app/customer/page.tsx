@@ -122,7 +122,9 @@ export default function CustomerPage() {
   const [profileCategory, setProfileCategory] = useState("client");
   const [bio, setBio] = useState("");
   const [contactPreference, setContactPreference] = useState("in_app");
-  const [registrationTier, setRegistrationTier] = useState<"basic" | "premium" | "vip">("basic");
+  const [registrationTier, setRegistrationTier] = useState<
+    "basic" | "premium" | "vip"
+  >("basic");
   const [message, setMessage] = useState("");
   const [view, setView] = useState<CustomerView>("home");
   const [accountName, setAccountName] = useState("Guest account");
@@ -459,7 +461,8 @@ export default function CustomerPage() {
   });
   const featuredProfiles = profiles.filter((profile) => {
     if (homeFilter === "All") return true;
-    const haystack = `${profile.name} ${profile.city} ${profile.tag} ${profile.status} ${profile.tier}`.toLowerCase();
+    const haystack =
+      `${profile.name} ${profile.city} ${profile.tag} ${profile.status} ${profile.tier}`.toLowerCase();
     return haystack.includes(homeFilter.toLowerCase());
   });
 
@@ -484,24 +487,55 @@ export default function CustomerPage() {
             continue.
           </p>
           <div className="age-gate-actions">
-            <button className="primary-button" type="button" onClick={confirmAge}>
+            <button
+              className="primary-button"
+              type="button"
+              onClick={confirmAge}
+            >
               I am 18 or older <span>→</span>
             </button>
-          <div className="age-date-grid">
-            <select value={birthDay} onChange={(event) => setBirthDay(event.target.value)} aria-label="Birth day">
-              <option value="">Day</option>
-              {Array.from({ length: 31 }, (_, index) => <option key={index + 1} value={index + 1}>{index + 1}</option>)}
-            </select>
-            <select value={birthMonth} onChange={(event) => setBirthMonth(event.target.value)} aria-label="Birth month">
-              <option value="">Month</option>
-              {Array.from({ length: 12 }, (_, index) => <option key={index + 1} value={index + 1}>{index + 1}</option>)}
-            </select>
-            <select value={birthYear} onChange={(event) => setBirthYear(event.target.value)} aria-label="Birth year">
-              <option value="">Year</option>
-              {Array.from({ length: 83 }, (_, index) => { const year = new Date().getFullYear() - 18 - index; return <option key={year} value={year}>{year}</option>; })}
-            </select>
-          </div>
-          {ageError ? <span className="age-error">{ageError}</span> : null}
+            <div className="age-date-grid">
+              <select
+                value={birthDay}
+                onChange={(event) => setBirthDay(event.target.value)}
+                aria-label="Birth day"
+              >
+                <option value="">Day</option>
+                {Array.from({ length: 31 }, (_, index) => (
+                  <option key={index + 1} value={index + 1}>
+                    {index + 1}
+                  </option>
+                ))}
+              </select>
+              <select
+                value={birthMonth}
+                onChange={(event) => setBirthMonth(event.target.value)}
+                aria-label="Birth month"
+              >
+                <option value="">Month</option>
+                {Array.from({ length: 12 }, (_, index) => (
+                  <option key={index + 1} value={index + 1}>
+                    {index + 1}
+                  </option>
+                ))}
+              </select>
+              <select
+                value={birthYear}
+                onChange={(event) => setBirthYear(event.target.value)}
+                aria-label="Birth year"
+              >
+                <option value="">Year</option>
+                {Array.from({ length: 83 }, (_, index) => {
+                  const year = new Date().getFullYear() - 18 - index;
+                  return (
+                    <option key={year} value={year}>
+                      {year}
+                    </option>
+                  );
+                })}
+              </select>
+            </div>
+            {ageError ? <span className="age-error">{ageError}</span> : null}
           </div>
           <a className="age-exit-link" href="https://www.google.com">
             Leave this page
@@ -513,7 +547,10 @@ export default function CustomerPage() {
 
   return (
     <main className="aqe-client" id="app">
-      <aside className="client-desktop-nav" aria-label="AQE ecosystem navigation">
+      <aside
+        className="client-desktop-nav"
+        aria-label="AQE ecosystem navigation"
+      >
         <div className="client-desktop-brand">AQE ECOSYSTEM</div>
         <span className="client-desktop-label">Discover</span>
         {[
@@ -530,17 +567,60 @@ export default function CustomerPage() {
             className={view === target ? "active" : ""}
             onClick={() => setView(target as CustomerView)}
           >
-            <span>{icon}</span>{label}
+            <span>{icon}</span>
+            {label}
           </button>
         ))}
         <span className="client-desktop-label">Account</span>
-        <button type="button" className={view === "me" ? "active" : ""} onClick={() => setView("me")}><span>◉</span>My profile</button>
-        <button type="button" className={view === "premium" ? "active" : ""} onClick={() => setView("premium")}><span>★</span>Premium Hub</button>
-        <button type="button" className={view === "vip" ? "active" : ""} onClick={() => setView("vip")}><span>♢</span>VIP Hub</button>
-        <button type="button" className={view === "rewards" ? "active" : ""} onClick={() => setView("rewards")}><span>✦</span>Rewards</button>
-        <button type="button" className={view === "referrals" ? "active" : ""} onClick={() => setView("referrals")}><span>♟</span>My Team</button>
-        <button type="button" className={view === "raffle" ? "active" : ""} onClick={() => setView("raffle")}><span>🎟</span>Raffle</button>
-        <button type="button" className={view === "settings" ? "active" : ""} onClick={() => setView("settings")}><span>⚙</span>Settings</button>
+        <button
+          type="button"
+          className={view === "me" ? "active" : ""}
+          onClick={() => setView("me")}
+        >
+          <span>◉</span>My profile
+        </button>
+        <button
+          type="button"
+          className={view === "premium" ? "active" : ""}
+          onClick={() => setView("premium")}
+        >
+          <span>★</span>Premium Hub
+        </button>
+        <button
+          type="button"
+          className={view === "vip" ? "active" : ""}
+          onClick={() => setView("vip")}
+        >
+          <span>♢</span>VIP Hub
+        </button>
+        <button
+          type="button"
+          className={view === "rewards" ? "active" : ""}
+          onClick={() => setView("rewards")}
+        >
+          <span>✦</span>Rewards
+        </button>
+        <button
+          type="button"
+          className={view === "referrals" ? "active" : ""}
+          onClick={() => setView("referrals")}
+        >
+          <span>♟</span>My Team
+        </button>
+        <button
+          type="button"
+          className={view === "raffle" ? "active" : ""}
+          onClick={() => setView("raffle")}
+        >
+          <span>🎟</span>Raffle
+        </button>
+        <button
+          type="button"
+          className={view === "settings" ? "active" : ""}
+          onClick={() => setView("settings")}
+        >
+          <span>⚙</span>Settings
+        </button>
       </aside>
       <header className="client-header">
         <div>
@@ -562,15 +642,15 @@ export default function CustomerPage() {
 
       <section className="client-content">
         <div className="client-hero">
-          <div className="hero-kicker">VERIFIED PROFESSIONALS · SECURE PAYMENTS · DISCREET EXPERIENCE</div>
+          <div className="hero-kicker">
+            VERIFIED PROFESSIONALS · SECURE PAYMENTS · DISCREET EXPERIENCE
+          </div>
           <h1>
             Discover
             <br />
             <em>Independence</em>
           </h1>
-          <p>
-            Verified professionals. Secure payments. Discreet experience.
-          </p>
+          <p>Verified professionals. Secure payments. Discreet experience.</p>
           <button
             className="primary-button"
             type="button"
@@ -608,7 +688,9 @@ export default function CustomerPage() {
           <div className="metric-grid">
             <div className="metric-card">
               <span>WALLET CASH</span>
-              <strong>{platformSettings.walletCurrency} {data.walletBalance || 0}</strong>
+              <strong>
+                {platformSettings.walletCurrency} {data.walletBalance || 0}
+              </strong>
             </div>
             <div className="metric-card">
               <span>QC CREDITS</span>
@@ -646,51 +728,95 @@ export default function CustomerPage() {
 
           {view === "home" && (
             <>
-            <div className="prototype-filter-pills">
-              {["All", "Available", "VIP", "Premium", "Kampala", "Entebbe", "Female", "Male", "Lesbian"].map((filter) => (
-                <button type="button" className={homeFilter === filter ? "active" : ""} key={filter} onClick={() => setHomeFilter(filter)}>{filter}</button>
-              ))}
-            </div>
-            <div className="featured-heading"><h2>Featured Profiles</h2><button type="button" onClick={() => setView("discover")}>See All →</button></div>
-            <div className="prototype-profile-grid">
-              {featuredProfiles.slice(0, 4).map((profile) => (
-                <button type="button" className="prototype-profile-card" key={profile.name} onClick={() => setSelectedProfile(profile)}>
-                  <div className="prototype-profile-image"><div className="prototype-profile-avatar">{profile.name.charAt(0)}</div><span>{profile.city} · 22</span><b>✓ Verified</b></div>
-                  <strong>{profile.name}</strong><small>{profile.tag} · {profile.city}</small><div><em>{profile.status}</em><label>{(profile.tier || "basic").toUpperCase()}</label></div>
+              <div className="prototype-filter-pills">
+                {[
+                  "All",
+                  "Available",
+                  "VIP",
+                  "Premium",
+                  "Kampala",
+                  "Entebbe",
+                  "Female",
+                  "Male",
+                  "Lesbian",
+                ].map((filter) => (
+                  <button
+                    type="button"
+                    className={homeFilter === filter ? "active" : ""}
+                    key={filter}
+                    onClick={() => setHomeFilter(filter)}
+                  >
+                    {filter}
+                  </button>
+                ))}
+              </div>
+              <div className="featured-heading">
+                <h2>Featured Profiles</h2>
+                <button type="button" onClick={() => setView("discover")}>
+                  See All →
                 </button>
-              ))}
-            </div>
-            {featuredProfiles.length === 0 ? <div className="empty-panel">No featured profiles match this filter.</div> : null}
-            <div className="explore-grid">
-              {[
-                "Directory",
-                "Bookings",
-                "Messages",
-                "Rewards",
-                "Marketplace",
-                "VIP room",
-              ].map((item, index) => (
-                <button
-                  className="explore-tile"
-                  type="button"
-                  key={item}
-                  onClick={() => {
-                    const routeMap: Record<number, CustomerView> = {
-                      0: "discover",
-                      1: "bookings",
-                      2: "messages",
-                      3: "rewards",
-                      4: "home",
-                      5: "vip",
-                    };
-                    setView(routeMap[index] ?? "home");
-                  }}
-                >
-                  <span>{["⌕", "◫", "✉", "★", "▤", "♢"][index]}</span>
-                  <strong>{item}</strong>
-                </button>
-              ))}
-            </div>
+              </div>
+              <div className="prototype-profile-grid">
+                {featuredProfiles.slice(0, 4).map((profile) => (
+                  <button
+                    type="button"
+                    className="prototype-profile-card"
+                    key={profile.name}
+                    onClick={() => setSelectedProfile(profile)}
+                  >
+                    <div className="prototype-profile-image">
+                      <div className="prototype-profile-avatar">
+                        {profile.name.charAt(0)}
+                      </div>
+                      <span>{profile.city} · 22</span>
+                      <b>✓ Verified</b>
+                    </div>
+                    <strong>{profile.name}</strong>
+                    <small>
+                      {profile.tag} · {profile.city}
+                    </small>
+                    <div>
+                      <em>{profile.status}</em>
+                      <label>{(profile.tier || "basic").toUpperCase()}</label>
+                    </div>
+                  </button>
+                ))}
+              </div>
+              {featuredProfiles.length === 0 ? (
+                <div className="empty-panel">
+                  No featured profiles match this filter.
+                </div>
+              ) : null}
+              <div className="explore-grid">
+                {[
+                  "Directory",
+                  "Bookings",
+                  "Messages",
+                  "Rewards",
+                  "Marketplace",
+                  "VIP room",
+                ].map((item, index) => (
+                  <button
+                    className="explore-tile"
+                    type="button"
+                    key={item}
+                    onClick={() => {
+                      const routeMap: Record<number, CustomerView> = {
+                        0: "discover",
+                        1: "bookings",
+                        2: "messages",
+                        3: "rewards",
+                        4: "home",
+                        5: "vip",
+                      };
+                      setView(routeMap[index] ?? "home");
+                    }}
+                  >
+                    <span>{["⌕", "◫", "✉", "★", "▤", "♢"][index]}</span>
+                    <strong>{item}</strong>
+                  </button>
+                ))}
+              </div>
             </>
           )}
 
@@ -784,7 +910,11 @@ export default function CustomerPage() {
                 <div className="status-pill">{data.tier}</div>
               </article>
 
-              <button className="content-panel compact content-panel-button" type="button" onClick={() => setView("wallet")}>
+              <button
+                className="content-panel compact content-panel-button"
+                type="button"
+                onClick={() => setView("wallet")}
+              >
                 <div className="mini-avatar gold">Q</div>
                 <div className="panel-copy">
                   <strong>Wallet</strong>
@@ -793,7 +923,11 @@ export default function CustomerPage() {
                 <small>UGX {data.earnings}</small>
               </button>
 
-              <button className="content-panel compact content-panel-button" type="button" onClick={() => setView("vip")}>
+              <button
+                className="content-panel compact content-panel-button"
+                type="button"
+                onClick={() => setView("vip")}
+              >
                 <div className="mini-avatar alt">V</div>
                 <div className="panel-copy">
                   <strong>VIP access</strong>
@@ -802,13 +936,25 @@ export default function CustomerPage() {
                 <small>{data.tier}</small>
               </button>
 
-              <button className="content-panel compact content-panel-button" type="button" onClick={() => setView("referrals")}>
+              <button
+                className="content-panel compact content-panel-button"
+                type="button"
+                onClick={() => setView("referrals")}
+              >
                 <div className="mini-avatar">R</div>
                 <div className="panel-copy">
                   <strong>Referral earnings</strong>
-                  <span>{referral.directCount} direct • {referral.indirectCount} indirect</span>
+                  <span>
+                    {referral.directCount} direct • {referral.indirectCount}{" "}
+                    indirect
+                  </span>
                 </div>
-                <small>{referral.currency} {(referral.directEarnings + referral.indirectEarnings).toLocaleString()}</small>
+                <small>
+                  {referral.currency}{" "}
+                  {(
+                    referral.directEarnings + referral.indirectEarnings
+                  ).toLocaleString()}
+                </small>
               </button>
             </div>
           )}
@@ -818,46 +964,283 @@ export default function CustomerPage() {
               <article className="prototype-hero-card wallet-hero">
                 <span className="eyebrow">AQE MONEY ACCOUNT</span>
                 <h2>Wallet cash</h2>
-                <strong>{platformSettings.walletCurrency} {data.walletBalance.toLocaleString()}</strong>
-                <p>Cash deposits and referral earnings are separate from QC credits.</p>
+                <strong>
+                  {platformSettings.walletCurrency}{" "}
+                  {data.walletBalance.toLocaleString()}
+                </strong>
+                <p>
+                  Cash deposits and referral earnings are separate from QC
+                  credits.
+                </p>
               </article>
               <div className="prototype-action-grid">
-                <button type="button" onClick={() => { window.location.href = "/payments"; }}>Deposit cash <span>→</span></button>
-                <button type="button" onClick={() => setView("referrals")}>View earnings <span>→</span></button>
-                <button type="button" onClick={() => { window.location.href = "/qc"; }}>Recharge QC <span>→</span></button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    window.location.href = "/payments";
+                  }}
+                >
+                  Deposit cash <span>→</span>
+                </button>
+                <button type="button" onClick={() => setView("referrals")}>
+                  View earnings <span>→</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    window.location.href = "/qc";
+                  }}
+                >
+                  Recharge QC <span>→</span>
+                </button>
               </div>
-              <article className="content-panel compact"><div className="mini-avatar gold">Q</div><div className="panel-copy"><strong>QC balance</strong><span>Usage credits, not cash</span></div><small>{data.qcBalance} QC</small></article>
+              <article className="content-panel compact">
+                <div className="mini-avatar gold">Q</div>
+                <div className="panel-copy">
+                  <strong>QC balance</strong>
+                  <span>Usage credits, not cash</span>
+                </div>
+                <small>{data.qcBalance} QC</small>
+              </article>
             </div>
           )}
 
           {view === "premium" && (
             <div className="prototype-screen-stack">
-              <article className="prototype-hero-card premium-hero"><span className="eyebrow">PREMIUM HUB</span><h2>Build your independent profile.</h2><p>Premium unlocks profile tools, messaging, comments, and daily chat allowance.</p><button type="button" onClick={() => { window.location.href = "/payments"; }}>Upgrade to Premium <span>→</span></button></article>
-              <div className="feature-list"><div><strong>Independent profile</strong><span>Present your work and services.</span></div><div><strong>Profile media</strong><span>Upload and manage your public profile.</span></div><div><strong>Daily chat allowance</strong><span>Connect with the AQE community.</span></div></div>
+              <article className="prototype-hero-card premium-hero">
+                <span className="eyebrow">PREMIUM HUB</span>
+                <h2>Build your independent profile.</h2>
+                <p>
+                  Premium unlocks profile tools, messaging, comments, and daily
+                  chat allowance.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    window.location.href = "/payments";
+                  }}
+                >
+                  Upgrade to Premium <span>→</span>
+                </button>
+              </article>
+              <div className="feature-list">
+                <div>
+                  <strong>Independent profile</strong>
+                  <span>Present your work and services.</span>
+                </div>
+                <div>
+                  <strong>Profile media</strong>
+                  <span>Upload and manage your public profile.</span>
+                </div>
+                <div>
+                  <strong>Daily chat allowance</strong>
+                  <span>Connect with the AQE community.</span>
+                </div>
+              </div>
             </div>
           )}
 
           {view === "vip" && (
             <div className="prototype-screen-stack">
-              <article className="prototype-hero-card vip-hero"><span className="eyebrow">VIP ECOSYSTEM</span><h2>Everything in one private room.</h2><p>Unlock asset room, store, groups, referral earnings, rewards, and VIP booking tools.</p><button type="button" onClick={() => { window.location.href = "/payments"; }}>Upgrade to VIP <span>→</span></button></article>
-              <div className="prototype-action-grid"><button type="button" onClick={() => setView("referrals")}>My team <span>→</span></button><button type="button" onClick={() => setView("rewards")}>VIP rewards <span>→</span></button><button type="button" onClick={() => { window.location.href = "/vip"; }}>Withdrawals <span>→</span></button></div>
+              <article className="prototype-hero-card vip-hero">
+                <span className="eyebrow">VIP ECOSYSTEM</span>
+                <h2>Everything in one private room.</h2>
+                <p>
+                  Unlock asset room, store, groups, referral earnings, rewards,
+                  and VIP booking tools.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    window.location.href = "/payments";
+                  }}
+                >
+                  Upgrade to VIP <span>→</span>
+                </button>
+              </article>
+              <div className="prototype-action-grid">
+                <button type="button" onClick={() => setView("referrals")}>
+                  My team <span>→</span>
+                </button>
+                <button type="button" onClick={() => setView("rewards")}>
+                  VIP rewards <span>→</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    window.location.href = "/vip";
+                  }}
+                >
+                  Withdrawals <span>→</span>
+                </button>
+              </div>
             </div>
           )}
 
           {view === "rewards" && (
-            <div className="prototype-screen-stack"><div className="section-heading"><div><span className="eyebrow">VIP ECOSYSTEM</span><h2>Rewards</h2></div><span className="status-pill">{data.qcBalance} QC</span></div><div className="feature-list"><div><strong>Daily claim</strong><span>Collect your daily QC reward.</span><button type="button" onClick={() => { window.location.href = "/qc"; }}>Claim QC</button></div><div><strong>1 Week VIP</strong><span>Redeem rewards after eligibility.</span><button type="button" onClick={() => setView("vip")}>View VIP</button></div><div><strong>Raffle</strong><span>Use QC for the active draw.</span><button type="button" onClick={() => setView("raffle")}>Open raffle</button></div></div></div>
+            <div className="prototype-screen-stack">
+              <div className="section-heading">
+                <div>
+                  <span className="eyebrow">VIP ECOSYSTEM</span>
+                  <h2>Rewards</h2>
+                </div>
+                <span className="status-pill">{data.qcBalance} QC</span>
+              </div>
+              <div className="feature-list">
+                <div>
+                  <strong>Daily claim</strong>
+                  <span>Collect your daily QC reward.</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      window.location.href = "/qc";
+                    }}
+                  >
+                    Claim QC
+                  </button>
+                </div>
+                <div>
+                  <strong>1 Week VIP</strong>
+                  <span>Redeem rewards after eligibility.</span>
+                  <button type="button" onClick={() => setView("vip")}>
+                    View VIP
+                  </button>
+                </div>
+                <div>
+                  <strong>Raffle</strong>
+                  <span>Use QC for the active draw.</span>
+                  <button type="button" onClick={() => setView("raffle")}>
+                    Open raffle
+                  </button>
+                </div>
+              </div>
+            </div>
           )}
 
           {view === "referrals" && (
-            <div className="prototype-screen-stack"><article className="prototype-hero-card referral-hero"><span className="eyebrow">MY TEAM / REFERRALS</span><h2>{referral.currency} {(referral.directEarnings + referral.indirectEarnings).toLocaleString()}</h2><p>Real earnings credited after referred-member payment confirmation.</p>{referral.referralLink ? <button type="button" onClick={() => navigator.clipboard.writeText(`${window.location.origin}${referral.referralLink}`)}>Copy referral link <span>→</span></button> : <small>Sign in to receive your unique referral link.</small>}</article><div className="metric-grid"><div className="metric-card"><span>DIRECT</span><strong>{referral.directCount}</strong></div><div className="metric-card"><span>INDIRECT</span><strong>{referral.indirectCount}</strong></div><div className="metric-card"><span>DIRECT EARNINGS</span><strong>{referral.currency} {referral.directEarnings.toLocaleString()}</strong></div><div className="metric-card"><span>INDIRECT EARNINGS</span><strong>{referral.currency} {referral.indirectEarnings.toLocaleString()}</strong></div></div></div>
+            <div className="prototype-screen-stack">
+              <article className="prototype-hero-card referral-hero">
+                <span className="eyebrow">MY TEAM / REFERRALS</span>
+                <h2>
+                  {referral.currency}{" "}
+                  {(
+                    referral.directEarnings + referral.indirectEarnings
+                  ).toLocaleString()}
+                </h2>
+                <p>
+                  Real earnings credited after referred-member payment
+                  confirmation.
+                </p>
+                {referral.referralLink ? (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      navigator.clipboard.writeText(
+                        `${window.location.origin}${referral.referralLink}`,
+                      )
+                    }
+                  >
+                    Copy referral link <span>→</span>
+                  </button>
+                ) : (
+                  <small>Sign in to receive your unique referral link.</small>
+                )}
+              </article>
+              <div className="metric-grid">
+                <div className="metric-card">
+                  <span>DIRECT</span>
+                  <strong>{referral.directCount}</strong>
+                </div>
+                <div className="metric-card">
+                  <span>INDIRECT</span>
+                  <strong>{referral.indirectCount}</strong>
+                </div>
+                <div className="metric-card">
+                  <span>DIRECT EARNINGS</span>
+                  <strong>
+                    {referral.currency}{" "}
+                    {referral.directEarnings.toLocaleString()}
+                  </strong>
+                </div>
+                <div className="metric-card">
+                  <span>INDIRECT EARNINGS</span>
+                  <strong>
+                    {referral.currency}{" "}
+                    {referral.indirectEarnings.toLocaleString()}
+                  </strong>
+                </div>
+              </div>
+            </div>
           )}
 
           {view === "raffle" && (
-            <div className="prototype-screen-stack"><article className="prototype-hero-card raffle-hero"><span className="eyebrow">RAFFLE</span><h2>Join the next draw.</h2><p>Tickets use QC credits. Your cash wallet is never used for raffle entry.</p><button type="button" onClick={() => { window.location.href = "/qc"; }}>View QC and rewards <span>→</span></button></article><div className="feature-list"><div><strong>Ticket price</strong><span>Manager-controlled QC amount</span></div><div><strong>Eligibility</strong><span>Available to eligible AQE members.</span></div></div></div>
+            <div className="prototype-screen-stack">
+              <article className="prototype-hero-card raffle-hero">
+                <span className="eyebrow">RAFFLE</span>
+                <h2>Join the next draw.</h2>
+                <p>
+                  Tickets use QC credits. Your cash wallet is never used for
+                  raffle entry.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    window.location.href = "/qc";
+                  }}
+                >
+                  View QC and rewards <span>→</span>
+                </button>
+              </article>
+              <div className="feature-list">
+                <div>
+                  <strong>Ticket price</strong>
+                  <span>Manager-controlled QC amount</span>
+                </div>
+                <div>
+                  <strong>Eligibility</strong>
+                  <span>Available to eligible AQE members.</span>
+                </div>
+              </div>
+            </div>
           )}
 
           {view === "settings" && (
-            <div className="prototype-screen-stack"><article className="content-panel"><div className="mini-avatar">{accountName.charAt(0).toUpperCase()}</div><div className="panel-copy"><strong>{accountName}</strong><span>{accountSubtitle}</span></div><button type="button" className="text-button" onClick={signOut}>Sign out</button></article><div className="feature-list"><div><strong>About AQE</strong><span>{platformSettings.about || "Community, profiles, bookings, and trusted creator tools."}</span></div><div><strong>Contact</strong><span>{platformSettings.contact || "Contact an AQE manager for support."}</span></div><div><strong>Privacy and safety</strong><span>Account, payment, and age-gate controls are active.</span></div></div></div>
+            <div className="prototype-screen-stack">
+              <article className="content-panel">
+                <div className="mini-avatar">
+                  {accountName.charAt(0).toUpperCase()}
+                </div>
+                <div className="panel-copy">
+                  <strong>{accountName}</strong>
+                  <span>{accountSubtitle}</span>
+                </div>
+                <button type="button" className="text-button" onClick={signOut}>
+                  Sign out
+                </button>
+              </article>
+              <div className="feature-list">
+                <div>
+                  <strong>About AQE</strong>
+                  <span>
+                    {platformSettings.about ||
+                      "Community, profiles, bookings, and trusted creator tools."}
+                  </span>
+                </div>
+                <div>
+                  <strong>Contact</strong>
+                  <span>
+                    {platformSettings.contact ||
+                      "Contact an AQE manager for support."}
+                  </span>
+                </div>
+                <div>
+                  <strong>Privacy and safety</strong>
+                  <span>
+                    Account, payment, and age-gate controls are active.
+                  </span>
+                </div>
+              </div>
+            </div>
           )}
 
           {view === "home" && (
@@ -1085,22 +1468,48 @@ export default function CustomerPage() {
                     <option value="independent">Independent profile</option>
                   </select>
                   <div className="registration-tier-block">
-                    <div className="registration-field-label">Membership tier</div>
+                    <div className="registration-field-label">
+                      Membership tier
+                    </div>
                     <div className="registration-tier-grid">
                       {[
-                        ["basic", "Basic", "Public exploration and account access"],
-                        ["premium", "Premium", "Independent profile and messaging"],
-                        ["vip", "VIP", "Full ecosystem, store, groups and rewards"],
+                        [
+                          "basic",
+                          "Basic",
+                          "Public exploration and account access",
+                        ],
+                        [
+                          "premium",
+                          "Premium",
+                          "Independent profile and messaging",
+                        ],
+                        [
+                          "vip",
+                          "VIP",
+                          "Full ecosystem, store, groups and rewards",
+                        ],
                       ].map(([value, label, description]) => (
                         <button
                           type="button"
                           key={value}
-                          className={registrationTier === value ? "registration-tier active" : "registration-tier"}
-                          onClick={() => setRegistrationTier(value as "basic" | "premium" | "vip")}
+                          className={
+                            registrationTier === value
+                              ? "registration-tier active"
+                              : "registration-tier"
+                          }
+                          onClick={() =>
+                            setRegistrationTier(
+                              value as "basic" | "premium" | "vip",
+                            )
+                          }
                         >
                           <strong>{label}</strong>
                           <span>{description}</span>
-                          {value !== "basic" ? <small>Payment required after registration</small> : <small>Selected by default</small>}
+                          {value !== "basic" ? (
+                            <small>Payment required after registration</small>
+                          ) : (
+                            <small>Selected by default</small>
+                          )}
                         </button>
                       ))}
                     </div>
@@ -1115,7 +1524,9 @@ export default function CustomerPage() {
                   <select
                     className="auth-input"
                     value={contactPreference}
-                    onChange={(event) => setContactPreference(event.target.value)}
+                    onChange={(event) =>
+                      setContactPreference(event.target.value)
+                    }
                   >
                     <option value="in_app">AQE messages</option>
                     <option value="phone">Phone</option>
@@ -1125,12 +1536,17 @@ export default function CustomerPage() {
                   <input
                     className="auth-input"
                     value={referralCode}
-                    onChange={(event) => setReferralCode(event.target.value.toUpperCase())}
+                    onChange={(event) =>
+                      setReferralCode(event.target.value.toUpperCase())
+                    }
                     placeholder="Referral code (optional)"
                   />
                   <label className="registration-consent">
                     <input type="checkbox" required />
-                    <span>I confirm I am 18+ and agree to the AQE terms and privacy policy.</span>
+                    <span>
+                      I confirm I am 18+ and agree to the AQE terms and privacy
+                      policy.
+                    </span>
                   </label>
                 </div>
               ) : null}

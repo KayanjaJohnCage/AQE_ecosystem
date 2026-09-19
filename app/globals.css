@@ -249,7 +249,12 @@ body {
   border: 1px solid rgba(255, 255, 255, 0.14);
   border-radius: 22px;
   padding: 24px 20px;
-  background: linear-gradient(135deg, rgba(225, 29, 72, .92), rgba(139, 92, 246, .82) 58%, rgba(10, 10, 15, .96));
+  background: linear-gradient(
+    135deg,
+    rgba(225, 29, 72, 0.92),
+    rgba(139, 92, 246, 0.82) 58%,
+    rgba(10, 10, 15, 0.96)
+  );
   box-shadow: 0 25px 60px rgba(85, 20, 90, 0.35);
 }
 .hero-kicker {
@@ -270,7 +275,9 @@ body {
   padding: 2px 0 12px;
   scrollbar-width: none;
 }
-.prototype-filter-pills::-webkit-scrollbar { display: none; }
+.prototype-filter-pills::-webkit-scrollbar {
+  display: none;
+}
 .prototype-filter-pills button {
   flex: 0 0 auto;
   padding: 9px 16px;
@@ -292,7 +299,10 @@ body {
   justify-content: space-between;
   margin: 8px 0 12px;
 }
-.featured-heading h2 { margin: 0; font-size: 16px; }
+.featured-heading h2 {
+  margin: 0;
+  font-size: 16px;
+}
 .featured-heading button {
   border: 0;
   background: none;
@@ -312,7 +322,7 @@ body {
   padding: 0;
   border: 1px solid #252540;
   border-radius: 16px;
-  background: rgba(18, 18, 26, .88);
+  background: rgba(18, 18, 26, 0.88);
   color: #f0f0f5;
   text-align: left;
   cursor: pointer;
@@ -341,21 +351,52 @@ body {
   bottom: 8px;
   padding: 4px 7px;
   border-radius: 7px;
-  background: rgba(0, 0, 0, .78);
+  background: rgba(0, 0, 0, 0.78);
   font-size: 9px;
 }
-.prototype-profile-image span { left: 8px; }
-.prototype-profile-image b { right: 8px; color: #f9e076; }
+.prototype-profile-image span {
+  left: 8px;
+}
+.prototype-profile-image b {
+  right: 8px;
+  color: #f9e076;
+}
 .prototype-profile-card > strong,
 .prototype-profile-card > small,
-.prototype-profile-card > div:last-child { display: block; margin: 0 12px; }
-.prototype-profile-card > strong { margin-top: 12px; font-size: 14px; }
-.prototype-profile-card > small { margin-top: 4px; color: #8a8ab0; font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.prototype-profile-card > div:last-child { display: flex; justify-content: space-between; gap: 8px; padding: 10px 0 13px; }
+.prototype-profile-card > div:last-child {
+  display: block;
+  margin: 0 12px;
+}
+.prototype-profile-card > strong {
+  margin-top: 12px;
+  font-size: 14px;
+}
+.prototype-profile-card > small {
+  margin-top: 4px;
+  color: #8a8ab0;
+  font-size: 11px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.prototype-profile-card > div:last-child {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 0 13px;
+}
 .prototype-profile-card em,
-.prototype-profile-card label { font-size: 10px; font-style: normal; font-weight: 800; }
-.prototype-profile-card em { color: #22c55e; }
-.prototype-profile-card label { color: #fbbf24; }
+.prototype-profile-card label {
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 800;
+}
+.prototype-profile-card em {
+  color: #22c55e;
+}
+.prototype-profile-card label {
+  color: #fbbf24;
+}
 .client-hero h1 em {
   color: #f9e076;
   font-style: normal;
@@ -863,10 +904,15 @@ body {
 }
 .prototype-hero-card {
   padding: 22px;
-  border: 1px solid rgba(255, 255, 255, .14);
+  border: 1px solid rgba(255, 255, 255, 0.14);
   border-radius: 20px;
-  background: linear-gradient(135deg, rgba(225, 29, 72, .82), rgba(139, 92, 246, .72), rgba(10, 10, 15, .96));
-  box-shadow: 0 20px 50px rgba(0, 0, 0, .28);
+  background: linear-gradient(
+    135deg,
+    rgba(225, 29, 72, 0.82),
+    rgba(139, 92, 246, 0.72),
+    rgba(10, 10, 15, 0.96)
+  );
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.28);
 }
 .prototype-hero-card h2 {
   margin: 10px 0 8px;
@@ -921,19 +967,62 @@ body {
   border-radius: 15px;
   background: #12121a;
 }
-.feature-list strong { color: #f0f0f5; }
-.feature-list span { color: #8a8ab0; font-size: 12px; }
-.feature-list button { justify-self: start; margin-top: 4px; }
-.premium-hero { background: linear-gradient(135deg, rgba(59, 130, 246, .65), rgba(139, 92, 246, .65), #101018); }
-.vip-hero { background: linear-gradient(135deg, rgba(251, 191, 36, .55), rgba(225, 29, 72, .65), #101018); }
-.wallet-hero { background: linear-gradient(135deg, rgba(20, 184, 166, .62), rgba(59, 130, 246, .52), #101018); }
-.referral-hero { background: linear-gradient(135deg, rgba(139, 92, 246, .68), rgba(225, 29, 72, .58), #101018); }
-.raffle-hero { background: linear-gradient(135deg, rgba(245, 158, 11, .62), rgba(225, 29, 72, .58), #101018); }
+.feature-list strong {
+  color: #f0f0f5;
+}
+.feature-list span {
+  color: #8a8ab0;
+  font-size: 12px;
+}
+.feature-list button {
+  justify-self: start;
+  margin-top: 4px;
+}
+.premium-hero {
+  background: linear-gradient(
+    135deg,
+    rgba(59, 130, 246, 0.65),
+    rgba(139, 92, 246, 0.65),
+    #101018
+  );
+}
+.vip-hero {
+  background: linear-gradient(
+    135deg,
+    rgba(251, 191, 36, 0.55),
+    rgba(225, 29, 72, 0.65),
+    #101018
+  );
+}
+.wallet-hero {
+  background: linear-gradient(
+    135deg,
+    rgba(20, 184, 166, 0.62),
+    rgba(59, 130, 246, 0.52),
+    #101018
+  );
+}
+.referral-hero {
+  background: linear-gradient(
+    135deg,
+    rgba(139, 92, 246, 0.68),
+    rgba(225, 29, 72, 0.58),
+    #101018
+  );
+}
+.raffle-hero {
+  background: linear-gradient(
+    135deg,
+    rgba(245, 158, 11, 0.62),
+    rgba(225, 29, 72, 0.58),
+    #101018
+  );
+}
 .registration-field-label {
   color: #b8b8d4;
   font-size: 10px;
   font-weight: 800;
-  letter-spacing: .8px;
+  letter-spacing: 0.8px;
   text-transform: uppercase;
 }
 .registration-tier-block {
@@ -972,8 +1061,8 @@ body {
 }
 .registration-tier.active {
   border-color: #e11d48;
-  background: rgba(225, 29, 72, .12);
-  box-shadow: 0 0 0 1px rgba(225, 29, 72, .12);
+  background: rgba(225, 29, 72, 0.12);
+  box-shadow: 0 0 0 1px rgba(225, 29, 72, 0.12);
 }
 .registration-tier.active strong {
   color: #fda4af;
@@ -1439,11 +1528,17 @@ body {
   .prototype-action-grid {
     grid-template-columns: 1fr;
   }
-  .prototype-profile-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .prototype-profile-image { height: 120px; }
+  .prototype-profile-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .prototype-profile-image {
+    height: 120px;
+  }
 }
 @media (min-width: 1024px) {
-  .prototype-profile-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .prototype-profile-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
 }
 @media (max-width: 600px) {
   .manager-prototype-top {
