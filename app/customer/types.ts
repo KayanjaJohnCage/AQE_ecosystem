@@ -1,0 +1,16 @@
+export type CustomerView =
+  | "home"
+  | "discover"
+  | "shop"
+  | "assetRoom"
+  | "comments"
+  | "messages"
+  | "bookings"
+  | "me"
+  | "wallet"
+  | "premium"
+  | "vip"
+  | "rewards"
+  | "referrals"
+  | "raffle"
+  | "settings";

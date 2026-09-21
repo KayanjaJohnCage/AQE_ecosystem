@@ -26,8 +26,10 @@ const defaults: AqePlatformSettings = {
 function normalizeSettings(
   value: Partial<AqePlatformSettings>,
 ): AqePlatformSettings {
-  const tierPrices = value.tierPrices || {};
-  const renewalPrices = value.renewalPrices || {};
+  const tierPrices: Partial<AqePlatformSettings["tierPrices"]> =
+    value.tierPrices ?? {};
+  const renewalPrices: Partial<AqePlatformSettings["renewalPrices"]> =
+    value.renewalPrices ?? {};
   return {
     tierPrices: {
       basic:
