@@ -5,6 +5,17 @@ ALTER TABLE public.platform_settings
 
 UPDATE public.platform_settings
 SET customer_content = COALESCE(customer_content, '{}'::jsonb) || jsonb_build_object(
+  'pricing', jsonb_build_object(
+    'originalTierPrices', jsonb_build_object('basic', 125000, 'premium', 250000, 'vip', 500000),
+    'currentTierPrices', jsonb_build_object('basic', 65000, 'premium', 150000, 'vip', 250000),
+    'promotionalLabels', jsonb_build_object('basic', '48% OFF', 'premium', '40% OFF', 'vip', '50% OFF'),
+    'welcomeBonus', 3000,
+    'deduction', jsonb_build_object('basic', 15000, 'premium', 30000, 'vip', 60000),
+    'teamLeaderRenewalCommission', jsonb_build_object('basic', 2500, 'premium', 5000),
+    'vipSalary', 10000,
+    'vipSalaryDay', 20,
+    'withdrawalBefore20th', false
+  ),
   'home', jsonb_build_object(
     'heroKicker', 'VERIFIED PROFESSIONALS · SECURE PAYMENTS · DISCREET EXPERIENCE',
     'heroTitle', 'Discover Independence',
