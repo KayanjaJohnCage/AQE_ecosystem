@@ -3,6 +3,7 @@
 .env.*.local
 Program Files
 node_modules/
+package-lock.json
 .next/
 out/
 coverage/

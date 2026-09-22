@@ -1813,3 +1813,486 @@ body {
     grid-template-columns: 1fr 1fr;
   }
 }
+
+
+/* =========================================================
+   AQE ORIGINAL PAYMENT RESTORATION
+   The UI mirrors the original polished payment/upgrade language
+   while using the current server-side payment implementation.
+   ========================================================= */
+
+.aqe-payment-page{
+  min-height:100vh;
+  width:100%;
+  max-width:1180px;
+  margin:0 auto;
+  padding:0 18px 96px;
+  color:var(--a1);
+}
+.aqe-payment-header{
+  position:sticky;
+  top:0;
+  z-index:45;
+  display:grid;
+  grid-template-columns:42px minmax(0,1fr) auto;
+  align-items:center;
+  gap:12px;
+  min-height:70px;
+  padding:12px 0;
+  background:rgba(10,10,15,.96);
+  backdrop-filter:blur(16px);
+  border-bottom:1px solid var(--a7);
+}
+.aqe-payment-back{
+  width:42px;
+  height:42px;
+  display:grid;
+  place-items:center;
+  border:1px solid var(--a7);
+  border-radius:13px;
+  background:var(--a8);
+  color:var(--a1);
+  text-decoration:none;
+}
+.aqe-payment-mark{
+  font-weight:900;
+  letter-spacing:3px;
+  font-size:17px;
+  background:linear-gradient(90deg,#e11d48,#8b5cf6);
+  background-clip:text;
+  -webkit-background-clip:text;
+  -webkit-text-fill-color:transparent;
+}
+.aqe-payment-word{
+  margin-top:-2px;
+  color:var(--g);
+  font-size:12px;
+  font-weight:700;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+}
+.aqe-payment-account{text-align:right;min-width:0}
+.aqe-payment-account span,.aqe-payment-account small{display:block}
+.aqe-payment-account span{font-size:12px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:180px}
+.aqe-payment-account small{margin-top:2px;color:var(--a4);font-size:10px}
+
+.aqe-payment-hero{
+  position:relative;
+  overflow:hidden;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:18px;
+  margin:20px 0 14px;
+  padding:24px;
+  border:1px solid rgba(139,92,246,.32);
+  border-radius:22px;
+  background:
+    radial-gradient(circle at 85% 15%,rgba(251,191,36,.15),transparent 24%),
+    linear-gradient(135deg,#e11d48,#8b5cf6);
+  box-shadow:0 22px 60px rgba(0,0,0,.24);
+}
+.aqe-payment-hero:after{
+  content:"";
+  position:absolute;
+  width:180px;height:180px;
+  right:-58px;top:-76px;
+  border-radius:50%;
+  background:rgba(255,255,255,.08);
+}
+.aqe-payment-hero > div:first-child{position:relative;z-index:1;max-width:760px}
+.aqe-payment-kicker{
+  display:inline-block;
+  color:var(--g);
+  font-size:10px;
+  font-weight:900;
+  letter-spacing:.14em;
+  text-transform:uppercase;
+}
+.aqe-payment-hero .aqe-payment-kicker{color:#fff;opacity:.9}
+.aqe-payment-hero h1{
+  margin:7px 0 8px;
+  font-size:clamp(24px,4vw,38px);
+  line-height:1.04;
+  font-weight:900;
+}
+.aqe-payment-hero p{margin:0;max-width:700px;color:rgba(255,255,255,.92);font-size:13px;line-height:1.55}
+.aqe-payment-hero-icon{
+  position:relative;z-index:1;
+  width:64px;height:64px;min-width:64px;
+  display:grid;place-items:center;
+  border-radius:20px;
+  background:rgba(255,255,255,.12);
+  border:1px solid rgba(255,255,255,.18);
+  color:#fff;font-size:24px;
+}
+
+.aqe-payment-mode-tabs{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:9px;
+  margin:0 0 14px;
+}
+.aqe-payment-mode-tabs button{
+  border:1px solid var(--a7);
+  border-radius:14px;
+  background:var(--a8);
+  color:var(--a3);
+  min-height:62px;
+  padding:9px 10px;
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  font-size:11px;font-weight:800;cursor:pointer;
+}
+.aqe-payment-mode-tabs button i{color:var(--a5)}
+.aqe-payment-mode-tabs button.active{
+  border-color:rgba(225,29,72,.8);
+  background:linear-gradient(135deg,rgba(225,29,72,.18),rgba(139,92,246,.16));
+  color:#fff;
+  box-shadow:inset 0 0 0 1px rgba(225,29,72,.15);
+}
+.aqe-payment-mode-tabs button.active i{color:var(--g)}
+
+.aqe-payment-section,.aqe-payment-checkout,.aqe-payment-result{
+  padding:18px;
+  border:1px solid var(--a7);
+  border-radius:20px;
+  background:rgba(18,18,26,.96);
+  margin-bottom:14px;
+}
+.aqe-payment-section-heading{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:14px;
+  margin-bottom:14px;
+}
+.aqe-payment-section-heading.compact{margin-bottom:12px}
+.aqe-payment-section-heading h2{
+  margin:5px 0 4px;
+  font-size:20px;
+  line-height:1.15;
+}
+.aqe-payment-section-heading p{margin:0;color:var(--a4);font-size:12px;line-height:1.5;max-width:760px}
+.aqe-payment-secure-pill,.aqe-payment-qc-pill{
+  flex:0 0 auto;
+  display:inline-flex;align-items:center;gap:6px;
+  padding:6px 9px;
+  border-radius:999px;
+  background:rgba(34,197,94,.1);
+  color:var(--gr);
+  border:1px solid rgba(34,197,94,.25);
+  font-size:10px;font-weight:800;
+}
+.aqe-payment-qc-pill{background:rgba(251,191,36,.1);border-color:rgba(251,191,36,.25);color:var(--g)}
+
+.aqe-payment-plan-grid{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:14px;
+}
+.aqe-payment-plan-card{
+  position:relative;
+  width:100%;
+  min-width:0;
+  text-align:left;
+  border:1px solid var(--a7);
+  border-radius:18px;
+  background:linear-gradient(145deg,#12121a,#0e0e15);
+  color:var(--a1);
+  padding:18px;
+  cursor:pointer;
+  transition:transform .18s ease,border-color .18s ease,box-shadow .18s ease;
+}
+.aqe-payment-plan-card:hover{transform:translateY(-2px);border-color:#343451}
+.aqe-payment-plan-card.selected{
+  border-color:rgba(212,175,55,.7);
+  box-shadow:0 0 0 1px rgba(212,175,55,.16),0 16px 42px rgba(0,0,0,.24);
+}
+.aqe-payment-plan-card.vip{background:linear-gradient(145deg,rgba(34,197,94,.10),#0e0e15)}
+.aqe-payment-plan-badge{
+  display:inline-flex;
+  padding:4px 8px;
+  border-radius:999px;
+  background:rgba(251,191,36,.1);
+  color:var(--g);
+  border:1px solid rgba(251,191,36,.22);
+  font-size:9px;font-weight:900;letter-spacing:.08em;
+}
+.aqe-payment-plan-card.vip .aqe-payment-plan-badge{
+  background:rgba(34,197,94,.10);
+  color:var(--gr);
+  border-color:rgba(34,197,94,.22);
+}
+.aqe-payment-plan-icon{
+  width:46px;height:46px;
+  display:grid;place-items:center;
+  margin:14px 0 12px;
+  border-radius:14px;
+  background:rgba(139,92,246,.12);
+  color:#c4b5fd;font-size:18px;
+}
+.aqe-payment-plan-card.premium .aqe-payment-plan-icon{background:rgba(225,29,72,.12);color:#fb7185}
+.aqe-payment-plan-card.vip .aqe-payment-plan-icon{background:rgba(34,197,94,.12);color:#86efac}
+.aqe-payment-plan-card > strong{display:block;font-size:18px}
+.aqe-payment-plan-card > small{display:block;margin-top:3px;color:var(--a4);font-size:11px}
+.aqe-payment-plan-price{display:block;margin-top:14px;font-size:25px;font-weight:900;line-height:1.1}
+.aqe-payment-plan-card > em{
+  display:inline-flex;
+  margin-top:9px;
+  padding:5px 8px;
+  border-radius:999px;
+  background:rgba(255,255,255,.05);
+  color:var(--a3);
+  font-size:10px;font-style:normal;font-weight:800;
+}
+.aqe-payment-plan-card > p{
+  margin:12px 0 0;
+  color:var(--a3);
+  font-size:11px;
+  line-height:1.55;
+}
+.aqe-payment-plan-limit{
+  display:grid;
+  gap:3px;
+  margin-top:12px;
+  padding-top:11px;
+  border-top:1px solid var(--a7);
+}
+.aqe-payment-plan-limit b{font-size:10px;color:var(--a4);text-transform:uppercase;letter-spacing:.08em}
+.aqe-payment-plan-limit span{font-size:10px;line-height:1.45;color:var(--a5)}
+.aqe-payment-plan-select{
+  display:block;
+  margin-top:14px;
+  width:100%;
+  padding:10px 12px;
+  border-radius:11px;
+  text-align:center;
+  background:#1a1a2e;
+  color:var(--a1);
+  font-size:11px;
+  font-weight:900;
+}
+.aqe-payment-plan-card.selected .aqe-payment-plan-select{background:linear-gradient(135deg,#e11d48,#be123c);color:#fff}
+
+.aqe-payment-qc-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.aqe-payment-qc-card{
+  border:1px solid var(--a7);border-radius:16px;background:var(--a8);
+  padding:16px 10px;color:var(--a1);cursor:pointer;
+  display:grid;place-items:center;gap:6px;text-align:center;
+}
+.aqe-payment-qc-card i{color:var(--g);font-size:18px}
+.aqe-payment-qc-card strong{font-size:17px}
+.aqe-payment-qc-card span{color:var(--a4);font-size:11px}
+.aqe-payment-qc-card.active{border-color:var(--g);background:rgba(251,191,36,.08);box-shadow:0 0 0 1px rgba(251,191,36,.12)}
+
+.aqe-payment-field{display:grid;gap:7px}
+.aqe-payment-field > span{font-size:10px;color:var(--a4);font-weight:800;text-transform:uppercase;letter-spacing:.06em}
+.aqe-payment-field input{
+  width:100%;
+  border:1px solid var(--a6);
+  border-radius:12px;
+  background:var(--a7);
+  color:var(--a1);
+  padding:12px 13px;
+  outline:none;
+  font-size:13px;
+}
+.aqe-payment-field input:focus{border-color:var(--r)}
+.aqe-payment-input-wrap{
+  display:flex;align-items:center;
+  border:1px solid var(--a6);
+  border-radius:12px;
+  overflow:hidden;
+  background:var(--a7);
+}
+.aqe-payment-input-wrap b{padding:0 12px;color:var(--g);font-size:12px}
+.aqe-payment-input-wrap input{border:0;border-left:1px solid var(--a6);border-radius:0}
+.aqe-payment-fields-two{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+
+.aqe-payment-method-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.aqe-payment-method{
+  display:grid;
+  grid-template-columns:46px minmax(0,1fr) 20px;
+  gap:12px;
+  align-items:center;
+  width:100%;
+  padding:12px;
+  border:1px solid var(--a7);
+  border-radius:16px;
+  background:var(--a8);
+  color:var(--a1);
+  text-align:left;
+  cursor:pointer;
+}
+.aqe-payment-method.selected{
+  border-color:rgba(34,197,94,.55);
+  box-shadow:0 0 0 1px rgba(34,197,94,.12);
+}
+.aqe-payment-method > i:last-child{color:var(--a6)}
+.aqe-payment-method.selected > i:last-child{color:var(--gr)}
+.aqe-payment-method-icon{
+  width:46px;height:46px;border-radius:14px;
+  display:grid;place-items:center;
+  font-size:17px;
+}
+.aqe-payment-method-icon.mukuru{background:rgba(59,130,246,.12);color:#60a5fa}
+.aqe-payment-method-icon.manager{background:rgba(251,191,36,.12);color:var(--g)}
+.aqe-payment-method strong,.aqe-payment-method span{display:block}
+.aqe-payment-method strong{font-size:13px}
+.aqe-payment-method span{margin-top:4px;color:var(--a4);font-size:10px;line-height:1.45}
+
+.aqe-payment-receiver{
+  margin-top:12px;
+  padding:14px;
+  border:1px solid rgba(139,92,246,.24);
+  border-radius:17px;
+  background:linear-gradient(145deg,rgba(139,92,246,.07),rgba(10,10,15,.18));
+}
+.aqe-payment-receiver-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.aqe-payment-receiver-head h3{margin:4px 0 0;font-size:15px}
+.aqe-payment-receiver-head > i{color:var(--pu)}
+.aqe-payment-receiver > p{margin:9px 0;color:var(--a4);font-size:11px;line-height:1.5}
+.aqe-payment-copy-row{
+  display:flex;align-items:center;justify-content:space-between;gap:10px;
+  margin-top:8px;padding:10px 11px;
+  border:1px solid var(--a7);border-radius:13px;background:rgba(18,18,26,.84)
+}
+.aqe-payment-copy-row > div{min-width:0}
+.aqe-payment-copy-row small{display:block;color:var(--a5);font-size:9px;text-transform:uppercase;letter-spacing:.06em}
+.aqe-payment-copy-row strong{display:block;margin-top:3px;font-size:12px;overflow-wrap:anywhere}
+.aqe-payment-copy-row button{
+  flex:0 0 auto;border:1px solid var(--a6);border-radius:10px;
+  background:#1a1a2e;color:var(--a1);padding:8px 10px;
+  font-size:10px;font-weight:800;cursor:pointer
+}
+.aqe-payment-copy-feedback{margin-top:8px;color:var(--gr);font-size:10px}
+
+.aqe-payment-manager-note{
+  display:flex;align-items:flex-start;gap:12px;
+  margin-top:12px;padding:14px;border-radius:16px;
+  background:rgba(251,191,36,.08);
+  border:1px solid rgba(251,191,36,.22)
+}
+.aqe-payment-manager-note-icon{
+  width:42px;height:42px;min-width:42px;border-radius:13px;
+  display:grid;place-items:center;background:rgba(251,191,36,.10);color:var(--g)
+}
+.aqe-payment-manager-note strong{display:block;font-size:13px}
+.aqe-payment-manager-note p{margin:4px 0 0;color:var(--a4);font-size:11px;line-height:1.5}
+
+.aqe-payment-checkout{
+  background:
+    radial-gradient(circle at 100% 0,rgba(139,92,246,.12),transparent 30%),
+    rgba(18,18,26,.96);
+}
+.aqe-payment-checkout-head{
+  display:flex;align-items:flex-end;justify-content:space-between;gap:12px;
+  padding-bottom:14px;border-bottom:1px solid var(--a7)
+}
+.aqe-payment-checkout-head h2{margin:5px 0 0;font-size:20px}
+.aqe-payment-checkout-head > strong{font-size:24px;color:var(--g);white-space:nowrap}
+.aqe-payment-summary-row{
+  display:flex;justify-content:space-between;align-items:flex-start;gap:12px;
+  padding:11px 0;border-bottom:1px solid rgba(37,37,64,.7);
+  font-size:11px;
+}
+.aqe-payment-summary-row span{color:var(--a5)}
+.aqe-payment-summary-row b{text-align:right;color:var(--a3);font-weight:700}
+.aqe-payment-auth-warning,.aqe-payment-error{
+  display:flex;align-items:center;gap:10px;
+  margin-top:12px;padding:11px 12px;border-radius:13px
+}
+.aqe-payment-auth-warning{
+  background:rgba(251,191,36,.08);
+  border:1px solid rgba(251,191,36,.2);
+}
+.aqe-payment-auth-warning > i{color:var(--g)}
+.aqe-payment-auth-warning div{flex:1;min-width:0}
+.aqe-payment-auth-warning strong,.aqe-payment-auth-warning span{display:block}
+.aqe-payment-auth-warning strong{font-size:11px}
+.aqe-payment-auth-warning span{margin-top:2px;color:var(--a4);font-size:10px;line-height:1.4}
+.aqe-payment-auth-warning a{color:var(--g);font-size:10px;font-weight:800}
+.aqe-payment-error{background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.22);color:#fca5a5;font-size:11px}
+.aqe-payment-submit{
+  width:100%;display:flex;align-items:center;justify-content:center;gap:9px;
+  margin-top:14px;padding:14px 16px;border:0;border-radius:14px;
+  background:linear-gradient(135deg,#e11d48,#be123c);color:#fff;
+  font-size:13px;font-weight:900;cursor:pointer
+}
+.aqe-payment-submit:disabled{opacity:.48;cursor:not-allowed}
+.aqe-payment-footnote{margin:9px 0 0;color:var(--a5);font-size:9px;line-height:1.5;text-align:center}
+
+.aqe-payment-result{
+  border-color:rgba(34,197,94,.22);
+  background:
+    radial-gradient(circle at 0 0,rgba(34,197,94,.08),transparent 34%),
+    rgba(18,18,26,.96);
+}
+.aqe-payment-result-top{display:flex;align-items:flex-start;gap:12px}
+.aqe-payment-result-icon{
+  width:48px;height:48px;min-width:48px;border-radius:15px;
+  display:grid;place-items:center;background:rgba(34,197,94,.1);color:var(--gr)
+}
+.aqe-payment-result h2{margin:4px 0 3px;font-size:20px}
+.aqe-payment-result p{margin:0;color:var(--a4);font-size:11px;line-height:1.5}
+.aqe-payment-result-grid{
+  display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px;margin-top:14px
+}
+.aqe-payment-result-grid > div{
+  min-width:0;padding:11px;border:1px solid var(--a7);border-radius:13px;background:var(--a8)
+}
+.aqe-payment-result-grid small,.aqe-payment-result-grid strong{display:block}
+.aqe-payment-result-grid small{color:var(--a5);font-size:9px;text-transform:uppercase;letter-spacing:.06em}
+.aqe-payment-result-grid strong{margin-top:4px;color:var(--a1);font-size:12px;overflow-wrap:anywhere}
+.aqe-payment-result-note{
+  display:flex;align-items:flex-start;gap:9px;
+  margin-top:12px;padding:11px 12px;border-radius:13px;
+  background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.18);
+  color:var(--a3);font-size:10px;line-height:1.5
+}
+.aqe-payment-result-note i{color:var(--g);margin-top:2px}
+.aqe-payment-provider-link{
+  display:inline-flex;align-items:center;gap:8px;
+  margin-top:12px;padding:11px 14px;border-radius:12px;
+  background:#1a1a2e;color:#fff;text-decoration:none;
+  font-size:11px;font-weight:800
+}
+
+@media(max-width:900px){
+  .aqe-payment-plan-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .aqe-payment-result-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:640px){
+  .aqe-payment-page{padding:0 11px 92px}
+  .aqe-payment-header{grid-template-columns:40px minmax(0,1fr) auto}
+  .aqe-payment-account span{max-width:120px}
+  .aqe-payment-hero{padding:20px}
+  .aqe-payment-hero h1{font-size:26px}
+  .aqe-payment-hero-icon{width:50px;height:50px;min-width:50px;border-radius:15px;font-size:18px}
+  .aqe-payment-mode-tabs button{min-height:56px;font-size:10px;flex-direction:column;gap:5px}
+  .aqe-payment-section,.aqe-payment-checkout,.aqe-payment-result{padding:14px;border-radius:17px}
+  .aqe-payment-section-heading{flex-direction:column}
+  .aqe-payment-plan-grid{grid-template-columns:1fr}
+  .aqe-payment-qc-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .aqe-payment-method-grid{grid-template-columns:1fr}
+  .aqe-payment-fields-two{grid-template-columns:1fr}
+  .aqe-payment-result-grid{grid-template-columns:1fr 1fr}
+  .aqe-payment-checkout-head{align-items:flex-start;flex-direction:column}
+  .aqe-payment-checkout-head > strong{font-size:22px}
+}
+@media(max-width:430px){
+  .aqe-payment-result-grid{grid-template-columns:1fr}
+}
+
+.aqe-original-host{width:100%;height:100dvh;min-height:100dvh;overflow:hidden;background:#0a0a0f}
+.aqe-original-frame{display:block;width:100%;height:100%;min-height:100dvh;border:0;background:#0a0a0f}
+
+.aqe-launch-home{min-height:100dvh;display:grid;place-items:center;padding:24px;background:#0a0a0f;color:#fff}
+.aqe-launch-card{width:min(620px,100%);padding:34px;border:1px solid #252540;border-radius:24px;background:linear-gradient(145deg,#12121a,#0a0a0f);box-shadow:0 30px 80px rgba(0,0,0,.45);text-align:center}
+.aqe-launch-brand{font-size:14px;font-weight:900;letter-spacing:.28em;color:#fbbf24;margin-bottom:8px}
+.aqe-launch-card h1{margin:0;font-size:32px}
+.aqe-launch-card p{margin:12px 0 24px;color:#b8b8d4;line-height:1.6}
+.aqe-launch-actions{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.aqe-launch-actions a{display:flex;align-items:center;justify-content:center;min-height:44px;border-radius:12px;background:#1a1a2e;border:1px solid #252540;color:#f0f0f5;text-decoration:none;font-weight:700}
+.aqe-launch-actions a:first-child{background:linear-gradient(135deg,#e11d48,#8b5cf6);border-color:transparent}
+@media(max-width:640px){.aqe-launch-actions{grid-template-columns:1fr}.aqe-launch-card{padding:26px 20px}}

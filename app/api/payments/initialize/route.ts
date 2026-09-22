@@ -29,6 +29,8 @@ export async function POST(request: Request) {
     const requestedTier = normalizeTier(
       typeof body.tier === "string" ? body.tier : "basic",
     );
+    const paymentKind = String(body.kind ?? body.paymentKind ?? "wallet_deposit").trim().toLowerCase();
+
 
     if (!Number.isFinite(amount) || amount <= 0) {
       return NextResponse.json(
@@ -44,7 +46,7 @@ export async function POST(request: Request) {
       );
     }
 
-    if (requestedTier !== "basic") {
+    if (paymentKind === "membership_upgrade" || requestedTier !== "basic") {
       const client = createServerSupabaseClient();
       const configured = client
         ? await client
@@ -87,6 +89,7 @@ export async function POST(request: Request) {
         source: "aqe-payment-init",
         origin: "server",
         requestedTier,
+        paymentKind,
       },
     });
 

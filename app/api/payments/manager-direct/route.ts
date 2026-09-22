@@ -27,6 +27,8 @@ export async function POST(request: Request) {
     const requestedTier = normalizeTier(
       typeof body.tier === "string" ? body.tier : "basic",
     );
+    const paymentKind = String(body.kind ?? body.paymentKind ?? "wallet_deposit").trim().toLowerCase();
+
     if (
       !Number.isFinite(amount) ||
       amount <= 0 ||
@@ -42,7 +44,7 @@ export async function POST(request: Request) {
       );
     }
 
-    if (requestedTier !== "basic") {
+    if (paymentKind === "membership_upgrade" || requestedTier !== "basic") {
       const client = createServerSupabaseClient();
       const configured = client
         ? await client
@@ -86,6 +88,7 @@ export async function POST(request: Request) {
         paymentMethod: "AQE_MANAGER",
         senderDetails: body.senderDetails ?? null,
         requestedTier,
+        paymentKind,
       },
     });
     if (!order.ok) return NextResponse.json(order, { status: 500 });
