@@ -13,6 +13,17 @@ export type ProfileRecord = {
   location?: string;
   category?: string;
   services?: string[];
+  contentCategories?: string[];
+  age?: number;
+  gender?: string;
+  pronouns?: string;
+  headline?: string;
+  languages?: string[];
+  area?: string;
+  availability?: string;
+  visibility?: string;
+  socialPlatforms?: Record<string, string>;
+  contactMethods?: Record<string, string>;
   tier: ProfileTier;
   verificationStatus:
     | "unverified"
@@ -35,6 +46,18 @@ export function createProfileRecord({
   country,
   location,
   category,
+  services,
+  contentCategories,
+  age,
+  gender,
+  pronouns,
+  headline,
+  languages,
+  area,
+  availability,
+  visibility,
+  socialPlatforms,
+  contactMethods,
 }: {
   userId: string;
   displayName: string;
@@ -88,6 +111,17 @@ export async function persistProfileRecord(profile: ProfileRecord) {
       location: profile.location ?? null,
       category: profile.category ?? null,
       services: profile.services ?? [],
+      content_categories: profile.contentCategories ?? [],
+      age: profile.age ?? null,
+      gender: profile.gender ?? null,
+      pronouns: profile.pronouns ?? null,
+      headline: profile.headline ?? null,
+      languages: profile.languages ?? [],
+      area: profile.area ?? null,
+      availability: profile.availability ?? null,
+      visibility: profile.visibility ?? "public",
+      social_platforms: profile.socialPlatforms ?? {},
+      contact_methods: profile.contactMethods ?? {},
       tier: profile.tier,
       verification_status: profile.verificationStatus,
       avatar_url: profile.profilePhotoId ?? null,
@@ -174,6 +208,17 @@ export async function getProfileByUserId(userId: string) {
         location: data.location ?? undefined,
         category: data.category ?? undefined,
         services: Array.isArray(data.services) ? data.services : undefined,
+        contentCategories: Array.isArray(data.content_categories) ? data.content_categories : undefined,
+        age: data.age ?? undefined,
+        gender: data.gender ?? undefined,
+        pronouns: data.pronouns ?? undefined,
+        headline: data.headline ?? undefined,
+        languages: Array.isArray(data.languages) ? data.languages : undefined,
+        area: data.area ?? undefined,
+        availability: data.availability ?? undefined,
+        visibility: data.visibility ?? undefined,
+        socialPlatforms: data.social_platforms ?? undefined,
+        contactMethods: data.contact_methods ?? undefined,
         tier: (data.tier as ProfileTier) ?? "basic",
         verificationStatus:
           (data.verification_status as ProfileRecord["verificationStatus"]) ??
