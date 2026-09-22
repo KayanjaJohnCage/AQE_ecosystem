@@ -68,6 +68,18 @@ export function createProfileRecord({
   country?: string;
   location?: string;
   category?: string;
+  services?: string[];
+  contentCategories?: string[];
+  age?: number;
+  gender?: string;
+  pronouns?: string;
+  headline?: string;
+  languages?: string[];
+  area?: string;
+  availability?: string;
+  visibility?: string;
+  socialPlatforms?: Record<string, string>;
+  contactMethods?: Record<string, string>;
 }): { ok: boolean; profile?: ProfileRecord; reason?: string } {
   if (!userId || !displayName) {
     return { ok: false, reason: "User ID and display name are required." };
@@ -86,6 +98,18 @@ export function createProfileRecord({
       country,
       location,
       category,
+      services,
+      contentCategories,
+      age,
+      gender,
+      pronouns,
+      headline,
+      languages,
+      area,
+      availability,
+      visibility,
+      socialPlatforms,
+      contactMethods,
       tier,
       verificationStatus,
       createdAt: now,
