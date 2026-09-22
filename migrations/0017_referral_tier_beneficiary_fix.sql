@@ -28,7 +28,7 @@ BEGIN
   SELECT * INTO v_order FROM public.payment_orders WHERE id = p_order_id FOR UPDATE;
   IF NOT FOUND THEN RAISE EXCEPTION 'Payment order not found'; END IF;
   IF v_order.status = 'confirmed' THEN RETURN jsonb_build_object('alreadyConfirmed', true, 'status', 'confirmed'); END IF;
-  IF v_order.status NOT IN ('initiated','pending') THEN RAISE EXCEPTION 'Payment order cannot be confirmed from status %', v_order.status); END IF;
+  IF v_order.status NOT IN ('initiated','pending') THEN RAISE EXCEPTION 'Payment order cannot be confirmed from status %', v_order.status; END IF;
 
   v_tier := COALESCE(v_order.metadata->>'requestedTier', 'basic');
   IF v_tier NOT IN ('basic','premium','vip') THEN v_tier := 'basic'; END IF;
