@@ -637,7 +637,7 @@ export default function ManagerPage() {
                 </section>
               </div>
             </>
-          ) : active === "Global Settings" ? (
+          ) : active === "Global Settings" || active === "Customer Experience" ? (
             <section className="manager-card manager-detail">
               <div className="manager-table-header">
                 <h3>Platform settings</h3>
