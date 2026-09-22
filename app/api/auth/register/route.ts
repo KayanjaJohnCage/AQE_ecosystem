@@ -22,6 +22,11 @@ export async function POST(request: Request) {
     const city = String(body.city ?? "").trim();
     const bio = String(body.bio ?? "").trim();
     const category = String(body.category ?? "client").trim();
+    const services = Array.isArray(body.services) ? body.services.filter((item: unknown) => typeof item === "string").map((item: string) => item.trim()).filter(Boolean) : [];
+    const contentCategories = Array.isArray(body.contentCategories) ? body.contentCategories.filter((item: unknown) => typeof item === "string").map((item: string) => item.trim().toLowerCase()).filter(Boolean) : [];
+    const socialPlatforms = body.socialPlatforms && typeof body.socialPlatforms === "object" ? body.socialPlatforms : (socialHandle ? { primary: socialHandle } : {});
+    const contactMethods = body.contactMethods && typeof body.contactMethods === "object" ? body.contactMethods : (contactPreference ? { preference: contactPreference } : {});
+    const ageValue = Number(body.age);
     const requestedTier = normalizeTier(
       typeof body.requestedTier === "string" ? body.requestedTier : "basic",
     );
@@ -102,6 +107,18 @@ export async function POST(request: Request) {
       location: city,
       bio,
       category,
+      services,
+      contentCategories,
+      age: Number.isFinite(ageValue) ? ageValue : undefined,
+      gender: String(body.gender ?? "").trim(),
+      pronouns: String(body.pronouns ?? "").trim(),
+      headline: String(body.headline ?? "").trim(),
+      languages: Array.isArray(body.languages) ? body.languages.filter((item: unknown) => typeof item === "string") : String(body.languages ?? "").split(",").map((item: string) => item.trim()).filter(Boolean),
+      area: String(body.area ?? "").trim(),
+      availability: String(body.availability ?? "").trim(),
+      visibility: String(body.visibility ?? "public").trim(),
+      socialPlatforms,
+      contactMethods,
       tier: "basic",
       verificationStatus: "pending",
     });
