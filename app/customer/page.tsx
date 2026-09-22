@@ -1706,15 +1706,29 @@ export default function CustomerPage() {
               ["basic", "Basic", "Base membership with public exploration and account access.", "basic"],
               ["premium", "Premium", "Independent profile, messages, comments, and daily chat allowance.", "premium"],
               ["vip", "VIP", "Everything: asset room, store, groups, voice, and booking tools.", "vip"],
-            ].map(([value, label, description, tone]) => <div className="aqe-upgrade-option" key={value}>
-              <div><strong>{label}</strong><span>{description}</span></div>
+            ].map(([value, label, description, tone]) => {
+              const tierKey = value as "basic" | "premium" | "vip";
+              const originalPrice = platformSettings.pricing.originalTierPrices[tierKey];
+              const currentPrice = platformSettings.pricing.currentTierPrices[tierKey];
+              const promoLabel = platformSettings.pricing.promotionalLabels[tierKey];
+              return <div className="aqe-upgrade-option" key={value}>
+              <div>
+                <strong>{label}</strong>
+                <span>{description}</span>
+                <small>
+                  <s>{platformSettings.walletCurrency} {Number(originalPrice).toLocaleString()}</s>{" "}
+                  <b>{platformSettings.walletCurrency} {Number(currentPrice).toLocaleString()}</b>{" "}
+                  {platformSettings.pricing.promotionalLabels && <em>{promoLabel}</em>}
+                </small>
+              </div>
               <button type="button" className={tone} onClick={() => {
                 setRegistrationTier(value as "basic" | "premium" | "vip");
                 setUpgradeOpen(false);
                 if (authenticated) window.location.href = "/payments";
                 else { setAuthMode("register"); setAuthOpen(true); }
               }}>{data.tier === value ? "Current" : "Select"}</button>
-            </div>)}
+            </div>;
+            })}
           </div>
         </div>
       ) : null}
