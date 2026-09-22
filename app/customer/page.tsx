@@ -84,56 +84,6 @@ const customerViewByRoute: Record<string, CustomerView> = Object.fromEntries(
   Object.entries(customerRouteByView).map(([view, route]) => [route, view]),
 ) as Record<string, CustomerView>;
 
-const profileCards: ProfileCard[] = [
-  {
-    name: "Nia A.",
-    city: "Kampala",
-    tag: "Creative Director",
-    status: "Open to collab",
-  },
-  {
-    name: "Ayo D.",
-    city: "Nairobi",
-    tag: "Event Host",
-    status: "Available this week",
-  },
-  {
-    name: "Tariq M.",
-    city: "Kigali",
-    tag: "Wellness Coach",
-    status: "Premium member",
-  },
-];
-
-const messageRows = [
-  { user: "Amina", preview: "Your profile is trending this week", time: "2m" },
-  { user: "Derrick", preview: "Booked a QC session for Friday", time: "14m" },
-  { user: "Sanyu", preview: "Shared a new media drop", time: "1h" },
-];
-
-const bookingRows = [
-  { title: "Creative strategy call", date: "Thu, 10:00", amount: "UGX 120K" },
-  { title: "Brand photo session", date: "Sat, 13:30", amount: "UGX 220K" },
-  { title: "Private community room", date: "Sun, 18:00", amount: "UGX 85K" },
-];
-
-const productRows: ProductRow[] = [
-  {
-    id: "demo-1",
-    title: "Premium spotlight bundle",
-    price: 45,
-    currency: "USD",
-    inventory: 8,
-  },
-  {
-    id: "demo-2",
-    title: "Community event ticket",
-    price: 30,
-    currency: "USD",
-    inventory: 24,
-  },
-];
-
 export default function CustomerPage() {
   const pathname = usePathname();
   const router = useRouter();
@@ -179,9 +129,9 @@ export default function CustomerPage() {
   const [selectedProfile, setSelectedProfile] = useState<ProfileCard | null>(
     null,
   );
-  const [profiles, setProfiles] = useState<ProfileCard[]>(profileCards);
+  const [profiles, setProfiles] = useState<ProfileCard[]>([]);
   const [profileActionMessage, setProfileActionMessage] = useState("");
-  const [messages, setMessages] = useState<MessageRow[]>(messageRows);
+  const [messages, setMessages] = useState<MessageRow[]>([]);
   const [messageRecipientId, setMessageRecipientId] = useState("");
   const [messageBody, setMessageBody] = useState("");
   const [messageFeedback, setMessageFeedback] = useState("");
@@ -193,13 +143,33 @@ export default function CustomerPage() {
   const [commentProfileId, setCommentProfileId] = useState("");
   const [commentBody, setCommentBody] = useState("");
   const [commentFeedback, setCommentFeedback] = useState("");
-  const [bookings, setBookings] = useState<BookingRow[]>(bookingRows);
-  const [products, setProducts] = useState<ProductRow[]>(productRows);
+  const [bookings, setBookings] = useState<BookingRow[]>([]);
+  const [products, setProducts] = useState<ProductRow[]>([]);
   const [platformSettings, setPlatformSettings] = useState({
     walletCurrency: "UGX",
     qcExchangeRate: 1000,
     about: "",
     contact: "",
+    tierPrices: { basic: 65000, premium: 150000, vip: 250000 },
+    pricing: {
+      originalTierPrices: { basic: 125000, premium: 250000, vip: 500000 },
+      currentTierPrices: { basic: 65000, premium: 150000, vip: 250000 },
+      promotionalLabels: { basic: "48% OFF", premium: "40% OFF", vip: "50% OFF" },
+      welcomeBonus: 3000,
+      deduction: { basic: 15000, premium: 30000, vip: 60000 },
+      teamLeaderRenewalCommission: { basic: 2500, premium: 5000 },
+      vipSalary: 10000,
+      vipSalaryDay: 20,
+      withdrawalBefore20th: false,
+    },
+    customerContent: {
+      home: {} as Record<string, unknown>,
+      rewards: {} as Record<string, unknown>,
+      campaign: {} as Record<string, unknown>,
+      raffle: {} as Record<string, unknown>,
+      promotions: {} as Record<string, unknown>,
+      vipContent: {} as Record<string, unknown>,
+    },
   });
   const [referral, setReferral] = useState({
     referralCode: "",
@@ -489,7 +459,7 @@ export default function CustomerPage() {
   async function runProfileAction(action: "message" | "booking") {
     if (!selectedProfile?.userId) {
       setProfileActionMessage(
-        "This demo profile is not connected to a live account yet.",
+        "This profile is not currently available for live actions.",
       );
       return;
     }
@@ -843,14 +813,10 @@ export default function CustomerPage() {
         <div className="client-hero aqe-original-hero">
           <div className="aqe-hero-orb" />
           <div className="hero-kicker">
-            VERIFIED PROFESSIONALS · SECURE PAYMENTS · DISCREET EXPERIENCE
+            {String(platformSettings.customerContent.home.heroKicker || "VERIFIED PROFESSIONALS · SECURE PAYMENTS · DISCREET EXPERIENCE")}
           </div>
-          <h1>
-            Discover
-            <br />
-            Independence
-          </h1>
-          <p>Verified professionals. Secure payments. Discreet experience.</p>
+          <h1>{String(platformSettings.customerContent.home.heroTitle || "Discover Independence")}</h1>
+          <p>{String(platformSettings.customerContent.home.heroDescription || "Verified professionals. Secure payments. Discreet experience.")}</p>
           {false && <button
             className="primary-button"
             type="button"
@@ -1433,15 +1399,15 @@ export default function CustomerPage() {
             <div className="aqe-rewards-screen">
               <div className="section-heading">
                 <div>
-                  <span className="eyebrow">VIP ECOSYSTEM</span>
-                  <h2>Rewards</h2>
+                  <span className="eyebrow">{String(platformSettings.customerContent.rewards.eyebrow || "VIP ECOSYSTEM")}</span>
+                  <h2>{String(platformSettings.customerContent.rewards.title || "Rewards")}</h2>
                 </div>
                 <span className="status-pill">{data.qcBalance} QC</span>
               </div>
               <div className="feature-list">
                 <div>
-                  <strong>Daily claim</strong>
-                  <span>Collect your daily QC reward.</span>
+                  <strong>{String(platformSettings.customerContent.rewards.dailyClaimTitle || "Daily claim")}</strong>
+                  <span>{String(platformSettings.customerContent.rewards.dailyClaimDescription || "Collect your daily QC reward.")}</span>
                   <button
                     type="button"
                     onClick={claimDailyQc}
@@ -1450,15 +1416,15 @@ export default function CustomerPage() {
                   </button>
                 </div>
                 <div>
-                  <strong>1 Week VIP</strong>
-                  <span>Redeem rewards after eligibility.</span>
+                  <strong>{String(platformSettings.customerContent.rewards.vipRewardTitle || "1 Week VIP")}</strong>
+                  <span>{String(platformSettings.customerContent.rewards.vipRewardDescription || "Redeem rewards after eligibility.")}</span>
                   <button type="button" onClick={() => navigateTo("vip")}>
                     View VIP
                   </button>
                 </div>
                 <div>
-                  <strong>Raffle</strong>
-                  <span>Use QC for the active draw.</span>
+                  <strong>{String(platformSettings.customerContent.rewards.raffleTitle || "Raffle")}</strong>
+                  <span>{String(platformSettings.customerContent.rewards.raffleDescription || "Use QC for the active draw.")}</span>
                   <button type="button" onClick={() => navigateTo("raffle")}>
                     Open raffle
                   </button>
@@ -1740,15 +1706,29 @@ export default function CustomerPage() {
               ["basic", "Basic", "Base membership with public exploration and account access.", "basic"],
               ["premium", "Premium", "Independent profile, messages, comments, and daily chat allowance.", "premium"],
               ["vip", "VIP", "Everything: asset room, store, groups, voice, and booking tools.", "vip"],
-            ].map(([value, label, description, tone]) => <div className="aqe-upgrade-option" key={value}>
-              <div><strong>{label}</strong><span>{description}</span></div>
+            ].map(([value, label, description, tone]) => {
+              const tierKey = value as "basic" | "premium" | "vip";
+              const originalPrice = platformSettings.pricing.originalTierPrices[tierKey];
+              const currentPrice = platformSettings.pricing.currentTierPrices[tierKey];
+              const promoLabel = platformSettings.pricing.promotionalLabels[tierKey];
+              return <div className="aqe-upgrade-option" key={value}>
+              <div>
+                <strong>{label}</strong>
+                <span>{description}</span>
+                <small>
+                  <s>{platformSettings.walletCurrency} {Number(originalPrice).toLocaleString()}</s>{" "}
+                  <b>{platformSettings.walletCurrency} {Number(currentPrice).toLocaleString()}</b>{" "}
+                  {platformSettings.pricing.promotionalLabels && <em>{promoLabel}</em>}
+                </small>
+              </div>
               <button type="button" className={tone} onClick={() => {
                 setRegistrationTier(value as "basic" | "premium" | "vip");
                 setUpgradeOpen(false);
                 if (authenticated) window.location.href = "/payments";
                 else { setAuthMode("register"); setAuthOpen(true); }
               }}>{data.tier === value ? "Current" : "Select"}</button>
-            </div>)}
+            </div>;
+            })}
           </div>
         </div>
       ) : null}

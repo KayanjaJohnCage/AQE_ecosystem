@@ -40,6 +40,25 @@ type PlatformSettings = {
   referralRates: { direct: number; indirect: number };
   about: string;
   contact: string;
+  pricing: {
+    originalTierPrices: { basic: number; premium: number; vip: number };
+    currentTierPrices: { basic: number; premium: number; vip: number };
+    promotionalLabels: { basic: string; premium: string; vip: string };
+    welcomeBonus: number;
+    deduction: { basic: number; premium: number; vip: number };
+    teamLeaderRenewalCommission: { basic: number; premium: number; vip?: number };
+    vipSalary: number;
+    vipSalaryDay: number;
+    withdrawalBefore20th: boolean;
+  };
+  customerContent: {
+    home: Record<string, unknown>;
+    rewards: Record<string, unknown>;
+    campaign: Record<string, unknown>;
+    raffle: Record<string, unknown>;
+    promotions: Record<string, unknown>;
+    vipContent: Record<string, unknown>;
+  };
 };
 
 const navGroups = [
@@ -87,6 +106,7 @@ const navGroups = [
       "Tier Rules",
       "VIP Salary",
       "Global Settings",
+      "Customer Experience",
     ],
   },
 ];
@@ -166,13 +186,32 @@ export default function ManagerPage() {
     instructions: "",
   });
   const [settings, setSettings] = useState<PlatformSettings>({
-    tierPrices: { basic: 125000, premium: 250000, vip: 500000 },
+    tierPrices: { basic: 65000, premium: 150000, vip: 250000 },
     renewalPrices: { basic: 2500, premium: 5000, vip: 8500 },
     walletCurrency: "UGX",
     qcExchangeRate: 1000,
     referralRates: { direct: 0.1, indirect: 0.05 },
     about: "",
     contact: "",
+    pricing: {
+      originalTierPrices: { basic: 125000, premium: 250000, vip: 500000 },
+      currentTierPrices: { basic: 65000, premium: 150000, vip: 250000 },
+      promotionalLabels: { basic: "48% OFF", premium: "40% OFF", vip: "50% OFF" },
+      welcomeBonus: 3000,
+      deduction: { basic: 15000, premium: 30000, vip: 60000 },
+      teamLeaderRenewalCommission: { basic: 2500, premium: 5000 },
+      vipSalary: 10000,
+      vipSalaryDay: 20,
+      withdrawalBefore20th: false,
+    },
+    customerContent: {
+      home: {},
+      rewards: {},
+      campaign: {},
+      raffle: {},
+      promotions: {},
+      vipContent: {},
+    },
   });
 
   useEffect(() => {
@@ -598,7 +637,7 @@ export default function ManagerPage() {
                 </section>
               </div>
             </>
-          ) : active === "Global Settings" ? (
+          ) : active === "Global Settings" || active === "Customer Experience" ? (
             <section className="manager-card manager-detail">
               <div className="manager-table-header">
                 <h3>Platform settings</h3>
@@ -745,6 +784,92 @@ export default function ManagerPage() {
                     rows={3}
                   />
                 </label>
+                <h4>Promotion pricing</h4>
+                <p className="manager-subtitle">
+                  Original prices, live promotional prices, and customer-facing promotion labels are manager controlled.
+                </p>
+                {(["basic", "premium", "vip"] as const).map((tier) => (
+                  <div key={`promo-${tier}`} className="manager-two-column">
+                    <label>
+                      {tier.toUpperCase()} original price
+                      <input type="number" min="0" value={settings.pricing.originalTierPrices[tier]}
+                        onChange={(event) => setSettings({ ...settings, pricing: { ...settings.pricing, originalTierPrices: { ...settings.pricing.originalTierPrices, [tier]: Number(event.target.value) } } })} />
+                    </label>
+                    <label>
+                      {tier.toUpperCase()} promotional price
+                      <input type="number" min="0" value={settings.pricing.currentTierPrices[tier]}
+                        onChange={(event) => setSettings({ ...settings, tierPrices: { ...settings.tierPrices, [tier]: Number(event.target.value) }, pricing: { ...settings.pricing, currentTierPrices: { ...settings.pricing.currentTierPrices, [tier]: Number(event.target.value) } } })} />
+                    </label>
+                    <label>
+                      Customer promotion label
+                      <input value={settings.pricing.promotionalLabels[tier]}
+                        onChange={(event) => setSettings({ ...settings, pricing: { ...settings.pricing, promotionalLabels: { ...settings.pricing.promotionalLabels, [tier]: event.target.value } } })} />
+                    </label>
+                  </div>
+                ))}
+                <label>
+                  Welcome bonus
+                  <input type="number" min="0" value={settings.pricing.welcomeBonus}
+                    onChange={(event) => setSettings({ ...settings, pricing: { ...settings.pricing, welcomeBonus: Number(event.target.value) } })} />
+                </label>
+                <label>
+                  VIP salary
+                  <input type="number" min="0" value={settings.pricing.vipSalary}
+                    onChange={(event) => setSettings({ ...settings, pricing: { ...settings.pricing, vipSalary: Number(event.target.value) } })} />
+                </label>
+                <label>
+                  VIP salary day
+                  <input type="number" min="1" max="31" value={settings.pricing.vipSalaryDay}
+                    onChange={(event) => setSettings({ ...settings, pricing: { ...settings.pricing, vipSalaryDay: Number(event.target.value) } })} />
+                </label>
+                <label>
+                  Allow VIP withdrawal before the 20th
+                  <input type="checkbox" checked={settings.pricing.withdrawalBefore20th}
+                    onChange={(event) => setSettings({ ...settings, pricing: { ...settings.pricing, withdrawalBefore20th: event.target.checked } })} />
+                </label>
+
+                <h4>Customer-facing Rewards / Campaign / Raffle</h4>
+                <label>
+                  Rewards title
+                  <input value={String(settings.customerContent.rewards.title ?? "")}
+                    onChange={(event) => setSettings({ ...settings, customerContent: { ...settings.customerContent, rewards: { ...settings.customerContent.rewards, title: event.target.value } } })} />
+                </label>
+                <label>
+                  Daily reward description
+                  <textarea rows={2} value={String(settings.customerContent.rewards.dailyClaimDescription ?? "")}
+                    onChange={(event) => setSettings({ ...settings, customerContent: { ...settings.customerContent, rewards: { ...settings.customerContent.rewards, dailyClaimDescription: event.target.value } } })} />
+                </label>
+                <label>
+                  Campaign title
+                  <input value={String(settings.customerContent.campaign.title ?? "")}
+                    onChange={(event) => setSettings({ ...settings, customerContent: { ...settings.customerContent, campaign: { ...settings.customerContent.campaign, title: event.target.value } } })} />
+                </label>
+                <label>
+                  Campaign description
+                  <textarea rows={2} value={String(settings.customerContent.campaign.description ?? "")}
+                    onChange={(event) => setSettings({ ...settings, customerContent: { ...settings.customerContent, campaign: { ...settings.customerContent.campaign, description: event.target.value } } })} />
+                </label>
+                <label>
+                  Raffle title
+                  <input value={String(settings.customerContent.raffle.title ?? "")}
+                    onChange={(event) => setSettings({ ...settings, customerContent: { ...settings.customerContent, raffle: { ...settings.customerContent.raffle, title: event.target.value } } })} />
+                </label>
+                <label>
+                  Raffle description
+                  <textarea rows={2} value={String(settings.customerContent.raffle.description ?? "")}
+                    onChange={(event) => setSettings({ ...settings, customerContent: { ...settings.customerContent, raffle: { ...settings.customerContent.raffle, description: event.target.value } } })} />
+                </label>
+                <label>
+                  VIP content title
+                  <input value={String(settings.customerContent.vipContent.title ?? "")}
+                    onChange={(event) => setSettings({ ...settings, customerContent: { ...settings.customerContent, vipContent: { ...settings.customerContent.vipContent, title: event.target.value } } })} />
+                </label>
+                <label>
+                  VIP content description
+                  <textarea rows={2} value={String(settings.customerContent.vipContent.description ?? "")}
+                    onChange={(event) => setSettings({ ...settings, customerContent: { ...settings.customerContent, vipContent: { ...settings.customerContent.vipContent, description: event.target.value } } })} />
+                </label>
+
                 <button type="submit" className="manager-action-button">
                   Save platform settings
                 </button>
