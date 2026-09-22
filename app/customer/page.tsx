@@ -84,56 +84,6 @@ const customerViewByRoute: Record<string, CustomerView> = Object.fromEntries(
   Object.entries(customerRouteByView).map(([view, route]) => [route, view]),
 ) as Record<string, CustomerView>;
 
-const profileCards: ProfileCard[] = [
-  {
-    name: "Nia A.",
-    city: "Kampala",
-    tag: "Creative Director",
-    status: "Open to collab",
-  },
-  {
-    name: "Ayo D.",
-    city: "Nairobi",
-    tag: "Event Host",
-    status: "Available this week",
-  },
-  {
-    name: "Tariq M.",
-    city: "Kigali",
-    tag: "Wellness Coach",
-    status: "Premium member",
-  },
-];
-
-const messageRows = [
-  { user: "Amina", preview: "Your profile is trending this week", time: "2m" },
-  { user: "Derrick", preview: "Booked a QC session for Friday", time: "14m" },
-  { user: "Sanyu", preview: "Shared a new media drop", time: "1h" },
-];
-
-const bookingRows = [
-  { title: "Creative strategy call", date: "Thu, 10:00", amount: "UGX 120K" },
-  { title: "Brand photo session", date: "Sat, 13:30", amount: "UGX 220K" },
-  { title: "Private community room", date: "Sun, 18:00", amount: "UGX 85K" },
-];
-
-const productRows: ProductRow[] = [
-  {
-    id: "demo-1",
-    title: "Premium spotlight bundle",
-    price: 45,
-    currency: "USD",
-    inventory: 8,
-  },
-  {
-    id: "demo-2",
-    title: "Community event ticket",
-    price: 30,
-    currency: "USD",
-    inventory: 24,
-  },
-];
-
 export default function CustomerPage() {
   const pathname = usePathname();
   const router = useRouter();
@@ -179,9 +129,9 @@ export default function CustomerPage() {
   const [selectedProfile, setSelectedProfile] = useState<ProfileCard | null>(
     null,
   );
-  const [profiles, setProfiles] = useState<ProfileCard[]>(profileCards);
+  const [profiles, setProfiles] = useState<ProfileCard[]>([]);
   const [profileActionMessage, setProfileActionMessage] = useState("");
-  const [messages, setMessages] = useState<MessageRow[]>(messageRows);
+  const [messages, setMessages] = useState<MessageRow[]>([]);
   const [messageRecipientId, setMessageRecipientId] = useState("");
   const [messageBody, setMessageBody] = useState("");
   const [messageFeedback, setMessageFeedback] = useState("");
@@ -193,8 +143,8 @@ export default function CustomerPage() {
   const [commentProfileId, setCommentProfileId] = useState("");
   const [commentBody, setCommentBody] = useState("");
   const [commentFeedback, setCommentFeedback] = useState("");
-  const [bookings, setBookings] = useState<BookingRow[]>(bookingRows);
-  const [products, setProducts] = useState<ProductRow[]>(productRows);
+  const [bookings, setBookings] = useState<BookingRow[]>([]);
+  const [products, setProducts] = useState<ProductRow[]>([]);
   const [platformSettings, setPlatformSettings] = useState({
     walletCurrency: "UGX",
     qcExchangeRate: 1000,
@@ -509,7 +459,7 @@ export default function CustomerPage() {
   async function runProfileAction(action: "message" | "booking") {
     if (!selectedProfile?.userId) {
       setProfileActionMessage(
-        "This demo profile is not connected to a live account yet.",
+        "This profile is not currently available for live actions.",
       );
       return;
     }
