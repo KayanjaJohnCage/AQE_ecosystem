@@ -21,6 +21,16 @@ type ProfileCard = {
   status: string;
   tier?: string;
   bio?: string;
+  age?: number | null;
+  gender?: string;
+  services?: string[];
+  contentCategories?: string[];
+  socialPlatforms?: Record<string, string>;
+  contactMethods?: Record<string, string>;
+  location?: string;
+  area?: string;
+  headline?: string;
+  languages?: string[];
 };
 
 type MessageRow = {
@@ -203,6 +213,7 @@ export default function CustomerPage() {
   const [referralCode, setReferralCode] = useState("");
   const [profileQuery, setProfileQuery] = useState("");
   const [homeFilter, setHomeFilter] = useState("All");
+  const [profileFilters, setProfileFilters] = useState({ category: "", service: "", location: "", ageMin: "", ageMax: "", gender: "" });
   const [isBooting, setIsBooting] = useState(true);
   const [ageConfirmed, setAgeConfirmed] = useState(false);
   const [birthDay, setBirthDay] = useState("");
@@ -635,15 +646,19 @@ export default function CustomerPage() {
 
   const visibleProfiles = profiles.filter((profile) => {
     const query = profileQuery.trim().toLowerCase();
-    if (!query) return true;
-    return `${profile.name} ${profile.city} ${profile.tag}`
-      .toLowerCase()
-      .includes(query);
+    const haystack = [profile.name, profile.city, profile.location, profile.area, profile.tag, profile.status, profile.tier, profile.gender, profile.bio, profile.headline, ...(profile.services || []), ...(profile.contentCategories || [])].filter(Boolean).join(" ").toLowerCase();
+    if (query && !haystack.includes(query)) return false;
+    if (profileFilters.category && !(profile.contentCategories || []).some((item) => item.toLowerCase() === profileFilters.category.toLowerCase())) return false;
+    if (profileFilters.service && !(profile.services || []).some((item) => item.toLowerCase().includes(profileFilters.service.toLowerCase()))) return false;
+    if (profileFilters.location && ![profile.location, profile.city, profile.area].filter(Boolean).some((item) => String(item).toLowerCase().includes(profileFilters.location.toLowerCase()))) return false;
+    if (profileFilters.gender && String(profile.gender || "").toLowerCase() !== profileFilters.gender.toLowerCase()) return false;
+    if (profileFilters.ageMin && Number(profile.age || 0) < Number(profileFilters.ageMin)) return false;
+    if (profileFilters.ageMax && Number(profile.age || 0) > Number(profileFilters.ageMax)) return false;
+    return true;
   });
   const featuredProfiles = profiles.filter((profile) => {
     if (homeFilter === "All") return true;
-    const haystack =
-      `${profile.name} ${profile.city} ${profile.tag} ${profile.status} ${profile.tier}`.toLowerCase();
+    const haystack = [profile.name, profile.city, profile.location, profile.area, profile.tag, profile.status, profile.tier, profile.gender, ...(profile.services || []), ...(profile.contentCategories || [])].filter(Boolean).join(" ").toLowerCase();
     return haystack.includes(homeFilter.toLowerCase());
   });
 
@@ -946,32 +961,31 @@ export default function CustomerPage() {
 
           {view === "discover" && (
             <div className="aqe-explore-results">
-              <input
-                className="directory-search"
-                value={profileQuery}
-                onChange={(event) => setProfileQuery(event.target.value)}
-                placeholder="Search people, places, or roles"
-                aria-label="Search profiles"
-              />
+              <div className="aqe-explore-filters">
+                <input className="directory-search" value={profileQuery} onChange={(event) => setProfileQuery(event.target.value)} placeholder="Search name, service, content, location..." aria-label="Search profiles" />
+                <div className="aqe-filter-row">
+                  {["", "lesbian", "gay", "bisexual", "trans", "queer"].map((category) => (
+                    <button type="button" key={category || "all"} className={profileFilters.category === category ? "active" : ""} onClick={() => setProfileFilters((current) => ({ ...current, category }))}>
+                      {category ? category.charAt(0).toUpperCase() + category.slice(1) : "All content"}
+                    </button>
+                  ))}
+                </div>
+                <div className="aqe-filter-controls">
+                  <input value={profileFilters.service} onChange={(e) => setProfileFilters(c => ({...c, service:e.target.value}))} placeholder="Service" />
+                  <input value={profileFilters.location} onChange={(e) => setProfileFilters(c => ({...c, location:e.target.value}))} placeholder="Location" />
+                  <input value={profileFilters.ageMin} onChange={(e) => setProfileFilters(c => ({...c, ageMin:e.target.value}))} type="number" min="18" placeholder="Min age" />
+                  <input value={profileFilters.ageMax} onChange={(e) => setProfileFilters(c => ({...c, ageMax:e.target.value}))} type="number" min="18" placeholder="Max age" />
+                  <select value={profileFilters.gender} onChange={(e) => setProfileFilters(c => ({...c, gender:e.target.value}))}><option value="">All genders</option><option value="female">Female</option><option value="male">Male</option><option value="non-binary">Non-binary</option><option value="other">Other</option></select>
+                </div>
+              </div>
               {visibleProfiles.map((profile) => (
-                <article
-                  key={profile.name}
-                  className="prototype-profile-card aqe-explore-card"
-                  onClick={() => setSelectedProfile(profile)}
-                  onKeyDown={(event) => {
-                    if (event.key === "Enter" || event.key === " ") {
-                      event.preventDefault();
-                      setSelectedProfile(profile);
-                    }
-                  }}
-                  role="button"
-                  tabIndex={0}
-                >
+                <article key={profile.id || profile.userId || profile.name} className="prototype-profile-card aqe-explore-card" onClick={() => setSelectedProfile(profile)} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); setSelectedProfile(profile); } }} role="button" tabIndex={0}>
                   <div className="prototype-profile-image"><span className="prototype-profile-rating"><i className="fas fa-star" /> 4.8</span></div>
                   <div className="panel-copy">
-                    <strong>{profile.name}</strong>
-                    <span>{profile.tag}</span>
-                    <small>{profile.city}</small>
+                    <strong>{profile.name}{profile.age ? ", " + profile.age : ""}</strong>
+                    <span>{profile.contentCategories?.join(" · ") || profile.tag}</span>
+                    <small>{profile.services?.join(" · ") || "Services not listed"} · {profile.location || profile.city}</small>
+                    <small>{profile.gender || "Gender not listed"}{profile.bio ? " · " + profile.bio : ""}</small>
                   </div>
                   <div className="status-pill">{profile.status}</div>
                 </article>
