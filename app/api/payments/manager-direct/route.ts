@@ -42,7 +42,7 @@ export async function POST(request: Request) {
       );
     }
 
-    if (requestedTier !== "basic") {
+    {
       const client = createServerSupabaseClient();
       const configured = client
         ? await client
@@ -51,13 +51,13 @@ export async function POST(request: Request) {
             .eq("id", 1)
             .maybeSingle()
         : { data: null };
-      const prices = configured.data?.settings?.tierPrices ?? {
-        premium: 250000,
-        vip: 500000,
+      const settings = configured.data?.settings ?? {};
+      const prices = settings.pricing?.currentTierPrices ?? settings.tierPrices ?? {
+        basic: 65000,
+        premium: 150000,
+        vip: 250000,
       };
-      const expectedCurrency = String(
-        configured.data?.settings?.walletCurrency ?? "UGX",
-      ).toUpperCase();
+      const expectedCurrency = String(settings.walletCurrency ?? "UGX").toUpperCase();
       const expectedPrice = Number(prices[requestedTier]);
       if (
         !Number.isFinite(expectedPrice) ||
@@ -67,7 +67,7 @@ export async function POST(request: Request) {
         return NextResponse.json(
           {
             ok: false,
-            reason: `The ${requestedTier} upgrade must use ${expectedCurrency} ${expectedPrice.toLocaleString()}.`,
+            reason: `The ${requestedTier} payment must use ${expectedCurrency} ${expectedPrice.toLocaleString()}.`,
           },
           { status: 400 },
         );
