@@ -200,6 +200,26 @@ export default function CustomerPage() {
     qcExchangeRate: 1000,
     about: "",
     contact: "",
+    tierPrices: { basic: 65000, premium: 150000, vip: 250000 },
+    pricing: {
+      originalTierPrices: { basic: 125000, premium: 250000, vip: 500000 },
+      currentTierPrices: { basic: 65000, premium: 150000, vip: 250000 },
+      promotionalLabels: { basic: "48% OFF", premium: "40% OFF", vip: "50% OFF" },
+      welcomeBonus: 3000,
+      deduction: { basic: 15000, premium: 30000, vip: 60000 },
+      teamLeaderRenewalCommission: { basic: 2500, premium: 5000 },
+      vipSalary: 10000,
+      vipSalaryDay: 20,
+      withdrawalBefore20th: false,
+    },
+    customerContent: {
+      home: {} as Record<string, unknown>,
+      rewards: {} as Record<string, unknown>,
+      campaign: {} as Record<string, unknown>,
+      raffle: {} as Record<string, unknown>,
+      promotions: {} as Record<string, unknown>,
+      vipContent: {} as Record<string, unknown>,
+    },
   });
   const [referral, setReferral] = useState({
     referralCode: "",
@@ -843,14 +863,10 @@ export default function CustomerPage() {
         <div className="client-hero aqe-original-hero">
           <div className="aqe-hero-orb" />
           <div className="hero-kicker">
-            VERIFIED PROFESSIONALS · SECURE PAYMENTS · DISCREET EXPERIENCE
+            {String(platformSettings.customerContent.home.heroKicker || "VERIFIED PROFESSIONALS · SECURE PAYMENTS · DISCREET EXPERIENCE")}
           </div>
-          <h1>
-            Discover
-            <br />
-            Independence
-          </h1>
-          <p>Verified professionals. Secure payments. Discreet experience.</p>
+          <h1>{String(platformSettings.customerContent.home.heroTitle || "Discover Independence")}</h1>
+          <p>{String(platformSettings.customerContent.home.heroDescription || "Verified professionals. Secure payments. Discreet experience.")}</p>
           {false && <button
             className="primary-button"
             type="button"
@@ -1433,15 +1449,15 @@ export default function CustomerPage() {
             <div className="aqe-rewards-screen">
               <div className="section-heading">
                 <div>
-                  <span className="eyebrow">VIP ECOSYSTEM</span>
-                  <h2>Rewards</h2>
+                  <span className="eyebrow">{String(platformSettings.customerContent.rewards.eyebrow || "VIP ECOSYSTEM")}</span>
+                  <h2>{String(platformSettings.customerContent.rewards.title || "Rewards")}</h2>
                 </div>
                 <span className="status-pill">{data.qcBalance} QC</span>
               </div>
               <div className="feature-list">
                 <div>
-                  <strong>Daily claim</strong>
-                  <span>Collect your daily QC reward.</span>
+                  <strong>{String(platformSettings.customerContent.rewards.dailyClaimTitle || "Daily claim")}</strong>
+                  <span>{String(platformSettings.customerContent.rewards.dailyClaimDescription || "Collect your daily QC reward.")}</span>
                   <button
                     type="button"
                     onClick={claimDailyQc}
@@ -1450,15 +1466,15 @@ export default function CustomerPage() {
                   </button>
                 </div>
                 <div>
-                  <strong>1 Week VIP</strong>
-                  <span>Redeem rewards after eligibility.</span>
+                  <strong>{String(platformSettings.customerContent.rewards.vipRewardTitle || "1 Week VIP")}</strong>
+                  <span>{String(platformSettings.customerContent.rewards.vipRewardDescription || "Redeem rewards after eligibility.")}</span>
                   <button type="button" onClick={() => navigateTo("vip")}>
                     View VIP
                   </button>
                 </div>
                 <div>
-                  <strong>Raffle</strong>
-                  <span>Use QC for the active draw.</span>
+                  <strong>{String(platformSettings.customerContent.rewards.raffleTitle || "Raffle")}</strong>
+                  <span>{String(platformSettings.customerContent.rewards.raffleDescription || "Use QC for the active draw.")}</span>
                   <button type="button" onClick={() => navigateTo("raffle")}>
                     Open raffle
                   </button>
