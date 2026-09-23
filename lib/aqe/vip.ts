@@ -30,6 +30,16 @@ export function isVipWithdrawalAllowed(
   };
 }
 
+export const DEFAULT_WITHDRAWAL_SERVICE_CHARGE_RATE = 0.10;
+
+export function calculateWithdrawalAmounts(amount: number, serviceChargeRate = DEFAULT_WITHDRAWAL_SERVICE_CHARGE_RATE) {
+  const grossAmount = Number(amount);
+  const rate = Number(serviceChargeRate);
+  const serviceChargeAmount = Math.round(grossAmount * rate * 100) / 100;
+  const netAmount = Math.round((grossAmount - serviceChargeAmount) * 100) / 100;
+  return { grossAmount, serviceChargeRate: rate, serviceChargeAmount, netAmount };
+}
+
 export function createVipWithdrawalRequest({
   userId,
   amount,
@@ -64,11 +74,13 @@ export function createVipWithdrawalRequest({
     };
   }
 
+  const amounts = calculateWithdrawalAmounts(amount);
   return {
     ok: true,
     status: "PENDING",
     userId,
-    amount,
+    amount: amounts.grossAmount,
+    ...amounts,
     requestId: `vip-withdrawal-${Date.now()}`,
     allowedDays: validation.allowedDays,
     message: "VIP withdrawal request created and submitted for review.",
@@ -112,6 +124,20 @@ export async function createPersistedVipWithdrawalRequest({
       reason: "VIP tier is required for withdrawals.",
     };
 
+  const { data: settingsRow } = await client
+    .from("platform_settings")
+    .select("settings")
+    .eq("id", 1)
+    .maybeSingle();
+
+  const configuredRate = Number(
+    settingsRow?.settings?.withdrawal?.serviceChargeRate ?? DEFAULT_WITHDRAWAL_SERVICE_CHARGE_RATE,
+  );
+  const serviceChargeRate =
+    Number.isFinite(configuredRate) && configuredRate >= 0 && configuredRate <= 1
+      ? configuredRate
+      : DEFAULT_WITHDRAWAL_SERVICE_CHARGE_RATE;
+
   const { data: scheduleRows, error: scheduleError } = await client
     .from("vip_withdrawal_schedule")
     .select(
@@ -136,10 +162,18 @@ export async function createPersistedVipWithdrawalRequest({
 
   if (!validation.ok) return { ...validation, source: "supabase" };
 
+  const amounts = calculateWithdrawalAmounts(amount, serviceChargeRate);
   const { data: withdrawal, error: withdrawalError } = await client
     .from("vip_withdrawal_requests")
-    .insert({ user_id: userId, amount, status: "PENDING" })
-    .select("id, user_id, amount, status, created_at")
+    .insert({
+      user_id: userId,
+      amount: amounts.grossAmount,
+      service_charge_rate: amounts.serviceChargeRate,
+      service_charge_amount: amounts.serviceChargeAmount,
+      net_amount: amounts.netAmount,
+      status: "PENDING",
+    })
+.select("id, user_id, amount, service_charge_rate, service_charge_amount, net_amount, status, created_at")
     .single();
 
   if (withdrawalError || !withdrawal) {
@@ -158,6 +192,10 @@ export async function createPersistedVipWithdrawalRequest({
     requestId: withdrawal.id,
     userId: withdrawal.user_id,
     amount: withdrawal.amount,
+    grossAmount: withdrawal.amount,
+    serviceChargeRate: withdrawal.service_charge_rate,
+    serviceChargeAmount: withdrawal.service_charge_amount,
+    netAmount: withdrawal.net_amount,
     allowedDays: validation.allowedDays,
     message: "VIP withdrawal request created and submitted for review.",
   };
