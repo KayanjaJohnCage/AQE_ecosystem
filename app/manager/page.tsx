@@ -489,7 +489,7 @@ export default function ManagerPage() {
 
   async function reviewWithdrawal(
     requestId: string,
-    status: "APPROVED" | "REJECTED",
+    status: "APPROVED" | "REJECTED" | "PAID",
   ) {
     const { session, user } = readStoredSession();
     const headers: HeadersInit = { "Content-Type": "application/json" };
