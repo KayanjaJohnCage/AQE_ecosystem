@@ -203,8 +203,6 @@ export default function CustomerPage() {
   });
   const [referralCode, setReferralCode] = useState("");
   const [receipts, setReceipts] = useState<Array<{ id:string; receipt_number:string; transaction_type:string; source:string; amount?:number|null; currency?:string|null; qc_amount?:number|null; cash_amount?:number|null; boost_days?:number|null; balance_before?:number|null; balance_after?:number|null; status:string; description?:string|null; created_at:string }>>([]);
-  const [campaigns, setCampaigns] = useState<Array<{id:string;name:string;description?:string;status:string}>>([]);
-  const [campaignCodes, setCampaignCodes] = useState<Array<{id:string;campaign_id:string;code:string;qc_amount:number;cash_amount:number;cash_currency:string;boost_days:number;boost_label?:string;usage_limit?:number|null;uses_count:number;active:boolean}>>([]);
   const [campaignPackages, setCampaignPackages] = useState<Array<{id:string;campaign_id:string;name:string;description?:string;qc_amount:number;cash_amount:number;cash_currency:string;boost_days:number;boost_label?:string;quantity?:number|null;claimed_count:number;active:boolean}>>([]);
   const [campaignFeedback, setCampaignFeedback] = useState("");
   const [campaignCodeInput, setCampaignCodeInput] = useState("");
@@ -310,8 +308,6 @@ export default function CustomerPage() {
         .then(async (response) => {
           if (!response.ok) return;
           const payload = await response.json();
-          if (Array.isArray(payload.campaigns)) setCampaigns(payload.campaigns);
-          if (Array.isArray(payload.codes)) setCampaignCodes(payload.codes);
           if (Array.isArray(payload.packages)) setCampaignPackages(payload.packages);
         }).catch(() => undefined);
 
