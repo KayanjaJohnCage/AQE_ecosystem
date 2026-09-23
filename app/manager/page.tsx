@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { readStoredSession } from "../../lib/clientSession";
 import ProfileBoostManager from "./components/ProfileBoostManager";
+import CampaignManager from "./components/CampaignManager";
 
 type ManagerData = {
   users: number;
@@ -69,6 +70,7 @@ const navGroups = [
       "Dashboard",
       "Users & Profiles",
       "Media & Profile Boosts",
+      "Campaign Room",
       "Verification",
       "Subscriptions",
       "Bookings & Requests",
@@ -1042,6 +1044,7 @@ export default function ManagerPage() {
               <div className="manager-table-header">
                 <h3>{active}</h3>
                 {active === "Media & Profile Boosts" ? <ProfileBoostManager /> : null}
+                {active === "Campaign Room" ? <CampaignManager /> : null}
 
       {active === "Users & Profiles" ? (
                   <input
