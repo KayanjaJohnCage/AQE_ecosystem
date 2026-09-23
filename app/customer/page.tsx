@@ -11,6 +11,16 @@ import { AssetRoomScreen } from "./components/AssetRoomScreen";
 import { ShopScreen } from "./components/ShopScreen";
 import { WalletScreen } from "./components/WalletScreen";
 import type { CustomerView } from "./types";
+import { getSupabaseClient } from "../../lib/supabaseClient";
+
+type ProfileMedia = {
+  id: string;
+  url: string;
+  type: "image" | "video";
+  mimeType?: string;
+  isProfilePhoto?: boolean;
+  moderationStatus?: string;
+};
 
 type ProfileCard = {
   id?: string;
@@ -31,6 +41,8 @@ type ProfileCard = {
   area?: string;
   headline?: string;
   languages?: string[];
+  avatarUrl?: string;
+  media?: ProfileMedia[];
 };
 
 type MessageRow = {
@@ -131,6 +143,9 @@ export default function CustomerPage() {
   );
   const [profiles, setProfiles] = useState<ProfileCard[]>([]);
   const [profileActionMessage, setProfileActionMessage] = useState("");
+  const [profileMedia, setProfileMedia] = useState<ProfileMedia[]>([]);
+  const [mediaUploading, setMediaUploading] = useState(false);
+  const [mediaFeedback, setMediaFeedback] = useState("");
   const [messages, setMessages] = useState<MessageRow[]>([]);
   const [messageRecipientId, setMessageRecipientId] = useState("");
   const [messageBody, setMessageBody] = useState("");
@@ -254,6 +269,16 @@ export default function CustomerPage() {
       .catch(() => undefined);
 
     if (session.access_token || user.id) {
+      fetch("/api/profile/media", { headers })
+        .then(async (response) => {
+          if (!response.ok) return;
+          const payload = await response.json();
+          if (Array.isArray(payload.media)) setProfileMedia(payload.media);
+        })
+        .catch(() => undefined);
+    }
+
+    if (session.access_token || user.id) {
       fetch("/api/referrals", { headers })
         .then(async (response) => {
           if (!response.ok) return;
@@ -314,6 +339,98 @@ export default function CustomerPage() {
       })
       .catch(() => undefined);
   }, []);
+
+  async function uploadProfileMedia(file: File) {
+    setMediaUploading(true);
+    setMediaFeedback("");
+
+    try {
+      const { session, user } = readStoredSession();
+      const headers: HeadersInit = { "Content-Type": "application/json" };
+      if (session.access_token) headers.authorization = `Bearer ${session.access_token}`;
+      if (user.id) headers["x-user-id"] = user.id;
+
+      const kind = file.type.startsWith("video/") ? "video" : "image";
+      const prepare = await fetch("/api/media/upload", {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          userId: user.id,
+          kind,
+          mimeType: file.type,
+          sizeBytes: file.size,
+          fileName: file.name,
+        }),
+      });
+      const payload = await prepare.json().catch(() => ({}));
+
+      if (!prepare.ok || !payload.ok || !payload.objectPath || !payload.token) {
+        setMediaFeedback(payload.reason || "Media upload could not be prepared.");
+        return;
+      }
+
+      const supabase = getSupabaseClient();
+      if (!supabase) {
+        setMediaFeedback("Media service is unavailable.");
+        return;
+      }
+
+      const { error } = await supabase.storage
+        .from("profile-media")
+        .uploadToSignedUrl(payload.objectPath, payload.token, file);
+
+      if (error) {
+        setMediaFeedback(error.message);
+        return;
+      }
+
+      const mediaResponse = await fetch("/api/profile/media", { headers });
+      const mediaPayload = await mediaResponse.json().catch(() => ({}));
+      const items: ProfileMedia[] = Array.isArray(mediaPayload.media)
+        ? mediaPayload.media
+        : [];
+      setProfileMedia(items);
+
+      if (kind === "image") {
+        const newest = items.find(
+          (item) => item.type === "image" && !item.isProfilePhoto,
+        );
+        if (newest) {
+          const photoResponse = await fetch("/api/media/profile-photo", {
+            method: "POST",
+            headers,
+            body: JSON.stringify({ userId: user.id, mediaId: newest.id }),
+          });
+          const photoPayload = await photoResponse.json().catch(() => ({}));
+          if (!photoResponse.ok || !photoPayload.ok) {
+            setMediaFeedback(
+              photoPayload.reason ||
+                "Photo uploaded, but the profile photo could not be updated.",
+            );
+            return;
+          }
+        }
+      }
+
+      const refreshed = await fetch("/api/profile/media", { headers });
+      const refreshedPayload = await refreshed.json().catch(() => ({}));
+      if (Array.isArray(refreshedPayload.media)) {
+        setProfileMedia(refreshedPayload.media);
+      }
+
+      setMediaFeedback(
+        kind === "video"
+          ? "Video uploaded successfully."
+          : "Photo uploaded and set as your profile photo.",
+      );
+    } catch (error) {
+      setMediaFeedback(
+        error instanceof Error ? error.message : "Media upload failed.",
+      );
+    } finally {
+      setMediaUploading(false);
+    }
+  }
 
   async function submitAuth(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
