@@ -333,28 +333,21 @@ export async function createPersistedVipWithdrawalRequest({
 
   if (!validation.ok) return { ...validation, source: "supabase" };
 
-  const amounts = calculateWithdrawalAmounts(amount, serviceChargeRate);
-  const { data: withdrawal, error: withdrawalError } = await client
-    .from("vip_withdrawal_requests")
-    .insert({
-      user_id: userId,
-      tier: resolvedTier,
-      payment_method: paymentMethod,
-      recipient_name: recipientName.trim(),
-      recipient_account: recipientAccount.trim(),
-      currency,
-      amount: amounts.grossAmount,
-      service_charge_rate: amounts.serviceChargeRate,
-      service_charge_amount: amounts.serviceChargeAmount,
-      net_amount: amounts.netAmount,
-      status: "PENDING",
-    })
-    .select(
-      "id, user_id, tier, payment_method, recipient_name, recipient_account, currency, amount, service_charge_rate, service_charge_amount, net_amount, status, created_at",
-    )
-    .single();
+  const { data: withdrawalData, error: withdrawalError } = await client.rpc(
+    "request_cash_withdrawal_atomic",
+    {
+      p_user_id: userId,
+      p_amount: amount,
+      p_tier: resolvedTier,
+      p_payment_method: paymentMethod,
+      p_recipient_name: recipientName.trim(),
+      p_recipient_account: recipientAccount.trim(),
+      p_currency: currency,
+      p_service_charge_rate: serviceChargeRate,
+    },
+  );
 
-  if (withdrawalError || !withdrawal) {
+  if (withdrawalError || !withdrawalData) {
     return {
       ok: false,
       status: "REJECTED",
@@ -363,6 +356,21 @@ export async function createPersistedVipWithdrawalRequest({
     };
   }
 
+  const withdrawal = withdrawalData as {
+    id: string;
+    userId: string;
+    tier: WithdrawalTier;
+    paymentMethod: string;
+    recipientName: string;
+    recipientAccount: string;
+    currency: string;
+    grossAmount: number;
+    serviceChargeRate: number;
+    serviceChargeAmount: number;
+    netAmount: number;
+    status: string;
+    createdAt: string;
+  };
   return {
     ok: true,
     status: "PENDING",
