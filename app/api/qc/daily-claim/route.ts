@@ -22,14 +22,7 @@ export async function POST(request: Request) {
     const supabase = getSupabaseClient();
 
     if (!supabase) {
-      return NextResponse.json({
-        ok: true,
-        amount: 5,
-        balanceAfter: 5,
-        mode: "demo",
-        message:
-          "Demo mode: daily QC claim succeeded without a connected Supabase project.",
-      });
+      return NextResponse.json({ ok: false, reason: "QC service is not configured." }, { status: 503 });
     }
 
     const result = await claimDailyReward(supabase, userId);
