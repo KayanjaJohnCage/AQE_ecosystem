@@ -246,6 +246,7 @@ export default function ManagerPage() {
       fetch("/api/support/tickets", { headers }),
       fetch("/api/vip/withdrawals", { headers }),
       fetch("/api/payments/manager-direct", { headers }),
+      fetch("/api/media/manager", { headers }),
     ])
       .then(
         async ([
@@ -255,8 +256,9 @@ export default function ManagerPage() {
           supportResponse,
           withdrawalsResponse,
           paymentsResponse,
+          mediaResponse,
         ]) => {
-          const [bookings, messages, products, support, withdrawals, payments] =
+          const [bookings, messages, products, support, withdrawals, payments, media] =
             await Promise.all([
               bookingsResponse.ok
                 ? bookingsResponse.json()
@@ -273,6 +275,9 @@ export default function ManagerPage() {
                 : Promise.resolve({}),
               paymentsResponse.ok
                 ? paymentsResponse.json()
+                : Promise.resolve({}),
+              mediaResponse.ok
+                ? mediaResponse.json()
                 : Promise.resolve({}),
             ]);
 
@@ -369,6 +374,25 @@ export default function ManagerPage() {
                 title: `${(withdrawal.tier || "basic").toUpperCase()} payout · ${withdrawal.recipient_name || "member"}`,
                 meta: `${withdrawal.payment_method || "MOBILE_MONEY"} · ${withdrawal.recipient_name || "No name"} · ${withdrawal.recipient_account || "No destination"}`,
                 value: `${withdrawal.status || "PENDING"} · Gross ${withdrawal.currency || "UGX"} ${Number(withdrawal.amount || 0).toLocaleString()} · Fee ${Number(withdrawal.service_charge_amount || 0).toLocaleString()} (${(Number(withdrawal.service_charge_rate ?? 0.08) * 100).toFixed(0)}%) · Net payout ${withdrawal.currency || "UGX"} ${Number(withdrawal.net_amount || 0).toLocaleString()}`,
+              }),
+            );
+          }
+          if (
+            Array.isArray(media.media) &&
+            media.media.length > 0
+          ) {
+            nextRows["Profile Media"] = media.media.map(
+              (item: {
+                id?: string;
+                ownerUserId?: string;
+                type?: string;
+                moderationStatus?: string;
+                isProfilePhoto?: boolean;
+              }) => ({
+                id: item.id,
+                title: `${(item.type || "image").toUpperCase()} ${item.isProfilePhoto ? "· PROFILE PHOTO" : "· PROFILE CONTENT"}`,
+                meta: `Owner: ${item.ownerUserId || "member"}`,
+                value: item.moderationStatus || "pending",
               }),
             );
           }
@@ -482,6 +506,25 @@ export default function ManagerPage() {
       payload.ok
         ? `Withdrawal ${status.toLowerCase()}.`
         : payload.reason || "Withdrawal review failed.",
+    );
+  }
+
+  async function reviewMedia(mediaId: string, status: "approved" | "rejected") {
+    const { session, user } = readStoredSession();
+    const headers: HeadersInit = { "Content-Type": "application/json" };
+    if (session.access_token) headers.authorization = `Bearer ${session.access_token}`;
+    if (user.id) headers["x-user-id"] = user.id;
+
+    const response = await fetch("/api/media/manager", {
+      method: "PATCH",
+      headers,
+      body: JSON.stringify({ mediaId, status }),
+    });
+    const payload = await response.json().catch(() => ({}));
+    setReviewMessage(
+      payload.ok
+        ? `Media ${status}.`
+        : payload.reason || "Media moderation failed.",
     );
   }
 
@@ -1049,6 +1092,24 @@ export default function ManagerPage() {
                           <button
                             type="button"
                             onClick={() => reviewBooking(row.id!, "rejected")}
+                          >
+                            Reject
+                          </button>
+                        </>
+                      ) : null}
+                      {active === "Profile Media" &&
+                      row.id &&
+                      /pending/i.test(row.value) ? (
+                        <>
+                          <button
+                            type="button"
+                            onClick={() => reviewMedia(row.id!, "approved")}
+                          >
+                            Approve
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => reviewMedia(row.id!, "rejected")}
                           >
                             Reject
                           </button>
