@@ -1,10 +1,14 @@
 import { NextResponse } from "next/server";
+import { resolveAuthenticatedSession } from "../../../lib/aqe/auth";
 import { createServerSupabaseClient } from "../../../lib/supabaseServer";
 
 export async function GET(request: Request) {
   try {
     const client = createServerSupabaseClient();
     if (!client) return NextResponse.json({ ok: true, source: "supabase", profiles: [] });
+
+    const session = await resolveAuthenticatedSession(request);
+    const viewerUserId = session.authenticated ? session.userId : undefined;
 
     const url = new URL(request.url);
     const query = url.searchParams.get("q")?.trim();
@@ -59,7 +63,7 @@ export async function GET(request: Request) {
       ? await client
           .from("profile_media")
           .select(
-            "id,owner_user_id,storage_path,media_type,mime_type,is_profile_photo,created_at",
+            "id,owner_user_id,storage_path,media_type,mime_type,is_profile_photo,content_access,created_at",
           )
           .in("owner_user_id", ownerIds)
           .eq("visibility", "public")
@@ -67,20 +71,45 @@ export async function GET(request: Request) {
           .order("created_at", { ascending: false })
       : { data: [] };
 
+    const vipOwnerIds = [...new Set((mediaRows ?? [])
+      .filter((media) => media.content_access === "subscribers_only")
+      .map((media) => media.owner_user_id))];
+
+    const subscribedVipIds = new Set<string>();
+    if (viewerUserId && vipOwnerIds.length) {
+      const { data: subscriptions } = await client
+        .from("vip_content_subscriptions")
+        .select("vip_user_id")
+        .eq("subscriber_user_id", viewerUserId)
+        .eq("status", "active")
+        .gt("expires_at", new Date().toISOString())
+        .in("vip_user_id", vipOwnerIds);
+      for (const subscription of subscriptions ?? []) subscribedVipIds.add(subscription.vip_user_id);
+    }
+
     const mediaByOwner = new Map<string, Array<Record<string, unknown>>>();
     for (const media of mediaRows ?? []) {
-      const signed = await client.storage
-        .from("profile-media")
-        .createSignedUrl(media.storage_path, 3600);
+      const locked = media.content_access === "subscribers_only" &&
+        media.owner_user_id !== viewerUserId &&
+        !subscribedVipIds.has(media.owner_user_id);
 
-      if (!signed.data?.signedUrl) continue;
+      let signedUrl = "";
+      if (!locked) {
+        const signed = await client.storage
+          .from("profile-media")
+          .createSignedUrl(media.storage_path, 3600);
+        signedUrl = signed.data?.signedUrl ?? "";
+      }
 
       const item = {
         id: media.id,
         type: media.media_type,
-        url: signed.data.signedUrl,
+        url: signedUrl,
         mimeType: media.mime_type,
         isProfilePhoto: Boolean(media.is_profile_photo),
+        contentAccess: media.content_access || "public",
+        locked,
+        subscriptionRequired: media.content_access === "subscribers_only",
       };
 
       const existing = mediaByOwner.get(media.owner_user_id) ?? [];
@@ -132,6 +161,7 @@ export async function GET(request: Request) {
             (media) => media.isProfilePhoto,
           )?.url || profile.avatar_url || "",
         media: mediaByOwner.get(profile.user_id) ?? [],
+        vipContent: profile.tier === "vip" ? { enabled: false, monthlyPrice: 0, currency: "UGX", subscribed: false } : null,
       })),
     });
   } catch (error) {
