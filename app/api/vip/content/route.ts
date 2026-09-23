@@ -18,6 +18,17 @@ export async function GET(request: Request) {
     const session = await resolveAuthenticatedSession(request);
 
     let subscription = null;
+    let creatorStats = null;
+    if (session.authenticated && session.userId === vipUserId) {
+      const [{ count }, { data: earningsRows }] = await Promise.all([
+        client.from("vip_content_subscriptions").select("id", { count: "exact", head: true }).eq("vip_user_id", vipUserId).eq("status", "active").gt("expires_at", new Date().toISOString()),
+        client.from("cash_wallet_ledger").select("amount").eq("user_id", vipUserId).eq("reference_type", "VIP_CONTENT_SUBSCRIPTION_EARNING"),
+      ]);
+      creatorStats = {
+        activeSubscribers: count ?? 0,
+        grossEarnings: (earningsRows ?? []).reduce((sum, row) => sum + Number(row.amount ?? 0), 0),
+      };
+    }
     if (session.authenticated && session.userId) {
       const { data } = await client
         .from("vip_content_subscriptions")
@@ -37,6 +48,7 @@ export async function GET(request: Request) {
       settings: settings ?? { vipUserId, enabled: false, monthlyPrice: 0, currency: "UGX", title: "VIP Content", description: null },
       subscription,
       subscribed: Boolean(subscription),
+      creatorStats,
     });
   } catch (error) {
     return NextResponse.json({ ok: false, reason: error instanceof Error ? error.message : "VIP content settings unavailable." }, { status: 500 });
