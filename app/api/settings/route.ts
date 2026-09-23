@@ -25,6 +25,20 @@ export type AqePlatformSettings = {
     vipSalaryDay: number;
     withdrawalBefore20th: boolean;
   };
+  mediaLimits: {
+    basic: { imagesPerMonth: number; videosPerMonth: number; maxImageSizeMB: number; maxVideoSizeMB: number };
+    premium: { imagesPerMonth: number; videosPerMonth: number; maxImageSizeMB: number; maxVideoSizeMB: number };
+    vip: { imagesPerMonth: number; videosPerMonth: number; maxImageSizeMB: number; maxVideoSizeMB: number };
+  };
+  profileBoosts: {
+    enabled: boolean;
+    managerCanGrant: boolean;
+    purchaseEnabled: boolean;
+    rewardEnabled: boolean;
+    taskEnabled: boolean;
+    campaignEnabled: boolean;
+    defaultDurations: { daily: number; weekly: number; monthly: number };
+  };
   customerContent: {
     home: Record<string, unknown>;
     rewards: Record<string, unknown>;
@@ -57,6 +71,20 @@ const defaults: AqePlatformSettings = {
     vipSalary: 10000,
     vipSalaryDay: 20,
     withdrawalBefore20th: false,
+  },
+  mediaLimits: {
+    basic: { imagesPerMonth: 10, videosPerMonth: 2, maxImageSizeMB: 5, maxVideoSizeMB: 75 },
+    premium: { imagesPerMonth: 30, videosPerMonth: 10, maxImageSizeMB: 8, maxVideoSizeMB: 100 },
+    vip: { imagesPerMonth: 100, videosPerMonth: 30, maxImageSizeMB: 12, maxVideoSizeMB: 150 },
+  },
+  profileBoosts: {
+    enabled: true,
+    managerCanGrant: true,
+    purchaseEnabled: true,
+    rewardEnabled: true,
+    taskEnabled: true,
+    campaignEnabled: true,
+    defaultDurations: { daily: 1, weekly: 7, monthly: 30 },
   },
   customerContent: {
     home: {
@@ -194,6 +222,39 @@ function normalizeSettings(value: Partial<AqePlatformSettings> = {}): AqePlatfor
         pricing.withdrawalBefore20th ?? defaults.pricing.withdrawalBefore20th,
       ),
     },
+    mediaLimits: {
+      basic: {
+        imagesPerMonth: Math.max(0, Math.round(positive(value.mediaLimits?.basic?.imagesPerMonth, defaults.mediaLimits.basic.imagesPerMonth))),
+        videosPerMonth: Math.max(0, Math.round(positive(value.mediaLimits?.basic?.videosPerMonth, defaults.mediaLimits.basic.videosPerMonth))),
+        maxImageSizeMB: positive(value.mediaLimits?.basic?.maxImageSizeMB, defaults.mediaLimits.basic.maxImageSizeMB),
+        maxVideoSizeMB: positive(value.mediaLimits?.basic?.maxVideoSizeMB, defaults.mediaLimits.basic.maxVideoSizeMB),
+      },
+      premium: {
+        imagesPerMonth: Math.max(0, Math.round(positive(value.mediaLimits?.premium?.imagesPerMonth, defaults.mediaLimits.premium.imagesPerMonth))),
+        videosPerMonth: Math.max(0, Math.round(positive(value.mediaLimits?.premium?.videosPerMonth, defaults.mediaLimits.premium.videosPerMonth))),
+        maxImageSizeMB: positive(value.mediaLimits?.premium?.maxImageSizeMB, defaults.mediaLimits.premium.maxImageSizeMB),
+        maxVideoSizeMB: positive(value.mediaLimits?.premium?.maxVideoSizeMB, defaults.mediaLimits.premium.maxVideoSizeMB),
+      },
+      vip: {
+        imagesPerMonth: Math.max(0, Math.round(positive(value.mediaLimits?.vip?.imagesPerMonth, defaults.mediaLimits.vip.imagesPerMonth))),
+        videosPerMonth: Math.max(0, Math.round(positive(value.mediaLimits?.vip?.videosPerMonth, defaults.mediaLimits.vip.videosPerMonth))),
+        maxImageSizeMB: positive(value.mediaLimits?.vip?.maxImageSizeMB, defaults.mediaLimits.vip.maxImageSizeMB),
+        maxVideoSizeMB: positive(value.mediaLimits?.vip?.maxVideoSizeMB, defaults.mediaLimits.vip.maxVideoSizeMB),
+      },
+    },
+    profileBoosts: {
+      enabled: Boolean(value.profileBoosts?.enabled ?? defaults.profileBoosts.enabled),
+      managerCanGrant: Boolean(value.profileBoosts?.managerCanGrant ?? defaults.profileBoosts.managerCanGrant),
+      purchaseEnabled: Boolean(value.profileBoosts?.purchaseEnabled ?? defaults.profileBoosts.purchaseEnabled),
+      rewardEnabled: Boolean(value.profileBoosts?.rewardEnabled ?? defaults.profileBoosts.rewardEnabled),
+      taskEnabled: Boolean(value.profileBoosts?.taskEnabled ?? defaults.profileBoosts.taskEnabled),
+      campaignEnabled: Boolean(value.profileBoosts?.campaignEnabled ?? defaults.profileBoosts.campaignEnabled),
+      defaultDurations: {
+        daily: Math.max(1, Math.round(positive(value.profileBoosts?.defaultDurations?.daily, 1))),
+        weekly: Math.max(1, Math.round(positive(value.profileBoosts?.defaultDurations?.weekly, 7))),
+        monthly: Math.max(1, Math.round(positive(value.profileBoosts?.defaultDurations?.monthly, 30))),
+      },
+    },
     customerContent: {
       home: { ...defaults.customerContent.home, ...(value.customerContent?.home ?? {}) },
       rewards: { ...defaults.customerContent.rewards, ...(value.customerContent?.rewards ?? {}) },
@@ -240,6 +301,14 @@ export async function PATCH(request: Request) {
       customerContent: {
         ...existing.settings.customerContent,
         ...(incoming.customerContent ?? {}),
+      },
+      mediaLimits: {
+        ...existing.settings.mediaLimits,
+        ...(incoming.mediaLimits ?? {}),
+      },
+      profileBoosts: {
+        ...existing.settings.profileBoosts,
+        ...(incoming.profileBoosts ?? {}),
       },
       pricing: {
         ...existing.settings.pricing,
