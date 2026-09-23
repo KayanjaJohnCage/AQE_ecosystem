@@ -57,6 +57,7 @@ DECLARE
   v_order public.payment_orders%ROWTYPE;
   v_amount numeric := NULL;
   v_currency text := NULL;
+  v_paid_upgrade boolean := false;
 BEGIN
   IF TG_OP = 'UPDATE' AND COALESCE(OLD.tier,'basic') IS DISTINCT FROM COALESCE(NEW.tier,'basic') THEN
     SELECT * INTO v_order
@@ -68,6 +69,7 @@ BEGIN
     LIMIT 1;
 
     IF FOUND THEN
+      v_paid_upgrade := true;
       v_amount := v_order.amount;
       v_currency := v_order.currency;
     END IF;
@@ -83,7 +85,7 @@ BEGIN
     );
 
     -- Welcome bonus is granted only for a real paid upgrade found above.
-    IF FOUND THEN
+    IF v_paid_upgrade THEN
       PERFORM public.issue_membership_welcome_bonus(NEW.user_id, NEW.tier);
     END IF;
   END IF;
