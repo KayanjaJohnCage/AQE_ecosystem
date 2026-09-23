@@ -229,6 +229,7 @@ export default function CustomerPage() {
   const [vipContentPrice, setVipContentPrice] = useState("");
   const [vipContentEnabled, setVipContentEnabled] = useState(false);
   const [vipContentFeedback, setVipContentFeedback] = useState("");
+  const [vipMediaAccess, setVipMediaAccess] = useState<"public" | "subscribers_only">("public");
 
   async function subscribeToVipContent(profile: ProfileCard) {
     if (!profile.userId || profile.tier !== "vip" || !profile.vipContent?.enabled) return;
@@ -460,6 +461,7 @@ export default function CustomerPage() {
           mimeType: file.type,
           sizeBytes: file.size,
           fileName: file.name,
+          contentAccess: data.tier === "vip" ? vipMediaAccess : "public",
         }),
       });
       const payload = await prepare.json().catch(() => ({}));
@@ -1477,6 +1479,14 @@ export default function CustomerPage() {
                         }}
                       />
                     </label>
+                    {data.tier === "vip" ? (
+                      <label className="secondary-button">
+                        <select value={vipMediaAccess} onChange={(event) => setVipMediaAccess(event.target.value as "public" | "subscribers_only")} disabled={mediaUploading} aria-label="VIP media access">
+                          <option value="public">Public content</option>
+                          <option value="subscribers_only">Subscribers only</option>
+                        </select>
+                      </label>
+                    ) : null}
                     <label className="secondary-button">
                       {mediaUploading ? "Uploading..." : "Add video"}
                       <input
