@@ -27,8 +27,8 @@ const drawerItems: NavigationItem[] = [
   { label: "Rewards", icon: "fa-gift", target: "rewards" },
   { label: "My Team", icon: "fa-users", target: "referrals" },
   { label: "Raffle", icon: "fa-ticket-alt", target: "raffle" },
-  { label: "Transactions", icon: "fa-receipt", target: "transactions" },
   { label: "Settings", icon: "fa-cog", target: "settings" },
+  { label: "Transactions", icon: "fa-receipt", target: "transactions" },
 ];
 
 type Props = {
