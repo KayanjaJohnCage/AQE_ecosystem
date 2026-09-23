@@ -1,5 +1,8 @@
--- Withdrawal fee change: future/default withdrawal requests are charged 8%.
--- Keep completed historical requests unchanged; update only pending requests and platform defaults.
+-- Withdrawal fee change: future/default withdrawal requests use 8%.
+-- Completed historical requests remain unchanged.
+
+ALTER TABLE public.vip_withdrawal_requests
+  ALTER COLUMN service_charge_rate SET DEFAULT 0.08;
 
 UPDATE public.vip_withdrawal_requests
 SET
