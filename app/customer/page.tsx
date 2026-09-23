@@ -44,6 +44,8 @@ type ProfileCard = {
   area?: string;
   headline?: string;
   languages?: string[];
+  availability?: string;
+  visibility?: string;
   avatarUrl?: string;
   media?: ProfileMedia[];
 };
