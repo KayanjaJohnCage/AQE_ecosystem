@@ -12,6 +12,7 @@ export async function POST(request: Request) {
     const mimeType = String(body.mimeType ?? "");
     const sizeBytes = Number(body.sizeBytes ?? 0);
     const fileName = String(body.fileName ?? "");
+    const contentAccess = body.contentAccess === "subscribers_only" ? "subscribers_only" : "public";
     const identity = await resolveMutationUserId(
       request,
       typeof body.userId === "string" ? body.userId : undefined,
@@ -38,6 +39,7 @@ export async function POST(request: Request) {
       kind,
       mimeType,
       sizeBytes,
+      contentAccess,
     });
 
     return NextResponse.json(
