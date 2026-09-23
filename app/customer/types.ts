@@ -13,4 +13,5 @@ export type CustomerView =
   | "rewards"
   | "referrals"
   | "raffle"
-  | "settings";
+  | "settings"
+  | "transactions";
