@@ -7,6 +7,32 @@ export const ALLOWED_VIDEO_TYPES = [
 export const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 export const MAX_VIDEO_BYTES = 75 * 1024 * 1024;
 
+type Tier = "basic" | "premium" | "vip";
+
+async function getMediaLimitContext(userId: string, kind: "image" | "video") {
+  const { createServerSupabaseClient } = await import("../supabaseServer");
+  const client = createServerSupabaseClient();
+  if (!client) return { ok: true as const, limited: false };
+  const { data: profile, error: profileError } = await client.from("profiles").select("tier").eq("user_id", userId).maybeSingle();
+  if (profileError) return { ok: false as const, reason: profileError.message };
+  const tier: Tier = profile?.tier === "premium" || profile?.tier === "vip" ? profile.tier : "basic";
+  const { data: settingsRow } = await client.from("platform_settings").select("settings").eq("id", 1).maybeSingle();
+  const configured = settingsRow?.settings?.mediaLimits?.[tier] ?? {};
+  const countLimit = Number(configured[kind === "image" ? "imagesPerMonth" : "videosPerMonth"] ?? (kind === "image" ? 10 : 2));
+  const maxSizeMB = Number(configured[kind === "image" ? "maxImageSizeMB" : "maxVideoSizeMB"] ?? (kind === "image" ? 5 : 75));
+  if (!Number.isFinite(countLimit) || countLimit < 0) return { ok: false as const, reason: "Invalid media upload limit configuration." };
+  if (!Number.isFinite(maxSizeMB) || maxSizeMB <= 0) return { ok: false as const, reason: "Invalid media file size configuration." };
+  const monthStart = new Date();
+  monthStart.setUTCDate(1);
+  monthStart.setUTCHours(0, 0, 0, 0);
+  const { count, error: countError } = await client.from("profile_media").select("id", { count: "exact", head: true }).eq("owner_user_id", userId).eq("media_type", kind).gte("created_at", monthStart.toISOString());
+  if (countError) return { ok: false as const, reason: countError.message };
+  if ((count ?? 0) >= countLimit) return { ok: false as const, reason: "Your " + tier + " plan has reached its " + kind + " upload limit for this month." };
+  return { ok: true as const, limited: true, tier, maxBytes: maxSizeMB * 1024 * 1024 };
+}
+
+
+
 export function validateUpload({
   kind,
   mimeType,
@@ -63,6 +89,12 @@ export async function createMediaUploadUrl({
       bucket: "profile-media",
       objectPath: buildSignedStoragePath(userId, fileName, kind),
     };
+  }
+
+  const limits = await getMediaLimitContext(userId, kind);
+  if (!limits.ok) return limits;
+  if (limits.limited && sizeBytes > limits.maxBytes) {
+    return { ok: false, reason: kind + " exceeds the " + limits.tier + " plan's maximum file size." };
   }
 
   const objectPath = buildSignedStoragePath(userId, fileName, kind);
