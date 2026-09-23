@@ -1267,6 +1267,9 @@ export default function CustomerPage() {
                 onDeposit={() => {
                   window.location.href = "/payments";
                 }}
+                onWithdraw={() => {
+                  window.location.href = "/vip";
+                }}
                 onRechargeQc={() => {
                   window.location.href = "/qc";
                 }}
