@@ -93,6 +93,7 @@ const customerRouteByView: Record<CustomerView, string> = {
   referrals: "/customer/my-team",
   raffle: "/customer/raffle",
   settings: "/customer/settings",
+  transactions: "/customer/transactions",
 };
 
 const customerViewByRoute: Record<string, CustomerView> = Object.fromEntries(
@@ -199,6 +200,12 @@ export default function CustomerPage() {
     currency: "UGX",
   });
   const [referralCode, setReferralCode] = useState("");
+  const [receipts, setReceipts] = useState<Array<{ id:string; receipt_number:string; transaction_type:string; source:string; amount?:number|null; currency?:string|null; qc_amount?:number|null; cash_amount?:number|null; boost_days?:number|null; balance_before?:number|null; balance_after?:number|null; status:string; description?:string|null; created_at:string }>>([]);
+  const [campaigns, setCampaigns] = useState<Array<{id:string;name:string;description?:string;status:string}>>([]);
+  const [campaignCodes, setCampaignCodes] = useState<Array<{id:string;campaign_id:string;code:string;qc_amount:number;cash_amount:number;cash_currency:string;boost_days:number;boost_label?:string;usage_limit?:number|null;uses_count:number;active:boolean}>>([]);
+  const [campaignPackages, setCampaignPackages] = useState<Array<{id:string;campaign_id:string;name:string;description?:string;qc_amount:number;cash_amount:number;cash_currency:string;boost_days:number;boost_label?:string;quantity?:number|null;claimed_count:number;active:boolean}>>([]);
+  const [campaignFeedback, setCampaignFeedback] = useState("");
+  const [campaignCodeInput, setCampaignCodeInput] = useState("");
   const [profileQuery, setProfileQuery] = useState("");
   const [homeFilter, setHomeFilter] = useState("All");
   const [profileFilters, setProfileFilters] = useState({ category: "", service: "", location: "", ageMin: "", ageMax: "", gender: "" });
@@ -289,6 +296,22 @@ export default function CustomerPage() {
           if (payload.ok) setReferral(payload);
         })
         .catch(() => undefined);
+
+      fetch("/api/receipts", { headers })
+        .then(async (response) => {
+          if (!response.ok) return;
+          const payload = await response.json();
+          if (Array.isArray(payload.receipts)) setReceipts(payload.receipts);
+        }).catch(() => undefined);
+
+      fetch("/api/campaigns", { headers })
+        .then(async (response) => {
+          if (!response.ok) return;
+          const payload = await response.json();
+          if (Array.isArray(payload.campaigns)) setCampaigns(payload.campaigns);
+          if (Array.isArray(payload.codes)) setCampaignCodes(payload.codes);
+          if (Array.isArray(payload.packages)) setCampaignPackages(payload.packages);
+        }).catch(() => undefined);
 
       fetch("/api/messages", { headers })
         .then(async (response) => {
@@ -1649,6 +1672,51 @@ export default function CustomerPage() {
             </div>
           )}
 
+          {view === "transactions" && (
+            <div className="aqe-rewards-screen">
+              <div className="section-heading"><div><span className="eyebrow">AQE PROOF</span><h2>Transactions & Receipts</h2></div><span className="status-pill">{receipts.length}</span></div>
+              <p className="screen-intro">Every completed reward, payment, wallet movement, QC transaction, boost and withdrawal is recorded with a permanent AQE reference.</p>
+              <div className="feature-list">
+                {receipts.map((receipt) => (
+                  <article key={receipt.id} className="content-panel compact">
+                    <div className="mini-avatar gold"><i className="fas fa-receipt" /></div>
+                    <div className="panel-copy"><strong>{receipt.transaction_type.replace(/_/g, " ")}</strong><span>{receipt.description || receipt.source} · {new Date(receipt.created_at).toLocaleString()}</span><small>Receipt: {receipt.receipt_number} · Status: {receipt.status}</small></div>
+                    <div><strong>{receipt.cash_amount ? `UGX ${Number(receipt.cash_amount).toLocaleString()}` : receipt.qc_amount ? `${Number(receipt.qc_amount).toLocaleString()} QC` : receipt.amount != null ? `${receipt.currency || platformSettings.walletCurrency} ${Number(receipt.amount).toLocaleString()}` : ""}</strong>{receipt.boost_days ? <small> + {receipt.boost_days} day boost</small> : null}</div>
+                  </article>
+                ))}
+                {!receipts.length ? <div className="empty-panel">No receipts yet. Your AQE proof will appear here after your first transaction or reward.</div> : null}
+              </div>
+            </div>
+          )}
+
+
+              <section className="aqe-community-screen" style={{marginTop:16}}>
+                <div className="section-heading"><div><span className="eyebrow">CAMPAIGNS</span><h2>Campaign rewards</h2></div></div>
+                <form className="aqe-community-form" onSubmit={async (event) => {
+                  event.preventDefault();
+                  setCampaignFeedback("");
+                  const {session,user}=readStoredSession();
+                  const headers:HeadersInit={"Content-Type":"application/json"};
+                  if(session.access_token) headers.authorization=`Bearer ${session.access_token}`;
+                  if(user.id) headers["x-user-id"]=user.id;
+                  const response=await fetch("/api/campaigns/redeem",{method:"POST",headers,body:JSON.stringify({code:campaignCodeInput})});
+                  const payload=await response.json().catch(()=>({}));
+                  setCampaignFeedback(payload.ok ? `Reward received. Receipt: ${payload.receiptNumber}` : payload.reason || "Code redemption failed.");
+                  if(payload.ok){setCampaignCodeInput(""); const rr=await fetch("/api/receipts",{headers}); const rp=await rr.json().catch(()=>({})); if(Array.isArray(rp.receipts)) setReceipts(rp.receipts);}
+                }}>
+                  <input value={campaignCodeInput} onChange={e=>setCampaignCodeInput(e.target.value.toUpperCase())} placeholder="Enter campaign code" required />
+                  <button type="submit">Redeem code</button>
+                  {campaignFeedback ? <span className="community-feedback">{campaignFeedback}</span> : null}
+                </form>
+                <div className="feature-list">
+                  {campaignPackages.filter(p=>p.active).map(pkg=><div key={pkg.id}><strong>{pkg.name}</strong><span>{pkg.qc_amount} QC · {pkg.cash_currency} {Number(pkg.cash_amount).toLocaleString()} · {pkg.boost_days} day boost · {pkg.quantity == null ? "Unlimited" : `${Math.max(0,pkg.quantity-pkg.claimed_count)} left`}</span><button type="button" onClick={async()=>{
+                    const {session,user}=readStoredSession(); const headers:HeadersInit={"Content-Type":"application/json"}; if(session.access_token)headers.authorization=`Bearer ${session.access_token}`; if(user.id)headers["x-user-id"]=user.id;
+                    const response=await fetch("/api/campaigns/redeem",{method:"POST",headers,body:JSON.stringify({packageId:pkg.id})}); const payload=await response.json().catch(()=>({}));
+                    setCampaignFeedback(payload.ok?`Gift received. Receipt: ${payload.receiptNumber}`:payload.reason||"Gift package failed.");
+                    if(payload.ok){const rr=await fetch("/api/receipts",{headers});const rp=await rr.json().catch(()=>({}));if(Array.isArray(rp.receipts))setReceipts(rp.receipts);}
+                  }}>Receive gift</button></div>)}
+                </div>
+              </section>
           {view === "referrals" && (
             <div className="aqe-referrals-screen">
               <article className="prototype-hero-card referral-hero">
