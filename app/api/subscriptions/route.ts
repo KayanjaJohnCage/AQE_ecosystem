@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { normalizeTier, resolveMutationUserId } from "../../../lib/aqe/auth";
+import { normalizeTier, requireAuthenticatedRoleAccess } from "../../../lib/aqe/auth";
 import {
   createSubscription,
   persistSubscription,
@@ -8,18 +8,11 @@ import { createServerSupabaseClient } from "../../../lib/supabaseServer";
 
 export async function POST(request: Request) {
   try {
+    const access = await requireAuthenticatedRoleAccess(request, ["manager", "admin"]);
+    if (!access.ok) return NextResponse.json({ ok: false, reason: "Subscriptions are created by confirmed payment orders." }, { status: 403 });
     const body = await request.json().catch(() => ({}));
-    const identity = await resolveMutationUserId(
-      request,
-      typeof body.userId === "string" ? body.userId : undefined,
-    );
-
-    if (!identity.ok) {
-      return NextResponse.json(
-        { ok: false, reason: identity.reason },
-        { status: 401 },
-      );
-    }
+    const userId = String(body.userId || "").trim();
+    if (!userId) return NextResponse.json({ ok: false, reason: "User ID is required." }, { status: 400 });
 
     const client = createServerSupabaseClient();
     let tier: "basic" | "premium" | "vip" = "basic";
@@ -28,7 +21,7 @@ export async function POST(request: Request) {
       const { data: profile } = await client
         .from("profiles")
         .select("tier")
-        .eq("user_id", identity.userId)
+        .eq("user_id", userId)
         .maybeSingle();
       tier = normalizeTier(profile?.tier ?? "basic") as
         | "basic"
@@ -56,7 +49,7 @@ export async function POST(request: Request) {
     }
 
     const result = createSubscription({
-      userId: identity.userId,
+      userId,
       tier,
       amount,
       currency,
