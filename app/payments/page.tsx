@@ -295,6 +295,7 @@ function PaymentsPageContent() {
         tier: mode === "upgrade" ? requestedTier : "basic",
         kind: mode === "upgrade" ? "membership_upgrade" : mode === "qc" ? "qc_recharge" : "wallet_deposit",
         paymentKind: mode === "upgrade" ? "membership_upgrade" : mode === "qc" ? "qc_recharge" : "wallet_deposit",
+        qcAmount: mode === "qc" ? Number(qcAmount) : undefined,
         provider: paymentMethod,
         reference: `AQE-${Date.now()}`,
         ...(paymentMethod === "AQE_MANAGER"
