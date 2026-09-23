@@ -19,7 +19,7 @@ jobs:
       - name: Install
         run: npm ci --legacy-peer-deps
       - name: Lint
-        run: npm run lint --if-present
+        run: ESLINT_USE_FLAT_CONFIG=false npx --yes eslint@9 .
       - name: Typecheck
         run: npm run typecheck
       - name: Test
