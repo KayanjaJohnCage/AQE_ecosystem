@@ -122,7 +122,7 @@ export async function createMediaUploadUrl({
     media_type: kind,
     mime_type: mimeType,
     file_size: sizeBytes,
-    visibility: "private",
+    visibility: "public",
     moderation_status: "pending",
     content_access: resolvedContentAccess,
   });
