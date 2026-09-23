@@ -130,7 +130,7 @@ const defaults: AqePlatformSettings = {
       enabled: true,
       subscriptionRequired: true,
       title: "VIP Locked Content",
-      description: "Subscribe monthly or upgrade to VIP to unlock VIP content.",
+      description: "VIP creators can set a monthly content price. Viewers must subscribe to that VIP creator to unlock subscriber-only media for one full month.",
     },
   },
 };
