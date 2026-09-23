@@ -33,6 +33,8 @@ DECLARE
   v_qc_amount numeric;
   v_subscription_id uuid;
   v_vip_user_id uuid;
+  v_vip_subscription jsonb;
+  v_vip_wallet public.cash_wallet%ROWTYPE;
 BEGIN
   SELECT settings INTO v_settings FROM public.platform_settings WHERE id=1;
   SELECT * INTO v_order FROM public.payment_orders WHERE id=p_order_id FOR UPDATE;
@@ -136,13 +138,41 @@ BEGIN
     IF v_vip_user_id IS NULL THEN
       RAISE EXCEPTION 'VIP content owner is missing from the payment order.';
     END IF;
-    PERFORM public.create_vip_content_subscription_atomic(
+    SELECT public.create_vip_content_subscription_atomic(
       v_order.id,
       v_order.user_id,
       v_vip_user_id,
       v_order.amount,
       v_order.currency
-    );
+    ) INTO v_vip_subscription;
+
+    -- Creator-content revenue is separate from membership/referral earnings.
+    -- No platform deduction is invented here; CEO pricing can configure it later.
+    INSERT INTO public.cash_wallet(user_id,available_balance,pending_balance,currency)
+    VALUES(v_vip_user_id,0,0,v_order.currency)
+    ON CONFLICT(user_id) DO NOTHING;
+
+    SELECT * INTO v_vip_wallet
+    FROM public.cash_wallet
+    WHERE user_id=v_vip_user_id
+    FOR UPDATE;
+
+    UPDATE public.cash_wallet
+    SET available_balance = available_balance + v_order.amount,
+        currency = v_order.currency,
+        updated_at = now()
+    WHERE user_id=v_vip_user_id;
+
+    INSERT INTO public.cash_wallet_ledger(
+      user_id,payment_order_id,amount,direction,currency,balance_after,
+      reference_type,reference_id
+    )
+    VALUES(
+      v_vip_user_id,v_order.id,v_order.amount,'CREDIT',v_order.currency,
+      v_vip_wallet.available_balance + v_order.amount,
+      'VIP_CONTENT_SUBSCRIPTION_EARNING',v_order.id::text
+    )
+    ON CONFLICT(user_id,payment_order_id,direction) DO NOTHING;
 
   ELSE
     RAISE EXCEPTION 'Unsupported payment kind: %',v_kind;
