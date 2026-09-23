@@ -35,6 +35,26 @@ export async function GET(request: Request) {
     const profiles = data ?? [];
     const ownerIds = profiles.map((profile) => profile.user_id);
 
+    const { data: boostRows } = ownerIds.length
+      ? await client
+          .from("profile_boosts")
+          .select("user_id,expires_at,label")
+          .in("user_id", ownerIds)
+          .eq("status", "active")
+          .gt("expires_at", new Date().toISOString())
+          .order("expires_at", { ascending: false })
+      : { data: [] };
+
+    const boostByOwner = new Map<string, { expiresAt: string; label: string }>();
+    for (const boost of boostRows ?? []) {
+      if (!boostByOwner.has(boost.user_id)) {
+        boostByOwner.set(boost.user_id, {
+          expiresAt: boost.expires_at,
+          label: boost.label || "Boosted profile",
+        });
+      }
+    }
+
     const { data: mediaRows } = ownerIds.length
       ? await client
           .from("profile_media")
@@ -68,10 +88,20 @@ export async function GET(request: Request) {
       mediaByOwner.set(media.owner_user_id, existing);
     }
 
+    const orderedProfiles = [...profiles].sort((a, b) => {
+      const aBoost = boostByOwner.get(a.user_id);
+      const bBoost = boostByOwner.get(b.user_id);
+      if (Boolean(aBoost) !== Boolean(bBoost)) return aBoost ? -1 : 1;
+      if (aBoost && bBoost) {
+        return new Date(bBoost.expiresAt).getTime() - new Date(aBoost.expiresAt).getTime();
+      }
+      return new Date(b.updated_at ?? 0).getTime() - new Date(a.updated_at ?? 0).getTime();
+    });
+
     return NextResponse.json({
       ok: true,
       source: "supabase",
-      profiles: profiles.map((profile) => ({
+      profiles: orderedProfiles.map((profile) => ({
 
         id: profile.id,
         userId: profile.user_id,
@@ -93,6 +123,9 @@ export async function GET(request: Request) {
         contactMethods: profile.contact_methods || {},
         status: profile.verification_status === "approved" ? "Verified member" : "Profile pending",
         tier: profile.tier || "basic",
+        boosted: boostByOwner.has(profile.user_id),
+        boostExpiresAt: boostByOwner.get(profile.user_id)?.expiresAt || null,
+        boostLabel: boostByOwner.get(profile.user_id)?.label || "",
         bio: profile.bio || "",
         avatarUrl:
           (mediaByOwner.get(profile.user_id) ?? []).find(
