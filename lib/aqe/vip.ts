@@ -92,7 +92,7 @@ export function isVipWithdrawalAllowed(
   };
 }
 
-export const DEFAULT_WITHDRAWAL_SERVICE_CHARGE_RATE = 0.10;
+export const DEFAULT_WITHDRAWAL_SERVICE_CHARGE_RATE = 0.08;
 
 export function calculateWithdrawalAmounts(
   amount: number,
