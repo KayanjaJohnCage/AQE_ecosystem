@@ -1297,7 +1297,15 @@ export default function CustomerPage() {
               {!authenticated ? <div className="aqe-own-signin"><i className="fas fa-lock" /><p>Sign in to manage your account. Guests can explore the public directory; signing in unlocks account tools.</p><button type="button" onClick={() => setAuthOpen(true)}>Sign In / Register</button></div> : null}
               <article className="content-panel">
                 <div className="mini-avatar">
-                  {accountName.charAt(0).toUpperCase()}
+                  {profileMedia.find((item) => item.isProfilePhoto)?.url ? (
+                    <img
+                      src={profileMedia.find((item) => item.isProfilePhoto)?.url}
+                      alt="Profile"
+                      className="aqe-avatar-image"
+                    />
+                  ) : (
+                    accountName.charAt(0).toUpperCase()
+                  )}
                 </div>
                 <div className="panel-copy">
                   <strong>{accountName}</strong>
@@ -1305,6 +1313,69 @@ export default function CustomerPage() {
                 </div>
                 <div className="status-pill">{data.tier}</div>
               </article>
+              {authenticated ? (
+                <section className="aqe-own-media-panel">
+                  <div className="section-heading compact-heading">
+                    <div>
+                      <span className="eyebrow">PROFILE CONTENT</span>
+                      <h2>Photos &amp; videos</h2>
+                    </div>
+                  </div>
+                  <div className="aqe-media-upload-row">
+                    <label className="primary-button">
+                      {mediaUploading ? "Uploading..." : "Add photo"}
+                      <input
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp"
+                        hidden
+                        disabled={mediaUploading}
+                        onChange={(event) => {
+                          const file = event.target.files?.[0];
+                          if (file) void uploadProfileMedia(file);
+                          event.currentTarget.value = "";
+                        }}
+                      />
+                    </label>
+                    <label className="secondary-button">
+                      {mediaUploading ? "Uploading..." : "Add video"}
+                      <input
+                        type="file"
+                        accept="video/mp4,video/webm,video/quicktime"
+                        hidden
+                        disabled={mediaUploading}
+                        onChange={(event) => {
+                          const file = event.target.files?.[0];
+                          if (file) void uploadProfileMedia(file);
+                          event.currentTarget.value = "";
+                        }}
+                      />
+                    </label>
+                  </div>
+                  {mediaFeedback ? (
+                    <span className="auth-message">{mediaFeedback}</span>
+                  ) : null}
+                  <div className="aqe-own-media-grid">
+                    {profileMedia.map((media) =>
+                      media.type === "video" ? (
+                        <video
+                          key={media.id}
+                          src={media.url}
+                          controls
+                          preload="metadata"
+                          className="aqe-own-media-item"
+                        />
+                      ) : (
+                        <img
+                          key={media.id}
+                          src={media.url}
+                          alt="AQE profile content"
+                          className="aqe-own-media-item"
+                        />
+                      ),
+                    )}
+                  </div>
+                </section>
+              ) : null
 
               <div className="aqe-own-shortcuts">
                 <button type="button" onClick={() => window.location.href = "/payments"}><i className="fas fa-arrow-down" /><span>Deposit</span></button>
@@ -1735,7 +1806,15 @@ export default function CustomerPage() {
             </button>
             <div className="profile-header">
               <div className="mini-avatar large">
-                {selectedProfile.name.charAt(0)}
+                {selectedProfile.avatarUrl ? (
+                  <img
+                    src={selectedProfile.avatarUrl}
+                    alt={`${selectedProfile.name} profile`}
+                    className="aqe-avatar-image"
+                  />
+                ) : (
+                  selectedProfile.name.charAt(0)
+                )}
               </div>
               <div>
                 <div className="eyebrow">PROFILE</div>
@@ -1771,7 +1850,30 @@ export default function CustomerPage() {
 
             <h3 className="aqe-profile-section-title">Photos &amp; Media</h3>
             <div className="aqe-profile-media-grid">
-              {[0, 1].map((item) => <div className="aqe-profile-media" key={item}><span>{selectedProfile.name.charAt(0)}</span></div>)}
+              {(selectedProfile.media ?? []).length ? (
+                (selectedProfile.media ?? []).map((media) =>
+                  media.type === "video" ? (
+                    <video
+                      key={media.id}
+                      src={media.url}
+                      controls
+                      preload="metadata"
+                      className="aqe-profile-media"
+                    />
+                  ) : (
+                    <img
+                      key={media.id}
+                      src={media.url}
+                      alt={`${selectedProfile.name} profile media`}
+                      className="aqe-profile-media"
+                    />
+                  ),
+                )
+              ) : (
+                <div className="aqe-profile-media-empty">
+                  No public photos or videos yet.
+                </div>
+              )}
             </div>
             <h3 className="aqe-profile-section-title">Store</h3>
             <div className="aqe-profile-store-card"><i className="fas fa-shopping-bag" /><div><strong>Profile store</strong><span>Products and private drops appear here when listed.</span></div></div>
