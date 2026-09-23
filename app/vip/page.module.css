@@ -1,0 +1,391 @@
+.page {
+  min-height: 100dvh;
+  padding: 0 14px 42px;
+  background:
+    radial-gradient(circle at 12% 72%, rgba(0, 191, 255, 0.08), transparent 24%),
+    radial-gradient(circle at 82% 62%, rgba(0, 191, 255, 0.06), transparent 28%),
+    #000;
+  color: #fff;
+  max-width: 560px;
+  margin: 0 auto;
+}
+
+.header {
+  min-height: 76px;
+  display: grid;
+  grid-template-columns: 44px 1fr 44px;
+  align-items: center;
+  text-align: center;
+}
+
+.header h1 {
+  margin: 0;
+  font-size: 21px;
+  font-weight: 900;
+}
+
+.back {
+  width: 42px;
+  height: 42px;
+  border: 0;
+  background: transparent;
+  color: #fff;
+  font-size: 38px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.headerSpacer {
+  width: 44px;
+}
+
+.currencyTabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin: 0 0 18px;
+}
+
+.currencyTabs button {
+  min-height: 40px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.currencyTabs button:first-child {
+  border-color: rgba(0, 191, 255, 0.45);
+}
+
+.currencyActive {
+  border-color: #00bfff !important;
+  background: rgba(0, 191, 255, 0.05) !important;
+  box-shadow: 0 0 10px rgba(0, 191, 255, 0.35), inset 0 0 0 1px rgba(0, 191, 255, 0.35);
+}
+
+.balanceRow {
+  display: flex;
+  align-items: baseline;
+  gap: 9px;
+  margin-bottom: 18px;
+}
+
+.balanceRow strong {
+  font-size: 29px;
+  letter-spacing: -0.04em;
+}
+
+.balanceRow span {
+  color: #00aeea;
+  font-size: 19px;
+  font-weight: 800;
+}
+
+.scheduleCard {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+  padding: 12px 13px;
+  border: 1px solid rgba(0, 191, 255, 0.28);
+  border-radius: 12px;
+  background: rgba(7, 22, 34, 0.88);
+}
+
+.scheduleCard small,
+.scheduleCard strong {
+  display: block;
+}
+
+.scheduleCard small {
+  color: #7db8ce;
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+}
+
+.scheduleCard strong {
+  margin-top: 4px;
+  font-size: 12px;
+}
+
+.scheduleBadge {
+  flex: 0 0 auto;
+  color: #00bfff;
+  font-size: 9px;
+  font-weight: 900;
+}
+
+.form {
+  display: grid;
+  gap: 12px;
+}
+
+.field,
+.amountField {
+  display: grid;
+  gap: 6px;
+}
+
+.field > span,
+.amountField > span {
+  color: #a9a9b7;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+}
+
+.field > input,
+.amountField input {
+  width: 100%;
+  min-height: 64px;
+  box-sizing: border-box;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 9px;
+  background: #f4f4f5;
+  color: #111;
+  padding: 0 14px;
+  font-size: 15px;
+  outline: none;
+}
+
+.field > input:focus,
+.amountField input:focus {
+  border-color: #00bfff;
+  box-shadow: 0 0 0 2px rgba(0, 191, 255, 0.12);
+}
+
+.methodGrid {
+  display: grid;
+  gap: 9px;
+}
+
+.method,
+.methodActive {
+  min-height: 64px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  text-align: left;
+  gap: 2px 10px;
+  padding: 10px 14px;
+  border-radius: 9px;
+  cursor: pointer;
+}
+
+.method {
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: #f4f4f5;
+  color: #222;
+}
+
+.methodActive {
+  border: 1px solid #00bfff;
+  background: #f4f4f5;
+  color: #111;
+  box-shadow: 0 0 10px rgba(0, 191, 255, 0.18);
+}
+
+.method strong,
+.method small,
+.methodActive strong,
+.methodActive small {
+  display: block;
+  grid-column: 1;
+}
+
+.method strong,
+.methodActive strong {
+  font-size: 13px;
+}
+
+.method small,
+.methodActive small {
+  color: #777;
+  font-size: 10px;
+}
+
+.method i,
+.methodActive i {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  font-size: 27px;
+  color: #aaa;
+  font-style: normal;
+}
+
+.amountField > div {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 145px;
+  min-height: 64px;
+  border-radius: 9px;
+  overflow: hidden;
+  background: #f4f4f5;
+}
+
+.amountField input {
+  min-height: 64px;
+  border: 0;
+  border-radius: 0;
+}
+
+.amountField div > strong {
+  display: grid;
+  place-items: center;
+  padding: 0 9px;
+  background: #00a9ee;
+  color: #fff;
+  font-size: 13px;
+  text-align: center;
+}
+
+.note {
+  margin: 2px 8px 0;
+  padding: 15px 14px;
+  border: 1px solid #00bfff;
+  border-radius: 10px;
+  background:
+    radial-gradient(circle at 20% 10%, rgba(0, 191, 255, 0.09), transparent 30%),
+    rgba(5, 19, 30, 0.86);
+  box-shadow: 0 0 9px rgba(0, 191, 255, 0.12);
+}
+
+.note strong {
+  font-size: 12px;
+}
+
+.note p {
+  margin: 11px 0 0;
+  color: #eee;
+  font-size: 11px;
+  line-height: 1.55;
+}
+
+.summary {
+  padding: 13px 14px;
+  border: 1px solid rgba(0, 191, 255, 0.22);
+  border-radius: 10px;
+  background: rgba(9, 20, 31, 0.86);
+}
+
+.summary > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 7px 0;
+  font-size: 11px;
+}
+
+.summary span {
+  color: #9ba5ae;
+}
+
+.summary strong {
+  text-align: right;
+}
+
+.netRow {
+  margin-top: 5px;
+  padding-top: 11px !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.netRow span,
+.netRow strong {
+  color: #00bfff;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.error,
+.success,
+.receipt {
+  padding: 11px 12px;
+  border-radius: 9px;
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.error {
+  color: #ffb4b4;
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  background: rgba(127, 29, 29, 0.18);
+}
+
+.success {
+  color: #a7f3d0;
+  border: 1px solid rgba(16, 185, 129, 0.4);
+  background: rgba(6, 78, 59, 0.2);
+}
+
+.receipt {
+  display: grid;
+  gap: 3px;
+  border: 1px solid rgba(0, 191, 255, 0.28);
+  background: rgba(0, 191, 255, 0.06);
+}
+
+.receipt span {
+  color: #00bfff;
+  font-weight: 900;
+}
+
+.receipt strong {
+  overflow-wrap: anywhere;
+  font-size: 10px;
+}
+
+.receipt small {
+  color: #aaa;
+}
+
+.confirm {
+  width: 100%;
+  min-height: 61px;
+  margin-top: 4px;
+  border: 1px solid #00bfff;
+  border-radius: 12px;
+  background: rgba(4, 20, 31, 0.88);
+  color: #fff;
+  box-shadow: 0 0 9px rgba(0, 191, 255, 0.16);
+  font-size: 15px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.confirm:hover:not(:disabled) {
+  background: rgba(0, 191, 255, 0.08);
+}
+
+.confirm:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+@media (max-width: 420px) {
+  .page {
+    padding-inline: 10px;
+  }
+
+  .balanceRow strong {
+    font-size: 25px;
+  }
+
+  .balanceRow span {
+    font-size: 17px;
+  }
+
+  .amountField > div {
+    grid-template-columns: minmax(0, 1fr) 132px;
+  }
+
+  .amountField div > strong {
+    font-size: 11px;
+  }
+}
