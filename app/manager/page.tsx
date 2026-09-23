@@ -1117,6 +1117,18 @@ export default function ManagerPage() {
                       ) : null}
                       {active === "Withdrawals" &&
                       row.id &&
+                      /approved/i.test(row.value) ? (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            reviewWithdrawal(row.id!, "PAID")
+                          }
+                        >
+                          Mark Paid
+                        </button>
+                      ) : null}
+                      {active === "Withdrawals" &&
+                      row.id &&
                       /pending/i.test(row.value) ? (
                         <>
                           <button
