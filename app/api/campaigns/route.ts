@@ -17,13 +17,15 @@ export async function GET(request: Request) {
     const access = await manager(request);
     if (!access.ok) return NextResponse.json({ ok: false, reason: access.reason }, { status: 403 });
   }
-  const campaigns = await client.from("campaigns").select("*").order("created_at", { ascending: false });
+  const campaigns = includeManagerData
+    ? await client.from("campaigns").select("*").order("created_at", { ascending: false })
+    : await client.from("campaigns").select("*").eq("status", "active").order("created_at", { ascending: false });
   if (campaigns.error) return NextResponse.json({ ok: false, reason: campaigns.error.message }, { status: 500 });
   const campaignIds = (campaigns.data ?? []).map((x) => x.id);
   if (!campaignIds.length) return NextResponse.json({ ok: true, campaigns: [], codes: [], packages: [] });
   const [codes, packages] = await Promise.all([
-    client.from("campaign_codes").select("*").in("campaign_id", campaignIds).order("created_at", { ascending: false }),
-    client.from("campaign_gift_packages").select("*").in("campaign_id", campaignIds).order("created_at", { ascending: false }),
+    includeManagerData ? client.from("campaign_codes").select("*").in("campaign_id", campaignIds).order("created_at", { ascending: false }) : client.from("campaign_codes").select("*").in("campaign_id", campaignIds).eq("active", true).order("created_at", { ascending: false }),
+    includeManagerData ? client.from("campaign_gift_packages").select("*").in("campaign_id", campaignIds).order("created_at", { ascending: false }) : client.from("campaign_gift_packages").select("*").in("campaign_id", campaignIds).eq("active", true).order("created_at", { ascending: false }),
   ]);
   if (codes.error || packages.error) return NextResponse.json({ ok: false, reason: codes.error?.message || packages.error?.message }, { status: 500 });
   return NextResponse.json({ ok: true, campaigns: campaigns.data ?? [], codes: codes.data ?? [], packages: packages.data ?? [] });
