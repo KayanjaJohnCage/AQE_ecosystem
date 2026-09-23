@@ -6,7 +6,6 @@ import styles from "./page.module.css";
 
 type Tier = "basic" | "premium" | "vip";
 type PaymentMethod = "AIRTEL_MONEY" | "MOBILE_MONEY" | "CARD";
-type Currency = "UGX" | "USDT";
 
 const tierLabels: Record<Tier, string> = {
   basic: "Basic",
@@ -25,29 +24,41 @@ const paymentMethods: Array<{
   label: string;
   description: string;
 }> = [
-  { value: "AIRTEL_MONEY", label: "AIRTEL", description: "Airtel Money" },
-  { value: "MOBILE_MONEY", label: "MOMO", description: "Mobile Money" },
-  { value: "CARD", label: "CARD", description: "Bank / payment card" },
+  {
+    value: "AIRTEL_MONEY",
+    label: "Airtel",
+    description: "Airtel Money",
+  },
+  {
+    value: "MOBILE_MONEY",
+    label: "MTN",
+    description: "MTN Mobile Money",
+  },
+  {
+    value: "CARD",
+    label: "Card",
+    description: "Payment card",
+  },
 ];
 
 export default function VipPage() {
   const [tier, setTier] = useState<Tier>("basic");
   const [balance, setBalance] = useState(0);
-  const [currency, setCurrency] = useState<Currency>("UGX");
   const [recipientName, setRecipientName] = useState("");
   const [recipientAccount, setRecipientAccount] = useState("");
   const [paymentMethod, setPaymentMethod] =
     useState<PaymentMethod>("AIRTEL_MONEY");
   const [amount, setAmount] = useState("");
-  const [serviceChargeRate, setServiceChargeRate] = useState(0.1);
+  const [serviceChargeRate, setServiceChargeRate] = useState(0.08);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [success, setSuccess] = useState(false);
-  const [request, setRequest] = useState<Record<string, unknown> | null>(null);
+  const [requestId, setRequestId] = useState("");
 
   useEffect(() => {
     const { session, user } = readStoredSession();
     const headers: HeadersInit = {};
+
     if (session.access_token) {
       headers.authorization = `Bearer ${session.access_token}`;
     }
@@ -57,12 +68,19 @@ export default function VipPage() {
       .then(async (response) => {
         if (!response.ok) return;
         const payload = await response.json();
+
         const nextTier = payload.customer?.tier;
-        if (nextTier === "basic" || nextTier === "premium" || nextTier === "vip") {
+        if (
+          nextTier === "basic" ||
+          nextTier === "premium" ||
+          nextTier === "vip"
+        ) {
           setTier(nextTier);
         }
-        if (Number.isFinite(Number(payload.customer?.walletBalance))) {
-          setBalance(Number(payload.customer.walletBalance));
+
+        const nextBalance = Number(payload.customer?.walletBalance);
+        if (Number.isFinite(nextBalance)) {
+          setBalance(nextBalance);
         }
       })
       .catch(() => undefined);
@@ -71,13 +89,12 @@ export default function VipPage() {
       .then(async (response) => {
         if (!response.ok) return;
         const payload = await response.json();
-        const settings = payload.settings;
-        const rate = Number(settings?.withdrawal?.serviceChargeRate ?? 0.1);
+        const rate = Number(
+          payload.settings?.withdrawal?.serviceChargeRate ?? 0.08,
+        );
+
         if (Number.isFinite(rate) && rate >= 0 && rate <= 1) {
           setServiceChargeRate(rate);
-        }
-        if (settings?.walletCurrency === "UGX" || settings?.walletCurrency === "USDT") {
-          setCurrency(settings.walletCurrency);
         }
       })
       .catch(() => undefined);
@@ -85,26 +102,46 @@ export default function VipPage() {
 
   const numericAmount = Number(amount || 0);
   const serviceCharge = useMemo(
-    () => Math.round(numericAmount * serviceChargeRate * 100) / 100,
+    () =>
+      Math.round(numericAmount * serviceChargeRate * 100) / 100,
     [numericAmount, serviceChargeRate],
   );
-  const netAmount = Math.max(0, Math.round((numericAmount - serviceCharge) * 100) / 100);
+  const netAmount = Math.max(
+    0,
+    Math.round((numericAmount - serviceCharge) * 100) / 100,
+  );
 
   const accountLabel =
     paymentMethod === "CARD" ? "Card number" : "Phone number";
-  const accountPlaceholder =
-    paymentMethod === "CARD" ? "Enter card number" : "Enter phone number";
 
   async function submitWithdrawal(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+
+    if (!recipientName.trim() || !recipientAccount.trim() || numericAmount <= 0) {
+      setSuccess(false);
+      setMessage(
+        "Enter the number, the name registered to that number, and a valid amount.",
+      );
+      return;
+    }
+
+    if (numericAmount > balance) {
+      setSuccess(false);
+      setMessage("The withdrawal amount cannot be greater than your available balance.");
+      return;
+    }
+
     setLoading(true);
     setMessage("");
     setSuccess(false);
-    setRequest(null);
+    setRequestId("");
 
     try {
       const { session, user } = readStoredSession();
-      const headers: HeadersInit = { "Content-Type": "application/json" };
+      const headers: HeadersInit = {
+        "Content-Type": "application/json",
+      };
+
       if (session.access_token) {
         headers.authorization = `Bearer ${session.access_token}`;
       }
@@ -115,26 +152,37 @@ export default function VipPage() {
         headers,
         body: JSON.stringify({
           amount: numericAmount,
-          currency,
+          currency: "UGX",
           paymentMethod,
-          recipientName,
-          recipientAccount,
+          recipientName: recipientName.trim(),
+          recipientAccount: recipientAccount.trim(),
           tier,
         }),
       });
+
       const payload = await response.json().catch(() => ({}));
 
       if (!response.ok || !payload.ok) {
-        setMessage(payload.reason || payload.message || "Withdrawal request could not be submitted.");
+        setMessage(
+          payload.reason ||
+            payload.message ||
+            "Withdrawal request could not be submitted.",
+        );
         return;
       }
 
       setSuccess(true);
-      setRequest(payload);
-      setMessage("Withdrawal request submitted to the manager for review.");
+      setRequestId(String(payload.requestId || ""));
+      setMessage(
+        "Withdrawal request sent to the manager. Your request is now pending review.",
+      );
       setAmount("");
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Withdrawal request failed.");
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : "Withdrawal request failed.",
+      );
     } finally {
       setLoading(false);
     }
@@ -149,160 +197,185 @@ export default function VipPage() {
           onClick={() => window.history.back()}
           aria-label="Go back"
         >
-          ‹
+          <span aria-hidden="true">‹</span>
         </button>
-        <h1>Withdraw</h1>
+
+        <div>
+          <span className={styles.eyebrow}>AQE WALLET</span>
+          <h1>Withdraw</h1>
+        </div>
+
         <span className={styles.headerSpacer} />
       </header>
 
-      <section className={styles.currencyTabs} aria-label="Withdrawal currency">
-        {(["UGX", "USDT"] as Currency[]).map((item) => (
-          <button
-            type="button"
-            key={item}
-            className={currency === item ? styles.currencyActive : ""}
-            onClick={() => setCurrency(item)}
-          >
-            {item}
-          </button>
-        ))}
-      </section>
-
-      <section className={styles.balanceRow}>
-        <strong>Balance:</strong>
-        <span>
-          {currency} {balance.toLocaleString()}
-        </span>
-      </section>
-
-      <section className={styles.scheduleCard}>
-        <div>
-          <small>WITHDRAWAL SCHEDULE</small>
-          <strong>
-            {tierLabels[tier]} · {tierSchedules[tier]}
-          </strong>
-        </div>
-        <span className={styles.scheduleBadge}>
-          {tier === "vip" ? "3 DAYS / WEEK" : "WEEKENDS"}
-        </span>
+      <section className={styles.balanceCard}>
+        <span>Available balance</span>
+        <strong>UGX {balance.toLocaleString()}</strong>
+        <small>
+          {tierLabels[tier]} member · withdrawals: {tierSchedules[tier]}
+        </small>
       </section>
 
       <form onSubmit={submitWithdrawal} className={styles.form}>
-        <label className={styles.field}>
-          <span>Receiver name</span>
-          <input
-            value={recipientName}
-            onChange={(event) => setRecipientName(event.target.value)}
-            placeholder="Enter receiver name"
-            autoComplete="name"
-            required
-          />
-        </label>
+        <section className={styles.section}>
+          <div className={styles.sectionHeading}>
+            <div>
+              <span className={styles.sectionEyebrow}>PAYMENT METHOD</span>
+              <h2>Where should we send it?</h2>
+            </div>
+          </div>
 
-        <label className={styles.field}>
-          <span>{accountLabel}</span>
-          <input
-            value={recipientAccount}
-            onChange={(event) => setRecipientAccount(event.target.value)}
-            placeholder={accountPlaceholder}
-            inputMode={paymentMethod === "CARD" ? "numeric" : "tel"}
-            autoComplete={paymentMethod === "CARD" ? "cc-number" : "tel"}
-            required
-          />
-        </label>
-
-        <div className={styles.field}>
-          <span>Payment method</span>
-          <div className={styles.methodGrid}>
+          <div className={styles.paymentGrid}>
             {paymentMethods.map((method) => (
               <button
                 type="button"
                 key={method.value}
                 className={
-                  paymentMethod === method.value ? styles.methodActive : styles.method
+                  paymentMethod === method.value
+                    ? styles.paymentOptionActive
+                    : styles.paymentOption
                 }
                 onClick={() => setPaymentMethod(method.value)}
               >
-                <strong>{method.label}</strong>
-                <small>{method.description}</small>
-                <i>›</i>
+                <span className={styles.paymentIcon}>
+                  {method.value === "AIRTEL_MONEY"
+                    ? "A"
+                    : method.value === "MOBILE_MONEY"
+                      ? "M"
+                      : "C"}
+                </span>
+                <span>
+                  <strong>{method.label}</strong>
+                  <small>{method.description}</small>
+                </span>
+                <span className={styles.radio}>
+                  {paymentMethod === method.value ? "✓" : ""}
+                </span>
               </button>
             ))}
           </div>
-        </div>
+        </section>
 
-        <label className={styles.amountField}>
-          <span>Amount to withdraw</span>
-          <div>
+        <section className={styles.section}>
+          <div className={styles.sectionHeading}>
+            <div>
+              <span className={styles.sectionEyebrow}>ACCOUNT DETAILS</span>
+              <h2>Enter the registered details</h2>
+            </div>
+          </div>
+
+          <label className={styles.formField}>
+            <span>{accountLabel}</span>
             <input
-              value={amount}
-              onChange={(event) => setAmount(event.target.value.replace(/[^0-9.]/g, ""))}
-              placeholder="0"
-              inputMode="decimal"
-              min="0.01"
-              step="0.01"
-              type="text"
+              className="auth-input"
+              value={recipientAccount}
+              onChange={(event) =>
+                setRecipientAccount(event.target.value)
+              }
+              placeholder={
+                paymentMethod === "CARD"
+                  ? "Enter card number"
+                  : "Enter phone number"
+              }
+              inputMode={paymentMethod === "CARD" ? "numeric" : "tel"}
+              autoComplete={
+                paymentMethod === "CARD" ? "cc-number" : "tel"
+              }
               required
             />
-            <strong>
-              {currency} {numericAmount > 0 ? netAmount.toLocaleString() : "0.00"}
-            </strong>
-          </div>
-        </label>
+          </label>
 
-        <section className={styles.note}>
-          <strong>Note:</strong>
-          <p>
-            Every withdrawal is subject to a {(serviceChargeRate * 100).toFixed(0)}% service charge.
-          </p>
-          <p>
-            {tier === "vip"
-              ? "VIP withdrawals are available on three configured days each week, and VIP earnings cannot be withdrawn before the 20th of the month."
-              : "Basic and Premium withdrawals are available on weekends only."}
-          </p>
-          <p>Your request is submitted to the manager for processing.</p>
+          <label className={styles.formField}>
+            <span>Name registered to this {paymentMethod === "CARD" ? "card" : "number"}</span>
+            <input
+              className="auth-input"
+              value={recipientName}
+              onChange={(event) => setRecipientName(event.target.value)}
+              placeholder="Enter registered name"
+              autoComplete="name"
+              required
+            />
+          </label>
+
+          <label className={styles.formField}>
+            <span>Amount to withdraw</span>
+            <div className={styles.amountWrap}>
+              <input
+                className="auth-input"
+                value={amount}
+                onChange={(event) =>
+                  setAmount(
+                    event.target.value.replace(/[^0-9.]/g, ""),
+                  )
+                }
+                placeholder="0"
+                inputMode="decimal"
+                min="0.01"
+                step="0.01"
+                type="text"
+                required
+              />
+              <strong>UGX</strong>
+            </div>
+          </label>
         </section>
 
         {numericAmount > 0 ? (
           <section className={styles.summary}>
             <div>
               <span>Withdrawal amount</span>
-              <strong>{currency} {numericAmount.toLocaleString()}</strong>
+              <strong>UGX {numericAmount.toLocaleString()}</strong>
             </div>
             <div>
-              <span>Service charge ({(serviceChargeRate * 100).toFixed(0)}%)</span>
-              <strong>- {currency} {serviceCharge.toLocaleString()}</strong>
+              <span>
+                Service charge ({(serviceChargeRate * 100).toFixed(0)}%)
+              </span>
+              <strong>
+                - UGX {serviceCharge.toLocaleString()}
+              </strong>
             </div>
             <div className={styles.netRow}>
               <span>You receive</span>
-              <strong>{currency} {netAmount.toLocaleString()}</strong>
+              <strong>UGX {netAmount.toLocaleString()}</strong>
             </div>
           </section>
         ) : null}
 
-        {message ? (
-          <div className={success ? styles.success : styles.error} role="status">
-            {message}
-          </div>
-        ) : null}
+        <section className={styles.note}>
+          <strong>Withdrawal information</strong>
+          <p>
+            Every withdrawal is subject to an{" "}
+            {(serviceChargeRate * 100).toFixed(0)}% service charge.
+          </p>
+          <p>
+            {tier === "vip"
+              ? "VIP withdrawals are available three times a week. VIP earnings cannot be withdrawn before the 20th of the month."
+              : "Basic and Premium withdrawals are available on weekends only."}
+          </p>
+          <p>
+            Make sure the number/card and registered name are correct before
+            sending your request.
+          </p>
+        </section>
 
-        {request ? (
-          <div className={styles.receipt}>
-            <span>Request submitted</span>
-            <strong>{String(request.requestId || "")}</strong>
-            <small>
-              Net payout: {String(request.currency || currency)}{" "}
-              {Number(request.netAmount || 0).toLocaleString()}
-            </small>
+        {message ? (
+          <div
+            className={success ? styles.success : styles.error}
+            role="status"
+          >
+            {message}
+            {success && requestId ? (
+              <small>Request ID: {requestId}</small>
+            ) : null}
           </div>
         ) : null}
 
         <button
-          className={styles.confirm}
+          className="primary-button"
           type="submit"
           disabled={loading || numericAmount <= 0}
         >
-          {loading ? "Submitting..." : "Confirm"}
+          {loading ? "Sending request..." : "Send Withdrawal Request"}
         </button>
       </form>
     </main>
