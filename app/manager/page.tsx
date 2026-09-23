@@ -250,6 +250,7 @@ export default function ManagerPage() {
       fetch("/api/vip/withdrawals", { headers }),
       fetch("/api/payments/manager-direct", { headers }),
       fetch("/api/media/manager", { headers }),
+      fetch("/api/receipts", { headers }),
     ])
       .then(
         async ([
@@ -260,6 +261,7 @@ export default function ManagerPage() {
           withdrawalsResponse,
           paymentsResponse,
           mediaResponse,
+          receiptsResponse,
         ]) => {
           const [bookings, messages, products, support, withdrawals, payments, media] =
             await Promise.all([
@@ -281,6 +283,9 @@ export default function ManagerPage() {
                 : Promise.resolve({}),
               mediaResponse.ok
                 ? mediaResponse.json()
+                : Promise.resolve({}),
+              receiptsResponse.ok
+                ? receiptsResponse.json()
                 : Promise.resolve({}),
             ]);
 
