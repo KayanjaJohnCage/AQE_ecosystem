@@ -1012,7 +1012,7 @@ export default function CustomerPage() {
                     onClick={() => setSelectedProfile(profile)}
                     >
                       <div className="prototype-profile-image">
-                        <span className="prototype-profile-rating"><i className="fas fa-star" /> 4.8</span>
+                        
                         {profile.boosted ? <span className="aqe-boost-badge"><i className="fas fa-bolt" /> Boosted</span> : null}
                         <div className="prototype-profile-avatar">
                           {profile.avatarUrl ? (
@@ -1577,7 +1577,7 @@ export default function CustomerPage() {
                   Upgrade to Premium <span>→</span>
                 </button>
               </article>
-              <div className="aqe-hub-metrics"><div><span>Photos</span><strong>3 / 3</strong></div><div><span>Chat allowance today</span><strong>0 / 5</strong></div><div><span>Global QC</span><strong>{data.qcBalance}</strong></div><div><span>Store</span><strong>Not available</strong></div></div>
+              <div className="aqe-hub-metrics"><div><span>Photos</span><strong>Manager limit</strong></div><div><span>Chat allowance today</span><strong>0 / 5</strong></div><div><span>Global QC</span><strong>{data.qcBalance}</strong></div><div><span>Store</span><strong>Not available</strong></div></div>
               <p className="aqe-hub-notice">Premium members get an independent profile with messages and comments, 5 free daily chat messages, and can book others. Groups, voice notes, asset room and store remain VIP-only.</p>
               <div className="feature-list">
                 <div>
@@ -1614,7 +1614,7 @@ export default function CustomerPage() {
                   Upgrade to VIP <span>→</span>
                 </button>
               </article>
-              <div className="aqe-hub-metrics"><div><span>Photos</span><strong>Unlimited</strong></div><div><span>DM</span><strong>Unlimited</strong></div><div><span>Asset room</span><strong>Active</strong></div><div><span>Store</span><strong>Active</strong></div><div><span>Groups &amp; voice</span><strong>Active</strong></div><div><span>Reward progress</span><strong>4 / 5</strong></div></div>
+              <div className="aqe-hub-metrics"><div><span>Photos</span><strong>Unlimited</strong></div><div><span>DM</span><strong>Unlimited</strong></div><div><span>Asset room</span><strong>Active</strong></div><div><span>Store</span><strong>Active</strong></div><div><span>Groups &amp; voice</span><strong>Active</strong></div><div><span>Reward progress</span><strong>Live rewards</strong></div></div>
               <div className="prototype-action-grid">
                 <button type="button" onClick={() => navigateTo("referrals")}>
                   My team <span>→</span>
@@ -1924,11 +1924,11 @@ export default function CustomerPage() {
             <div className="profile-metrics">
               <div>
                 <span>Availability</span>
-                <strong>Open</strong>
+                <strong>{selectedProfile.availability || "Not listed"}</strong>
               </div>
               <div>
                 <span>Response</span>
-                <strong>2h</strong>
+                <strong>Not listed</strong>
               </div>
               <div>
                 <span>Tier</span>
@@ -1971,7 +1971,7 @@ export default function CustomerPage() {
             <h3 className="aqe-profile-section-title">Store</h3>
             <div className="aqe-profile-store-card"><i className="fas fa-shopping-bag" /><div><strong>Profile store</strong><span>Products and private drops appear here when listed.</span></div></div>
             <h3 className="aqe-profile-section-title">Reviews</h3>
-            <div className="aqe-profile-review"><div><i className="fas fa-star" /><i className="fas fa-star" /><i className="fas fa-star" /><i className="fas fa-star" /><i className="fas fa-star" /></div><p>“Verified AQE member feedback will appear here.”</p><span>— AQE community</span></div>
+            <div className="aqe-profile-review"><div><i className="fas fa-star" /><i className="fas fa-star" /><i className="fas fa-star" /><i className="fas fa-star" /><i className="fas fa-star" /></div><p>“No verified AQE member feedback yet.”</p><span>— AQE community</span></div>
 
             <div className="profile-actions">
               <button
