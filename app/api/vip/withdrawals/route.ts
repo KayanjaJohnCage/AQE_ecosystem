@@ -3,8 +3,13 @@ import {
   requireAuthenticatedRoleAccess,
   resolveMutationUserId,
 } from "../../../../lib/aqe/auth";
-import { createPersistedVipWithdrawalRequest } from "../../../../lib/aqe/vip";
+import {
+  createPersistedVipWithdrawalRequest,
+  type WithdrawalTier,
+} from "../../../../lib/aqe/vip";
 import { createServerSupabaseClient } from "../../../../lib/supabaseServer";
+
+const PAYMENT_METHODS = ["AIRTEL_MONEY", "MOBILE_MONEY", "CARD"] as const;
 
 export async function POST(request: Request) {
   try {
@@ -21,9 +26,47 @@ export async function POST(request: Request) {
       );
     }
 
+    const amount = Number(body.amount ?? 0);
+    const recipientName = String(body.recipientName ?? "").trim();
+    const recipientAccount = String(body.recipientAccount ?? "").trim();
+    const paymentMethod = String(body.paymentMethod ?? "").trim();
+    const currency = String(body.currency ?? "UGX").trim().toUpperCase();
+
+    if (!recipientName || !recipientAccount || !PAYMENT_METHODS.includes(paymentMethod as (typeof PAYMENT_METHODS)[number])) {
+      return NextResponse.json(
+        {
+          ok: false,
+          reason: "Receiver name, phone/card number, and payment method are required.",
+        },
+        { status: 400 },
+      );
+    }
+
+    if (!Number.isFinite(amount) || amount <= 0) {
+      return NextResponse.json(
+        { ok: false, reason: "Enter a valid withdrawal amount." },
+        { status: 400 },
+      );
+    }
+
+    if (!["UGX", "USDT"].includes(currency)) {
+      return NextResponse.json(
+        { ok: false, reason: "Unsupported withdrawal currency." },
+        { status: 400 },
+      );
+    }
+
     const result = await createPersistedVipWithdrawalRequest({
       userId: identity.userId,
-      amount: Number(body.amount ?? 0),
+      amount,
+      tier:
+        body.tier === "basic" || body.tier === "premium" || body.tier === "vip"
+          ? (body.tier as WithdrawalTier)
+          : undefined,
+      recipientName,
+      recipientAccount,
+      paymentMethod,
+      currency,
     });
 
     return NextResponse.json(result, { status: result.ok ? 200 : 400 });
@@ -32,7 +75,7 @@ export async function POST(request: Request) {
       {
         ok: false,
         message:
-          error instanceof Error ? error.message : "VIP withdrawal failed",
+          error instanceof Error ? error.message : "Withdrawal failed",
       },
       { status: 400 },
     );
@@ -50,21 +93,28 @@ export async function GET(request: Request) {
         { ok: false, reason: access.reason },
         { status: 403 },
       );
+
     const client = createServerSupabaseClient();
     if (!client)
-      return NextResponse.json({ ok: true, source: "demo", withdrawals: [] });
+      return NextResponse.json(
+        { ok: false, reason: "Withdrawal queue is unavailable." },
+        { status: 503 },
+      );
+
     const { data, error } = await client
       .from("vip_withdrawal_requests")
       .select(
-        "id, user_id, amount, status, created_at, reviewed_at, reviewed_by, review_reason",
+        "id, user_id, tier, payment_method, recipient_name, recipient_account, currency, amount, service_charge_rate, service_charge_amount, net_amount, status, created_at, reviewed_at, reviewed_by, review_reason",
       )
       .order("created_at", { ascending: false })
       .limit(50);
+
     if (error)
       return NextResponse.json(
         { ok: false, reason: error.message },
         { status: 500 },
       );
+
     return NextResponse.json({
       ok: true,
       source: "supabase",
@@ -95,9 +145,11 @@ export async function PATCH(request: Request) {
         { ok: false, reason: access.reason },
         { status: 403 },
       );
+
     const body = await request.json().catch(() => ({}));
     const requestId = String(body.requestId ?? "").trim();
     const status = String(body.status ?? "").trim();
+
     if (
       !requestId ||
       !["APPROVED", "REJECTED", "PAID", "CANCELLED"].includes(status)
@@ -110,14 +162,14 @@ export async function PATCH(request: Request) {
         { status: 400 },
       );
     }
+
     const client = createServerSupabaseClient();
     if (!client)
-      return NextResponse.json({
-        ok: true,
-        saved: false,
-        source: "memory",
-        status,
-      });
+      return NextResponse.json(
+        { ok: false, reason: "Withdrawal queue is unavailable." },
+        { status: 503 },
+      );
+
     const updated = await client
       .from("vip_withdrawal_requests")
       .update({
@@ -128,8 +180,11 @@ export async function PATCH(request: Request) {
       })
       .eq("id", requestId)
       .eq("status", "PENDING")
-      .select("id, status, reviewed_at, reviewed_by, review_reason")
+      .select(
+        "id, tier, payment_method, recipient_name, recipient_account, currency, amount, service_charge_rate, service_charge_amount, net_amount, status, reviewed_at, reviewed_by, review_reason",
+      )
       .single();
+
     if (updated.error || !updated.data)
       return NextResponse.json(
         {
@@ -138,6 +193,7 @@ export async function PATCH(request: Request) {
         },
         { status: 409 },
       );
+
     return NextResponse.json({
       ok: true,
       saved: true,
