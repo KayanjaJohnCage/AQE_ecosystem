@@ -367,7 +367,7 @@ export default function ManagerPage() {
               }) => ({
                 id: withdrawal.id,
                 title: `${(withdrawal.tier || "basic").toUpperCase()} payout · ${withdrawal.recipient_name || "member"}`,
-                meta: `${withdrawal.payment_method || "MOBILE_MONEY"} · ${withdrawal.recipient_account || "No destination"} · Gross ${withdrawal.currency || "UGX"} ${Number(withdrawal.amount || 0).toLocaleString()} · Fee ${Number(withdrawal.service_charge_rate || 0.1) * 100}%`,
+                meta: `${withdrawal.payment_method || "MOBILE_MONEY"} · ${withdrawal.recipient_account || "No destination"} · Gross ${withdrawal.currency || "UGX"} ${Number(withdrawal.amount || 0).toLocaleString()} · Fee ${Number(withdrawal.service_charge_rate ?? 0.08) * 100}%`,
                 value: `${withdrawal.status || "PENDING"} · Net ${withdrawal.currency || "UGX"} ${Number(withdrawal.net_amount || 0).toLocaleString()}`,
               }),
             );
