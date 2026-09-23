@@ -16,7 +16,7 @@ export async function GET(request: Request) {
     const ageMax = Number(url.searchParams.get("ageMax") || 0);
 
     let profileQuery = client.from("profiles").select(
-      "id,user_id,display_name,bio,country,location,area,category,content_categories,services,age,gender,headline,languages,pronouns,availability,visibility,social_platforms,contact_methods,tier,verification_status"
+      "id,user_id,display_name,bio,country,location,area,category,content_categories,services,age,gender,headline,languages,pronouns,availability,visibility,social_platforms,contact_methods,tier,verification_status,avatar_url"
     ).eq("visibility", "public").order("updated_at", { ascending: false }).limit(100);
 
     if (query) profileQuery = profileQuery.or(
@@ -32,10 +32,47 @@ export async function GET(request: Request) {
     const { data, error } = await profileQuery;
     if (error) return NextResponse.json({ ok: false, reason: error.message }, { status: 500 });
 
+    const profiles = data ?? [];
+    const ownerIds = profiles.map((profile) => profile.user_id);
+
+    const { data: mediaRows } = ownerIds.length
+      ? await client
+          .from("profile_media")
+          .select(
+            "id,owner_user_id,storage_path,media_type,mime_type,is_profile_photo,created_at",
+          )
+          .in("owner_user_id", ownerIds)
+          .eq("visibility", "public")
+          .eq("moderation_status", "approved")
+          .order("created_at", { ascending: false })
+      : { data: [] };
+
+    const mediaByOwner = new Map<string, Array<Record<string, unknown>>>();
+    for (const media of mediaRows ?? []) {
+      const signed = await client.storage
+        .from("profile-media")
+        .createSignedUrl(media.storage_path, 3600);
+
+      if (!signed.data?.signedUrl) continue;
+
+      const item = {
+        id: media.id,
+        type: media.media_type,
+        url: signed.data.signedUrl,
+        mimeType: media.mime_type,
+        isProfilePhoto: Boolean(media.is_profile_photo),
+      };
+
+      const existing = mediaByOwner.get(media.owner_user_id) ?? [];
+      existing.push(item);
+      mediaByOwner.set(media.owner_user_id, existing);
+    }
+
     return NextResponse.json({
       ok: true,
       source: "supabase",
-      profiles: (data ?? []).map((profile) => ({
+      profiles: profiles.map((profile) => ({
+
         id: profile.id,
         userId: profile.user_id,
         name: profile.display_name || "AQE Member",
@@ -57,6 +94,11 @@ export async function GET(request: Request) {
         status: profile.verification_status === "approved" ? "Verified member" : "Profile pending",
         tier: profile.tier || "basic",
         bio: profile.bio || "",
+        avatarUrl:
+          (mediaByOwner.get(profile.user_id) ?? []).find(
+            (media) => media.isProfilePhoto,
+          )?.url || profile.avatar_url || "",
+        media: mediaByOwner.get(profile.user_id) ?? [],
       })),
     });
   } catch (error) {
