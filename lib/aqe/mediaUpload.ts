@@ -72,12 +72,14 @@ export async function createMediaUploadUrl({
   kind,
   mimeType,
   sizeBytes,
+  contentAccess = "public",
 }: {
   userId: string;
   fileName: string;
   kind: "image" | "video";
   mimeType: string;
   sizeBytes: number;
+  contentAccess?: "public" | "subscribers_only";
 }) {
   const { createServerSupabaseClient } = await import("../supabaseServer");
   const client = createServerSupabaseClient();
@@ -96,6 +98,11 @@ export async function createMediaUploadUrl({
   if (limits.limited && sizeBytes > limits.maxBytes) {
     return { ok: false, reason: kind + " exceeds the " + limits.tier + " plan's maximum file size." };
   }
+
+  const profile = await client.from("profiles").select("tier").eq("user_id", userId).maybeSingle();
+  const resolvedContentAccess = contentAccess === "subscribers_only" && profile.data?.tier === "vip"
+    ? "subscribers_only"
+    : "public";
 
   const objectPath = buildSignedStoragePath(userId, fileName, kind);
   const { data, error } = await client.storage
@@ -117,6 +124,7 @@ export async function createMediaUploadUrl({
     file_size: sizeBytes,
     visibility: "private",
     moderation_status: "pending",
+    content_access: resolvedContentAccess,
   });
 
   if (mediaError) {
