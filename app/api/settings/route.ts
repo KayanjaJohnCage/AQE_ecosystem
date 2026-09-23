@@ -10,6 +10,10 @@ export type AqePlatformSettings = {
   referralRates: { direct: number; indirect: number };
   about: string;
   contact: string;
+  withdrawal: {
+    serviceChargeRate: number;
+    serviceChargeLabel: string;
+  };
   pricing: {
     originalTierPrices: { basic: number; premium: number; vip: number };
     currentTierPrices: { basic: number; premium: number; vip: number };
@@ -39,6 +43,10 @@ const defaults: AqePlatformSettings = {
   referralRates: { direct: 0.1, indirect: 0.05 },
   about: "AQE is a community ecosystem for connection, profiles, bookings, and trusted creator tools.",
   contact: "Contact an AQE manager for payment and account support.",
+  withdrawal: {
+    serviceChargeRate: 0.10,
+    serviceChargeLabel: "10% withdrawal service charge",
+  },
   pricing: {
     originalTierPrices: { basic: 125000, premium: 250000, vip: 500000 },
     currentTierPrices: { basic: 65000, premium: 150000, vip: 250000 },
@@ -115,6 +123,7 @@ function normalizeSettings(value: Partial<AqePlatformSettings> = {}): AqePlatfor
   const promotionalLabels = pricing.promotionalLabels ?? {};
   const deduction = pricing.deduction ?? {};
   const teamLeaderRenewalCommission = pricing.teamLeaderRenewalCommission ?? {};
+  const withdrawal = value.withdrawal ?? {};
 
   const normalizedTierPrices = {
     basic: positive(tierPrices.basic, defaults.tierPrices.basic),
@@ -145,6 +154,15 @@ function normalizeSettings(value: Partial<AqePlatformSettings> = {}): AqePlatfor
     },
     about: String(value.about || defaults.about),
     contact: String(value.contact || defaults.contact),
+    withdrawal: {
+      serviceChargeRate:
+        Number(withdrawal.serviceChargeRate) >= 0 && Number(withdrawal.serviceChargeRate) <= 1
+          ? Number(withdrawal.serviceChargeRate)
+          : defaults.withdrawal.serviceChargeRate,
+      serviceChargeLabel: String(
+        withdrawal.serviceChargeLabel || defaults.withdrawal.serviceChargeLabel,
+      ),
+    },
     pricing: {
       originalTierPrices: {
         basic: positive(originalTierPrices.basic, defaults.pricing.originalTierPrices.basic),
