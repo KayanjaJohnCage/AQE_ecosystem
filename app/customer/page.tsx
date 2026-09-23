@@ -20,6 +20,9 @@ type ProfileMedia = {
   mimeType?: string;
   isProfilePhoto?: boolean;
   moderationStatus?: string;
+  contentAccess?: "public" | "subscribers_only";
+  locked?: boolean;
+  subscriptionRequired?: boolean;
 };
 
 type ProfileCard = {
@@ -48,6 +51,14 @@ type ProfileCard = {
   visibility?: string;
   avatarUrl?: string;
   media?: ProfileMedia[];
+  vipContent?: {
+    enabled: boolean;
+    monthlyPrice: number;
+    currency: string;
+    title: string;
+    description?: string | null;
+    subscribed: boolean;
+  } | null;
 };
 
 type MessageRow = {
@@ -215,6 +226,71 @@ export default function CustomerPage() {
   const [birthMonth, setBirthMonth] = useState("");
   const [birthYear, setBirthYear] = useState("");
   const [ageError, setAgeError] = useState("");
+  const [vipContentPrice, setVipContentPrice] = useState("");
+  const [vipContentEnabled, setVipContentEnabled] = useState(false);
+  const [vipContentFeedback, setVipContentFeedback] = useState("");
+
+  async function subscribeToVipContent(profile: ProfileCard) {
+    if (!profile.userId || profile.tier !== "vip" || !profile.vipContent?.enabled) return;
+    if (profile.vipContent.subscribed) return;
+    const { session, user } = readStoredSession();
+    if (!session.access_token && !user.id) {
+      setAuthOpen(true);
+      return;
+    }
+    setProfileActionMessage("Creating your VIP content subscription payment...");
+    try {
+      const headers: HeadersInit = { "Content-Type": "application/json" };
+      if (session.access_token) headers.authorization = `Bearer ${session.access_token}`;
+      if (user.id) headers["x-user-id"] = user.id;
+      const response = await fetch("/api/payments/initialize", {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          amount: profile.vipContent.monthlyPrice,
+          currency: profile.vipContent.currency,
+          paymentKind: "vip_content_subscription",
+          vipUserId: profile.userId,
+          qcPackageId: `vip-content-${profile.userId}`,
+        }),
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok || !payload.ok) {
+        setProfileActionMessage(payload.reason || payload.message || "VIP content subscription payment could not be created.");
+        return;
+      }
+      setProfileActionMessage(`Payment created. Reference: ${payload.reference || payload.order?.reference || "AQE reference"}. Complete the payment, then wait for confirmation.`);
+    } catch (error) {
+      setProfileActionMessage(error instanceof Error ? error.message : "VIP content subscription payment failed.");
+    }
+  }
+
+  async function saveVipContentSettings() {
+    const { session, user } = readStoredSession();
+    const headers: HeadersInit = { "Content-Type": "application/json" };
+    if (session.access_token) headers.authorization = `Bearer ${session.access_token}`;
+    if (user.id) headers["x-user-id"] = user.id;
+    const price = Number(vipContentPrice);
+    if (!Number.isFinite(price) || price <= 0) {
+      setVipContentFeedback("Enter a monthly content subscription price.");
+      return;
+    }
+    try {
+      const response = await fetch("/api/vip/content", {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          enabled: vipContentEnabled,
+          monthlyPrice: price,
+          currency: platformSettings.walletCurrency,
+        }),
+      });
+      const payload = await response.json().catch(() => ({}));
+      setVipContentFeedback(payload.ok ? "VIP content subscription settings saved." : payload.reason || "Could not save VIP content settings.");
+    } catch (error) {
+      setVipContentFeedback(error instanceof Error ? error.message : "Could not save VIP content settings.");
+    }
+  }
 
   const navigateTo = (target: CustomerView) => {
     setView(target);
@@ -1361,6 +1437,25 @@ export default function CustomerPage() {
               </article>
               {authenticated ? (
                 <section className="aqe-own-media-panel">
+                  {data.tier === "vip" ? (
+                    <div className="content-panel compact" style={{ marginBottom: 12 }}>
+                      <div className="panel-copy">
+                        <strong>VIP creator content</strong>
+                        <span>Set a monthly price for subscriber-only photos and videos. This is separate from your VIP membership renewal.</span>
+                      </div>
+                      <input
+                        className="auth-input"
+                        type="number"
+                        min="1"
+                        value={vipContentPrice}
+                        onChange={(event) => setVipContentPrice(event.target.value)}
+                        placeholder={`Monthly price in ${platformSettings.walletCurrency}`}
+                      />
+                      <label><input type="checkbox" checked={vipContentEnabled} onChange={(event) => setVipContentEnabled(event.target.checked)} /> Enable content subscriptions</label>
+                      <button type="button" className="secondary-button" onClick={() => void saveVipContentSettings()}>Save content subscription</button>
+                      {vipContentFeedback ? <span className="auth-message">{vipContentFeedback}</span> : null}
+                    </div>
+                  ) : null}
                   <div className="section-heading compact-heading">
                     <div>
                       <span className="eyebrow">PROFILE CONTENT</span>
@@ -1939,11 +2034,33 @@ export default function CustomerPage() {
                 "Open to meaningful connections and collaborations across East Africa."}
             </p>
 
+            {selectedProfile.tier === "vip" && selectedProfile.vipContent?.enabled ? (
+              <div className="content-panel compact" style={{ marginBottom: 12 }}>
+                <div className="panel-copy">
+                  <strong>{selectedProfile.vipContent.title || "VIP Content"}</strong>
+                  <span>{selectedProfile.vipContent.description || `Subscribe for ${selectedProfile.vipContent.currency} ${Number(selectedProfile.vipContent.monthlyPrice).toLocaleString()} per month to unlock subscriber-only content.`}</span>
+                </div>
+                {!selectedProfile.vipContent.subscribed ? (
+                  <button type="button" className="primary-button" onClick={() => void subscribeToVipContent(selectedProfile)}>
+                    Subscribe · {selectedProfile.vipContent.currency} {Number(selectedProfile.vipContent.monthlyPrice).toLocaleString()} / month
+                  </button>
+                ) : (
+                  <span className="status-pill">Subscribed · access active</span>
+                )}
+              </div>
+            ) : null}
             <h3 className="aqe-profile-section-title">Photos &amp; Media</h3>
             <div className="aqe-profile-media-grid">
               {(selectedProfile.media ?? []).length ? (
                 (selectedProfile.media ?? []).map((media) =>
-                  media.type === "video" ? (
+                  media.locked ? (
+                    <div key={media.id} className="aqe-profile-media" style={{ display: "grid", placeItems: "center", minHeight: 180, padding: 20, textAlign: "center", background: "rgba(0,0,0,.08)", filter: "blur(.2px)" }}>
+                      <div>
+                        <strong>🔒 Subscriber-only content</strong>
+                        <p>Subscribe to this VIP's content for one full month to unlock this media.</p>
+                      </div>
+                    </div>
+                  ) : media.type === "video" ? (
                     <video
                       key={media.id}
                       src={media.url}
