@@ -71,9 +71,9 @@ export async function GET(request: Request) {
           .order("created_at", { ascending: false })
       : { data: [] };
 
-    const vipOwnerIds = [...new Set((mediaRows ?? [])
-      .filter((media) => media.content_access === "subscribers_only")
-      .map((media) => media.owner_user_id))];
+    const vipOwnerIds = profiles
+      .filter((profile) => profile.tier === "vip")
+      .map((profile) => profile.user_id);
 
     const subscribedVipIds = new Set<string>();
     if (viewerUserId && vipOwnerIds.length) {
