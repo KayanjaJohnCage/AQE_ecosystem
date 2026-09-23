@@ -30,6 +30,9 @@ type ProfileCard = {
   tag: string;
   status: string;
   tier?: string;
+  boosted?: boolean;
+  boostExpiresAt?: string | null;
+  boostLabel?: string;
   bio?: string;
   age?: number | null;
   gender?: string;
@@ -987,6 +990,7 @@ export default function CustomerPage() {
                     >
                       <div className="prototype-profile-image">
                         <span className="prototype-profile-rating"><i className="fas fa-star" /> 4.8</span>
+                        {profile.boosted ? <span className="aqe-boost-badge"><i className="fas fa-bolt" /> Boosted</span> : null}
                         <div className="prototype-profile-avatar">
                           {profile.avatarUrl ? (
                             <img
@@ -1005,6 +1009,7 @@ export default function CustomerPage() {
                         <b>✓ Verified</b>
                       </div>
                     <strong>{profile.name}</strong>
+                    {profile.boosted ? <small className="aqe-boost-label"><i className="fas fa-bolt" /> {profile.boostLabel || "Boosted profile"}</small> : null}
                     <small>
                       {profile.tag} · {profile.city}
                     </small>
@@ -1075,7 +1080,7 @@ export default function CustomerPage() {
               {visibleProfiles.map((profile) => (
                 <article key={profile.id || profile.userId || profile.name} className="prototype-profile-card aqe-explore-card" onClick={() => setSelectedProfile(profile)} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); setSelectedProfile(profile); } }} role="button" tabIndex={0}>
                   <div className="prototype-profile-image">
-                    <span className="prototype-profile-rating"><i className="fas fa-star" /> 4.8</span>
+                    <span className="prototype-profile-rating"><i className="fas fa-star" /> 4.8</span>\n                    {profile.boosted ? <span className="aqe-boost-badge"><i className="fas fa-bolt" /> Boosted</span> : null}
                     <div className="prototype-profile-avatar">
                       {profile.avatarUrl ? (
                         <img src={profile.avatarUrl} alt={profile.name} className="aqe-avatar-image" />
