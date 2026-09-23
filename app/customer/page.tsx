@@ -988,11 +988,22 @@ export default function CustomerPage() {
                       <div className="prototype-profile-image">
                         <span className="prototype-profile-rating"><i className="fas fa-star" /> 4.8</span>
                         <div className="prototype-profile-avatar">
-                        {profile.name.charAt(0)}
+                          {profile.avatarUrl ? (
+                            <img
+                              src={profile.avatarUrl}
+                              alt={profile.name}
+                              className="aqe-avatar-image"
+                            />
+                          ) : (
+                            profile.name.charAt(0)
+                          )}
+                        </div>
+                        <span>
+                          {profile.city}
+                          {profile.age ? ` · ${profile.age}` : ""}
+                        </span>
+                        <b>✓ Verified</b>
                       </div>
-                      <span>{profile.city} · 22</span>
-                      <b>✓ Verified</b>
-                    </div>
                     <strong>{profile.name}</strong>
                     <small>
                       {profile.tag} · {profile.city}
@@ -1063,7 +1074,16 @@ export default function CustomerPage() {
               </div>
               {visibleProfiles.map((profile) => (
                 <article key={profile.id || profile.userId || profile.name} className="prototype-profile-card aqe-explore-card" onClick={() => setSelectedProfile(profile)} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); setSelectedProfile(profile); } }} role="button" tabIndex={0}>
-                  <div className="prototype-profile-image"><span className="prototype-profile-rating"><i className="fas fa-star" /> 4.8</span></div>
+                  <div className="prototype-profile-image">
+                    <span className="prototype-profile-rating"><i className="fas fa-star" /> 4.8</span>
+                    <div className="prototype-profile-avatar">
+                      {profile.avatarUrl ? (
+                        <img src={profile.avatarUrl} alt={profile.name} className="aqe-avatar-image" />
+                      ) : (
+                        profile.name.charAt(0)
+                      )}
+                    </div>
+                  </div>
                   <div className="panel-copy">
                     <strong>{profile.name}{profile.age ? ", " + profile.age : ""}</strong>
                     <span>{profile.contentCategories?.join(" · ") || profile.tag}</span>
