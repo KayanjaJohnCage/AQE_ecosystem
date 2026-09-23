@@ -63,18 +63,25 @@ export async function POST(request: Request) {
       };
       const expectedCurrency = String(settings.walletCurrency ?? "UGX").toUpperCase();
       const expectedPrice = Number(prices[requestedTier]);
-      if (
-        !Number.isFinite(expectedPrice) ||
-        amount !== expectedPrice ||
-        currency !== expectedCurrency
-      ) {
-        return NextResponse.json(
-          {
-            ok: false,
-            reason: `The ${requestedTier} payment must use ${expectedCurrency} ${expectedPrice.toLocaleString()}.`,
-          },
-          { status: 400 },
-        );
+      if (paymentKind === "membership_upgrade") {
+        if (!Number.isFinite(expectedPrice) || amount !== expectedPrice || currency !== expectedCurrency) {
+          return NextResponse.json({ ok: false, reason: `The ${requestedTier} payment must use ${expectedCurrency} ${expectedPrice.toLocaleString()}.` }, { status: 400 });
+        }
+      } else if (paymentKind === "qc_recharge") {
+        const qcAmount = Number(body.qcAmount ?? 0);
+        const expectedQcPrice = qcAmount * Number(settings.qcExchangeRate ?? 1000);
+        if (!Number.isFinite(qcAmount) || qcAmount <= 0 || amount !== expectedQcPrice || currency !== expectedCurrency) {
+          return NextResponse.json({ ok: false, reason: `QC recharge must match the configured QC exchange rate.` }, { status: 400 });
+        }
+      } else if (paymentKind === "wallet_deposit") {
+        if (currency !== expectedCurrency) return NextResponse.json({ ok: false, reason: `Wallet deposits must use ${expectedCurrency}.` }, { status: 400 });
+      } else if (paymentKind === "subscription_renewal") {
+        const renewal = Number(settings.renewalPrices?.[requestedTier] ?? 0);
+        if (!Number.isFinite(renewal) || amount !== renewal || currency !== expectedCurrency) {
+          return NextResponse.json({ ok: false, reason: `The ${requestedTier} renewal must use ${expectedCurrency} ${renewal.toLocaleString()}.` }, { status: 400 });
+        }
+      } else {
+        return NextResponse.json({ ok: false, reason: "Unsupported payment type." }, { status: 400 });
       }
     }
 
@@ -90,6 +97,7 @@ export async function POST(request: Request) {
         origin: "server",
         requestedTier,
         paymentKind,
+        qcAmount: paymentKind === "qc_recharge" ? Number(body.qcAmount ?? 0) : null,
       },
     });
 
