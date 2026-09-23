@@ -117,6 +117,21 @@ export async function GET(request: Request) {
       mediaByOwner.set(media.owner_user_id, existing);
     }
 
+    const vipOwnerIdsForSettings = profiles.filter((profile) => profile.tier === "vip").map((profile) => profile.user_id);
+    const { data: vipSettingsRows } = vipOwnerIdsForSettings.length
+      ? await client.from("vip_content_settings").select("vip_user_id,enabled,monthly_price,currency,title,description").in("vip_user_id", vipOwnerIdsForSettings)
+      : { data: [] };
+    const vipSettingsByOwner = new Map<string, { enabled: boolean; monthlyPrice: number; currency: string; title: string; description: string | null }>();
+    for (const row of vipSettingsRows ?? []) {
+      vipSettingsByOwner.set(row.vip_user_id, {
+        enabled: Boolean(row.enabled),
+        monthlyPrice: Number(row.monthly_price),
+        currency: row.currency,
+        title: row.title,
+        description: row.description,
+      });
+    }
+
     const orderedProfiles = [...profiles].sort((a, b) => {
       const aBoost = boostByOwner.get(a.user_id);
       const bBoost = boostByOwner.get(b.user_id);
@@ -161,7 +176,18 @@ export async function GET(request: Request) {
             (media) => media.isProfilePhoto,
           )?.url || profile.avatar_url || "",
         media: mediaByOwner.get(profile.user_id) ?? [],
-        vipContent: profile.tier === "vip" ? { enabled: false, monthlyPrice: 0, currency: "UGX", subscribed: false } : null,
+        vipContent: profile.tier === "vip"
+          ? {
+              ...(vipSettingsByOwner.get(profile.user_id) ?? {
+                enabled: false,
+                monthlyPrice: 0,
+                currency: "UGX",
+                title: "VIP Content",
+                description: null,
+              }),
+              subscribed: subscribedVipIds.has(profile.user_id),
+            }
+          : null,
       })),
     });
   } catch (error) {
