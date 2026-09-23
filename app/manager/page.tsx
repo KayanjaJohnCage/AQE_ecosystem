@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { readStoredSession } from "../../lib/clientSession";
+import ProfileBoostManager from "./components/ProfileBoostManager";
 
 type ManagerData = {
   users: number;
@@ -67,7 +68,7 @@ const navGroups = [
     items: [
       "Dashboard",
       "Users & Profiles",
-      "Profile Media",
+      "Media & Profile Boosts",
       "Verification",
       "Subscriptions",
       "Bookings & Requests",
@@ -1040,7 +1041,9 @@ export default function ManagerPage() {
             <section className="manager-card manager-detail">
               <div className="manager-table-header">
                 <h3>{active}</h3>
-                {active === "Users & Profiles" ? (
+                {active === "Media & Profile Boosts" ? <ProfileBoostManager /> : null}
+
+      {active === "Users & Profiles" ? (
                   <input
                     className="manager-search"
                     value={profileQuery}
