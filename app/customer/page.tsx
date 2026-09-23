@@ -1421,7 +1421,7 @@ export default function CustomerPage() {
                     )}
                   </div>
                 </section>
-              ) : null
+              ) : null}
 
               <div className="aqe-own-shortcuts">
                 <button type="button" onClick={() => window.location.href = "/payments"}><i className="fas fa-arrow-down" /><span>Deposit</span></button>
