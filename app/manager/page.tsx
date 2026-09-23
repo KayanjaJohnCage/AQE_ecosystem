@@ -149,11 +149,6 @@ const tableSeeds: Record<string, ManagerRow[]> = {
     { title: "Verification appeal", meta: "Escalated", value: "In review" },
     { title: "Account issue", meta: "Low priority", value: "Resolved" },
   ],
-  Withdrawals: [
-    { title: "VIP payout batch", meta: "UGX 3.1M", value: "Queued" },
-    { title: "Creator payout", meta: "UGX 820K", value: "Approved" },
-    { title: "Commission transfer", meta: "UGX 480K", value: "Processing" },
-  ],
   "Audit Logs": [
     { title: "Tier rule update", meta: "Owner action", value: "Approved" },
     { title: "QC ledger sync", meta: "System", value: "Success" },
@@ -359,13 +354,21 @@ export default function ManagerPage() {
               (withdrawal: {
                 id?: string;
                 user_id?: string;
+                tier?: string;
+                payment_method?: string;
+                recipient_name?: string;
+                recipient_account?: string;
+                currency?: string;
                 amount?: number;
+                service_charge_rate?: number;
+                service_charge_amount?: number;
+                net_amount?: number;
                 status?: string;
               }) => ({
                 id: withdrawal.id,
-                title: `VIP payout ${withdrawal.user_id || "member"}`,
-                meta: `UGX ${withdrawal.amount ?? 0}`,
-                value: withdrawal.status || "PENDING",
+                title: `${(withdrawal.tier || "basic").toUpperCase()} payout · ${withdrawal.recipient_name || "member"}`,
+                meta: `${withdrawal.payment_method || "MOBILE_MONEY"} · ${withdrawal.recipient_account || "No destination"} · Gross ${withdrawal.currency || "UGX"} ${Number(withdrawal.amount || 0).toLocaleString()} · Fee ${Number(withdrawal.service_charge_rate || 0.1) * 100}%`,
+                value: `${withdrawal.status || "PENDING"} · Net ${withdrawal.currency || "UGX"} ${Number(withdrawal.net_amount || 0).toLocaleString()}`,
               }),
             );
           }
