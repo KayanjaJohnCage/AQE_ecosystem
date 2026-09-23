@@ -1,124 +1,83 @@
 .page {
   min-height: 100dvh;
-  padding: 0 14px 42px;
+  box-sizing: border-box;
+  padding: 0 18px 42px;
   background:
-    radial-gradient(circle at 12% 72%, rgba(0, 191, 255, 0.08), transparent 24%),
-    radial-gradient(circle at 82% 62%, rgba(0, 191, 255, 0.06), transparent 28%),
-    #000;
-  color: #fff;
-  max-width: 560px;
+    radial-gradient(circle at 50% -10%, rgba(212, 175, 55, 0.11), transparent 34%),
+    #0a0a0f;
+  color: #f0f0f5;
+  max-width: 480px;
   margin: 0 auto;
 }
 
 .header {
   min-height: 76px;
   display: grid;
-  grid-template-columns: 44px 1fr 44px;
+  grid-template-columns: 42px 1fr 42px;
   align-items: center;
-  text-align: center;
+  gap: 10px;
 }
 
 .header h1 {
-  margin: 0;
-  font-size: 21px;
-  font-weight: 900;
+  margin: 3px 0 0;
+  color: #f5f5f7;
+  font-family: Georgia, serif;
+  font-size: 25px;
+}
+
+.eyebrow,
+.sectionEyebrow {
+  color: #f9e076;
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 1.6px;
 }
 
 .back {
-  width: 42px;
-  height: 42px;
-  border: 0;
-  background: transparent;
-  color: #fff;
-  font-size: 38px;
-  line-height: 1;
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(212, 175, 55, 0.2);
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.28);
+  color: #d4af37;
   cursor: pointer;
+}
+
+.back span {
+  margin-top: -3px;
+  font-size: 31px;
+  line-height: 1;
 }
 
 .headerSpacer {
-  width: 44px;
+  width: 42px;
 }
 
-.currencyTabs {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-  margin: 0 0 18px;
+.balanceCard {
+  margin: 0 0 14px;
+  padding: 18px;
+  border: 1px solid rgba(212, 175, 55, 0.22);
+  border-radius: 18px;
+  background:
+    radial-gradient(circle at 100% 0, rgba(212, 175, 55, 0.1), transparent 35%),
+    rgba(255, 255, 255, 0.025);
 }
 
-.currencyTabs button {
-  min-height: 40px;
-  border: 1px solid transparent;
-  border-radius: 8px;
-  background: transparent;
-  color: #fff;
-  font-size: 15px;
-  font-weight: 900;
-  cursor: pointer;
-}
-
-.currencyTabs button:first-child {
-  border-color: rgba(0, 191, 255, 0.45);
-}
-
-.currencyActive {
-  border-color: #00bfff !important;
-  background: rgba(0, 191, 255, 0.05) !important;
-  box-shadow: 0 0 10px rgba(0, 191, 255, 0.35), inset 0 0 0 1px rgba(0, 191, 255, 0.35);
-}
-
-.balanceRow {
-  display: flex;
-  align-items: baseline;
-  gap: 9px;
-  margin-bottom: 18px;
-}
-
-.balanceRow strong {
-  font-size: 29px;
-  letter-spacing: -0.04em;
-}
-
-.balanceRow span {
-  color: #00aeea;
-  font-size: 19px;
-  font-weight: 800;
-}
-
-.scheduleCard {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 12px;
-  padding: 12px 13px;
-  border: 1px solid rgba(0, 191, 255, 0.28);
-  border-radius: 12px;
-  background: rgba(7, 22, 34, 0.88);
-}
-
-.scheduleCard small,
-.scheduleCard strong {
+.balanceCard span,
+.balanceCard small {
   display: block;
+  color: #969188;
+  font-size: 11px;
 }
 
-.scheduleCard small {
-  color: #7db8ce;
-  font-size: 9px;
-  font-weight: 900;
-  letter-spacing: 0.1em;
-}
-
-.scheduleCard strong {
-  margin-top: 4px;
-  font-size: 12px;
-}
-
-.scheduleBadge {
-  flex: 0 0 auto;
-  color: #00bfff;
-  font-size: 9px;
-  font-weight: 900;
+.balanceCard strong {
+  display: block;
+  margin: 5px 0 7px;
+  color: #f9e076;
+  font-size: 27px;
+  letter-spacing: -0.03em;
 }
 
 .form {
@@ -126,164 +85,155 @@
   gap: 12px;
 }
 
-.field,
-.amountField {
-  display: grid;
-  gap: 6px;
+.section {
+  padding: 16px;
+  border: 1px solid #252540;
+  border-radius: 18px;
+  background: #12121a;
 }
 
-.field > span,
-.amountField > span {
-  color: #a9a9b7;
-  font-size: 10px;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.07em;
+.sectionHeading {
+  margin-bottom: 13px;
 }
 
-.field > input,
-.amountField input {
-  width: 100%;
-  min-height: 64px;
-  box-sizing: border-box;
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 9px;
-  background: #f4f4f5;
-  color: #111;
-  padding: 0 14px;
+.sectionHeading h2 {
+  margin: 5px 0 0;
+  color: #f0f0f5;
   font-size: 15px;
-  outline: none;
 }
 
-.field > input:focus,
-.amountField input:focus {
-  border-color: #00bfff;
-  box-shadow: 0 0 0 2px rgba(0, 191, 255, 0.12);
-}
-
-.methodGrid {
+.paymentGrid {
   display: grid;
-  gap: 9px;
+  gap: 8px;
 }
 
-.method,
-.methodActive {
-  min-height: 64px;
+.paymentOption,
+.paymentOptionActive {
+  width: 100%;
+  min-height: 62px;
   display: grid;
-  grid-template-columns: 1fr auto;
+  grid-template-columns: 40px 1fr 24px;
   align-items: center;
+  gap: 10px;
+  padding: 9px 11px;
+  border-radius: 13px;
   text-align: left;
-  gap: 2px 10px;
-  padding: 10px 14px;
-  border-radius: 9px;
   cursor: pointer;
 }
 
-.method {
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  background: #f4f4f5;
-  color: #222;
+.paymentOption {
+  border: 1px solid #252540;
+  background: #0e0e16;
+  color: #f0f0f5;
 }
 
-.methodActive {
-  border: 1px solid #00bfff;
-  background: #f4f4f5;
-  color: #111;
-  box-shadow: 0 0 10px rgba(0, 191, 255, 0.18);
+.paymentOptionActive {
+  border: 1px solid #d4af37;
+  background: rgba(212, 175, 55, 0.08);
+  color: #f9e076;
+  box-shadow: 0 0 18px rgba(212, 175, 55, 0.08);
 }
 
-.method strong,
-.method small,
-.methodActive strong,
-.methodActive small {
+.paymentIcon {
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  background: rgba(212, 175, 55, 0.1);
+  color: #f9e076;
+  font-weight: 900;
+  font-size: 14px;
+}
+
+.paymentOption strong,
+.paymentOption small,
+.paymentOptionActive strong,
+.paymentOptionActive small {
   display: block;
-  grid-column: 1;
 }
 
-.method strong,
-.methodActive strong {
+.paymentOption strong,
+.paymentOptionActive strong {
   font-size: 13px;
 }
 
-.method small,
-.methodActive small {
-  color: #777;
+.paymentOption small,
+.paymentOptionActive small {
+  margin-top: 2px;
+  color: #8a8ab0;
   font-size: 10px;
 }
 
-.method i,
-.methodActive i {
-  grid-column: 2;
-  grid-row: 1 / span 2;
-  font-size: 27px;
-  color: #aaa;
-  font-style: normal;
-}
-
-.amountField > div {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 145px;
-  min-height: 64px;
-  border-radius: 9px;
-  overflow: hidden;
-  background: #f4f4f5;
-}
-
-.amountField input {
-  min-height: 64px;
-  border: 0;
-  border-radius: 0;
-}
-
-.amountField div > strong {
+.radio {
+  width: 20px;
+  height: 20px;
   display: grid;
   place-items: center;
-  padding: 0 9px;
-  background: #00a9ee;
-  color: #fff;
-  font-size: 13px;
-  text-align: center;
-}
-
-.note {
-  margin: 2px 8px 0;
-  padding: 15px 14px;
-  border: 1px solid #00bfff;
-  border-radius: 10px;
-  background:
-    radial-gradient(circle at 20% 10%, rgba(0, 191, 255, 0.09), transparent 30%),
-    rgba(5, 19, 30, 0.86);
-  box-shadow: 0 0 9px rgba(0, 191, 255, 0.12);
-}
-
-.note strong {
-  font-size: 12px;
-}
-
-.note p {
-  margin: 11px 0 0;
-  color: #eee;
+  box-sizing: border-box;
+  border: 1px solid #49495e;
+  border-radius: 50%;
+  color: #17130a;
+  background: transparent;
   font-size: 11px;
-  line-height: 1.55;
+  font-weight: 900;
+}
+
+.paymentOptionActive .radio {
+  border-color: #d4af37;
+  background: #d4af37;
+}
+
+.formField {
+  display: grid;
+  gap: 2px;
+}
+
+.formField + .formField {
+  margin-top: 9px;
+}
+
+.formField > span {
+  color: #969188;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.amountWrap {
+  position: relative;
+}
+
+.amountWrap :global(.auth-input) {
+  padding-right: 58px;
+}
+
+.amountWrap > strong {
+  position: absolute;
+  right: 13px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #f9e076;
+  font-size: 11px;
+  pointer-events: none;
 }
 
 .summary {
-  padding: 13px 14px;
-  border: 1px solid rgba(0, 191, 255, 0.22);
-  border-radius: 10px;
-  background: rgba(9, 20, 31, 0.86);
+  padding: 14px 16px;
+  border: 1px solid rgba(212, 175, 55, 0.2);
+  border-radius: 15px;
+  background: rgba(212, 175, 55, 0.045);
 }
 
 .summary > div {
   display: flex;
   justify-content: space-between;
   gap: 14px;
-  padding: 7px 0;
+  padding: 6px 0;
   font-size: 11px;
 }
 
 .summary span {
-  color: #9ba5ae;
+  color: #969188;
 }
 
 .summary strong {
@@ -292,100 +242,84 @@
 
 .netRow {
   margin-top: 5px;
-  padding-top: 11px !important;
+  padding-top: 10px !important;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .netRow span,
 .netRow strong {
-  color: #00bfff;
+  color: #f9e076;
   font-size: 13px;
   font-weight: 900;
 }
 
-.error,
-.success,
-.receipt {
-  padding: 11px 12px;
-  border-radius: 9px;
+.note {
+  padding: 15px 16px;
+  border: 1px solid #252540;
+  border-radius: 15px;
+  background: #12121a;
+}
+
+.note > strong {
+  color: #f9e076;
+  font-size: 12px;
+}
+
+.note p {
+  margin: 9px 0 0;
+  color: #9292a8;
   font-size: 11px;
-  line-height: 1.45;
+  line-height: 1.55;
 }
 
-.error {
-  color: #ffb4b4;
-  border: 1px solid rgba(239, 68, 68, 0.4);
-  background: rgba(127, 29, 29, 0.18);
-}
-
-.success {
-  color: #a7f3d0;
-  border: 1px solid rgba(16, 185, 129, 0.4);
-  background: rgba(6, 78, 59, 0.2);
-}
-
-.receipt {
-  display: grid;
-  gap: 3px;
-  border: 1px solid rgba(0, 191, 255, 0.28);
-  background: rgba(0, 191, 255, 0.06);
-}
-
-.receipt span {
-  color: #00bfff;
-  font-weight: 900;
-}
-
-.receipt strong {
-  overflow-wrap: anywhere;
-  font-size: 10px;
-}
-
-.receipt small {
-  color: #aaa;
-}
-
-.confirm {
+.form :global(.primary-button) {
   width: 100%;
-  min-height: 61px;
-  margin-top: 4px;
-  border: 1px solid #00bfff;
-  border-radius: 12px;
-  background: rgba(4, 20, 31, 0.88);
-  color: #fff;
-  box-shadow: 0 0 9px rgba(0, 191, 255, 0.16);
-  font-size: 15px;
-  font-weight: 900;
-  cursor: pointer;
+  min-height: 52px;
+  margin-top: 2px;
+  font-size: 12px;
 }
 
-.confirm:hover:not(:disabled) {
-  background: rgba(0, 191, 255, 0.08);
-}
-
-.confirm:disabled {
+.form :global(.primary-button:disabled) {
   opacity: 0.45;
   cursor: not-allowed;
 }
 
-@media (max-width: 420px) {
+.error,
+.success {
+  padding: 12px 13px;
+  border-radius: 12px;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.error {
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  background: rgba(127, 29, 29, 0.12);
+  color: #fda4af;
+}
+
+.success {
+  border: 1px solid rgba(34, 197, 94, 0.3);
+  background: rgba(22, 101, 52, 0.12);
+  color: #86efac;
+}
+
+.success small {
+  display: block;
+  margin-top: 5px;
+  color: #9292a8;
+}
+
+@media (max-width: 380px) {
   .page {
-    padding-inline: 10px;
+    padding-inline: 12px;
   }
 
-  .balanceRow strong {
-    font-size: 25px;
+  .section {
+    padding: 13px;
   }
 
-  .balanceRow span {
-    font-size: 17px;
-  }
-
-  .amountField > div {
-    grid-template-columns: minmax(0, 1fr) 132px;
-  }
-
-  .amountField div > strong {
-    font-size: 11px;
+  .balanceCard strong {
+    font-size: 24px;
   }
 }
