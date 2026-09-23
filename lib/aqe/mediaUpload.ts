@@ -4,8 +4,8 @@ export const ALLOWED_VIDEO_TYPES = [
   "video/webm",
   "video/quicktime",
 ];
-export const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
-export const MAX_VIDEO_BYTES = 75 * 1024 * 1024;
+export const MAX_IMAGE_BYTES = 25 * 1024 * 1024;
+export const MAX_VIDEO_BYTES = 250 * 1024 * 1024;
 
 type Tier = "basic" | "premium" | "vip";
 
