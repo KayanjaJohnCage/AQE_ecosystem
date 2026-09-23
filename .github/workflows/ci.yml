@@ -17,7 +17,7 @@ jobs:
           node-version: 26.8.1
           cache: 'npm'
       - name: Install
-        run: npm ci
+        run: npm ci --legacy-peer-deps
       - name: Lint
         run: npm run lint --if-present
       - name: Typecheck
