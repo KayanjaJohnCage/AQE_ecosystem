@@ -170,26 +170,21 @@ export async function PATCH(request: Request) {
         { status: 503 },
       );
 
-    const updated = await client
-      .from("vip_withdrawal_requests")
-      .update({
-        status,
-        reviewed_at: new Date().toISOString(),
-        reviewed_by: access.session?.userId,
-        review_reason: body.reason ? String(body.reason) : null,
-      })
-      .eq("id", requestId)
-      .eq("status", "PENDING")
-      .select(
-        "id, tier, payment_method, recipient_name, recipient_account, currency, amount, service_charge_rate, service_charge_amount, net_amount, status, reviewed_at, reviewed_by, review_reason",
-      )
-      .single();
+    const { data: finalized, error: finalizeError } = await client.rpc(
+      "finalize_cash_withdrawal_atomic",
+      {
+        p_withdrawal_id: requestId,
+        p_status: status,
+        p_actor_id: access.session?.userId,
+        p_reason: body.reason ? String(body.reason) : null,
+      },
+    );
 
-    if (updated.error || !updated.data)
+    if (finalizeError || !finalized)
       return NextResponse.json(
         {
           ok: false,
-          reason: updated.error?.message ?? "Pending withdrawal not found.",
+          reason: finalizeError?.message ?? "Pending withdrawal could not be processed.",
         },
         { status: 409 },
       );
@@ -197,7 +192,7 @@ export async function PATCH(request: Request) {
     return NextResponse.json({
       ok: true,
       saved: true,
-      withdrawal: updated.data,
+      withdrawal: finalized,
     });
   } catch (error) {
     return NextResponse.json(
