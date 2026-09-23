@@ -80,6 +80,17 @@ export async function POST(request: Request) {
         if (!Number.isFinite(renewal) || amount !== renewal || currency !== expectedCurrency) {
           return NextResponse.json({ ok: false, reason: `The ${requestedTier} renewal must use ${expectedCurrency} ${renewal.toLocaleString()}.` }, { status: 400 });
         }
+      } else if (paymentKind === "vip_content_subscription") {
+        const vipUserId = String(body.vipUserId ?? "").trim();
+        if (!vipUserId || vipUserId === identity.userId) {
+          return NextResponse.json({ ok: false, reason: "A different VIP profile is required." }, { status: 400 });
+        }
+        const vipSettings = client
+          ? await client.from("vip_content_settings").select("vip_user_id,enabled,monthly_price,currency").eq("vip_user_id", vipUserId).maybeSingle()
+          : { data: null };
+        if (!vipSettings.data?.enabled || vipSettings.data.currency !== expectedCurrency || amount !== Number(vipSettings.data.monthly_price)) {
+          return NextResponse.json({ ok: false, reason: "The VIP content subscription price is invalid or no longer available." }, { status: 400 });
+        }
       } else {
         return NextResponse.json({ ok: false, reason: "Unsupported payment type." }, { status: 400 });
       }
@@ -98,6 +109,7 @@ export async function POST(request: Request) {
         requestedTier,
         paymentKind,
         qcAmount: paymentKind === "qc_recharge" ? Number(body.qcAmount ?? 0) : null,
+        vipUserId: paymentKind === "vip_content_subscription" ? String(body.vipUserId ?? "").trim() : null,
       },
     });
 
