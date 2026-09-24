@@ -17,6 +17,7 @@ export async function GET(request: Request) {
     }
 
     const client = createServerSupabaseClient();
+    if (!client) return NextResponse.json({ ok: false, reason: "Notification service is not configured." }, { status: 503 });
     const url = new URL(request.url);
     const limit = Math.min(
       Math.max(Number(url.searchParams.get("limit") ?? 50), 1),
@@ -93,6 +94,7 @@ export async function PATCH(request: Request) {
     }
 
     const client = createServerSupabaseClient();
+    if (!client) return NextResponse.json({ ok: false, reason: "Notification service is not configured." }, { status: 503 });
 
     if (markAll) {
       const updated = await client
