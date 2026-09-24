@@ -17,11 +17,11 @@ The application foundation and server-side business workflows are implemented. T
 ## Local setup
 
 1. Install dependencies with `npm install`.
-2. Copy `.env.example` to `.env.local` and fill all three Supabase values.
-3. Apply `supabase/migrations/001_aqe_foundation.sql` first, then apply root `migrations/0001_init.sql` through `migrations/0015_wallet_referrals_atomic_payment.sql` in filename order.
-4. Run `npm test` and `npm run typecheck`.
+2. Copy `.env.example` to `.env.local` and fill the Supabase values.
+3. Apply `supabase/migrations/001_aqe_foundation.sql`, then root `migrations/0001_init.sql` through the latest migration (`0036_profile_media_bucket.sql`) in filename order.
+4. Run `npm test`, `npm run typecheck`, and `npm run build`.
 5. Start the app with `npm run dev`.
-6. Check `http://localhost:3000/api/health`.
+6. Check `/api/health` before accepting real traffic.
 
 ### Environment variables
 
@@ -29,6 +29,8 @@ The application foundation and server-side business workflows are implemented. T
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`: Supabase publishable/anon key.
 - `SUPABASE_SERVICE_ROLE_KEY`: server-only key. Never expose or commit it.
 - `NEXT_PUBLIC_APP_ENV`: `development`, `staging`, or `production`.
+- `CRON_SECRET`: server-only secret required by the VIP salary cron.
+- `MUKURU_SEND_MONEY_URL` (optional): payment instruction URL.
 
 Blank Supabase values enable limited demo mode. Persistent workflows require Supabase configuration and applied migrations.
 
@@ -37,6 +39,8 @@ Blank Supabase values enable limited demo mode. Persistent workflows require Sup
 The foundation migration lives in `supabase/migrations/` and the follow-up migrations currently live in the root `migrations/` folder. In Supabase Dashboard, open SQL Editor and run the foundation file first, followed by `migrations/0001_init.sql` through `migrations/0015_wallet_referrals_atomic_payment.sql` in order. Do not run them out of order. Migration `0015` adds unique referral links, direct/indirect earnings, an idempotent cash-wallet ledger, and the server-only payment confirmation function.
 
 The root migration files are not automatically discovered by `supabase db push`. If using the Supabase CLI, move or consolidate the follow-up files into `supabase/migrations/` with unique timestamp prefixes before running `supabase db push`; do not keep and apply duplicate copies.
+
+The current migration sequence extends through `0036_profile_media_bucket.sql`. Apply migrations strictly in filename order. The latest migrations add atomic withdrawals, profile media limits/boosts, receipts, campaigns, VIP salary, renewal commissions, separate VIP creator-content subscriptions, subscriber-only media RLS, renewal chaining, and the private media storage bucket.
 
 ## Important rules
 
