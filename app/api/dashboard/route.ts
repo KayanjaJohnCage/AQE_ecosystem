@@ -114,11 +114,6 @@ export async function GET(request: Request) {
       "customer_id",
       session.userId,
     );
-    const referralEarnings = await client
-      .from("referral_earnings")
-      .select("amount")
-      .eq("beneficiary_user_id", session.userId)
-      .eq("status", "CREDITED");
     const earnings = totalEarnings;
 
     if (session.role === "manager" || session.role === "admin") {
