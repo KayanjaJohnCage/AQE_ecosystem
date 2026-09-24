@@ -201,7 +201,10 @@ export async function resolveAuthenticatedSession(
     role: data.user.user_metadata?.role,
   };
 
-  let role = resolveRoleFromClaims(claims) ?? requestSession.role;
+  // Never trust role headers or user metadata for authorization after a real
+  // Supabase session has been verified. Production roles come from the
+  // server-side profile record; missing/unknown roles default to customer.
+  let role: AqeRole = "customer";
   const serverClient = createServerSupabaseClient();
 
   if (serverClient) {
@@ -211,7 +214,7 @@ export async function resolveAuthenticatedSession(
       .eq("user_id", data.user.id)
       .maybeSingle();
 
-    role = normalizeRole(profile?.role) ?? role;
+    role = normalizeRole(profile?.role) ?? "customer";
   }
 
   return {
