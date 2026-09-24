@@ -273,10 +273,32 @@ export function sanitizeProfilePayload(input: Record<string, unknown>) {
       typeof input.country === "string" ? input.country.trim() : undefined,
     location:
       typeof input.location === "string" ? input.location.trim() : undefined,
+    area:
+      typeof input.area === "string" ? input.area.trim() : undefined,
     category:
       typeof input.category === "string" ? input.category.trim() : undefined,
     services: Array.isArray(input.services)
-      ? input.services.filter((item) => typeof item === "string")
+      ? input.services.filter((item) => typeof item === "string").slice(0, 50)
+      : undefined,
+    contentCategories: Array.isArray(input.contentCategories)
+      ? input.contentCategories.filter((item) => typeof item === "string").slice(0, 50)
+      : undefined,
+    age: Number.isInteger(input.age) && Number(input.age) >= 18 && Number(input.age) <= 100
+      ? Number(input.age)
+      : undefined,
+    gender: typeof input.gender === "string" ? input.gender.trim() : undefined,
+    pronouns: typeof input.pronouns === "string" ? input.pronouns.trim() : undefined,
+    headline: typeof input.headline === "string" ? input.headline.trim().slice(0, 160) : undefined,
+    languages: Array.isArray(input.languages)
+      ? input.languages.filter((item) => typeof item === "string").slice(0, 20)
+      : undefined,
+    availability: typeof input.availability === "string" ? input.availability.trim().slice(0, 500) : undefined,
+    visibility: typeof input.visibility === "string" ? input.visibility.trim().toLowerCase() : undefined,
+    socialPlatforms: input.socialPlatforms && typeof input.socialPlatforms === "object" && !Array.isArray(input.socialPlatforms)
+      ? Object.fromEntries(Object.entries(input.socialPlatforms as Record<string, unknown>).filter(([, value]) => typeof value === "string").slice(0, 10))
+      : undefined,
+    contactMethods: input.contactMethods && typeof input.contactMethods === "object" && !Array.isArray(input.contactMethods)
+      ? Object.fromEntries(Object.entries(input.contactMethods as Record<string, unknown>).filter(([, value]) => typeof value === "string").slice(0, 10))
       : undefined,
     tier: normalizeTier(
       typeof input.tier === "string" ? input.tier : undefined,
