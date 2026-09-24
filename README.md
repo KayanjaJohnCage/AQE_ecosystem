@@ -40,7 +40,7 @@ The foundation migration lives in `supabase/migrations/` and the follow-up migra
 
 The root migration files are not automatically discovered by `supabase db push`. If using the Supabase CLI, move or consolidate the follow-up files into `supabase/migrations/` with unique timestamp prefixes before running `supabase db push`; do not keep and apply duplicate copies.
 
-The current migration sequence extends through `0036_profile_media_bucket.sql`. Apply migrations strictly in filename order. The latest migrations add atomic withdrawals, profile media limits/boosts, receipts, campaigns, VIP salary, renewal commissions, separate VIP creator-content subscriptions, subscriber-only media RLS, renewal chaining, and the private media storage bucket.
+The current migration sequence extends through `0038_atomic_daily_qc_claim.sql`. Apply migrations strictly in filename order. The latest migrations add atomic withdrawals, profile media limits/boosts, receipts, campaigns, VIP salary, renewal commissions, separate VIP creator-content subscriptions, subscriber-only media RLS, renewal chaining, and the private media storage bucket.
 
 ## Important rules
 
@@ -59,3 +59,9 @@ The current migration sequence extends through `0036_profile_media_bucket.sql`. 
 ## Verification
 
 Verify with `npm run typecheck`, `npm test`, and `npm run build`. Use `npm run dev` for local development and `/api/health` to inspect configuration.
+
+## Cron secret
+
+AQE uses `CRON_SECRET` to protect server-side scheduled endpoints such as the VIP salary job. Vercel sends this value as `Authorization: Bearer <CRON_SECRET>` when it invokes a configured cron route. Keep the secret only in the hosting provider's server environment; never put it in `NEXT_PUBLIC_*`, browser code, Git, or screenshots.
+
+Generate a long random value (Vercel recommends at least 16 characters), set the same value in the production environment, and redeploy. If `CRON_SECRET` is missing or the Authorization header does not match, AQE returns HTTP 401 and the scheduled job does not run.
