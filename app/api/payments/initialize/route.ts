@@ -22,7 +22,7 @@ export async function POST(request: Request) {
     }
 
     const amount = Number(body.amount ?? 0);
-    const currency = String(body.currency ?? "NGN")
+    const currency = String(body.currency ?? "UGX")
       .trim()
       .toUpperCase();
     const qcPackageId = String(body.qcPackageId ?? "default").trim();
