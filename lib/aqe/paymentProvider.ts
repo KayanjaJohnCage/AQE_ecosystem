@@ -20,6 +20,10 @@ export function createPaymentProvider(env: Record<string, string | undefined>) {
           ? "live"
           : "mock";
 
+      if (env.NODE_ENV === "production" && mode === "mock") {
+        throw new Error("Production payment configuration is incomplete: Supabase must be configured.");
+      }
+
       return {
         ok: true,
         provider: "MukuruPay",
