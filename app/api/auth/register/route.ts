@@ -5,7 +5,10 @@ import {
   createProfileRecord,
   persistProfileRecord,
 } from "../../../../lib/aqe/profile";
-import { createServerSupabaseClient } from "../../../../lib/supabaseServer";
+import {
+  createAnonSupabaseClient,
+  createServerSupabaseClient,
+} from "../../../../lib/supabaseServer";
 
 export async function POST(request: Request) {
   try {
@@ -163,11 +166,17 @@ export async function POST(request: Request) {
       }
     }
 
+    const authClient = createAnonSupabaseClient();
+    const { data: signedIn } = authClient
+      ? await authClient.auth.signInWithPassword({ email, password })
+      : { data: { session: null } };
+
     return NextResponse.json({
       ok: true,
       mode: "supabase",
       user: data.user,
       profile: persisted.profile ?? profileRecord.profile,
+      session: signedIn.session,
       tier: "basic",
       requestedTier,
       upgradeRequired: requestedTier !== "basic",
