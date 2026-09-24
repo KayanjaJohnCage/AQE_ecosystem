@@ -287,6 +287,27 @@ export async function createPersistedVipWithdrawalRequest({
     };
   }
 
+  let directInviteCount = 0;
+  if (resolvedTier === "basic" || resolvedTier === "premium") {
+    const { count, error: inviteError } = await client
+      .from("profiles")
+      .select("user_id", { count: "exact", head: true })
+      .eq("referred_by", userId);
+    if (inviteError) {
+      return { ok: false, status: "REJECTED", reason: inviteError.message };
+    }
+    directInviteCount = count ?? 0;
+    if (directInviteCount < 2) {
+      return {
+        ok: false,
+        status: "REJECTED",
+        reason: "Basic and Premium members need at least 2 direct invites before withdrawing.",
+        directInviteCount,
+        requiredDirectInvites: 2,
+      };
+    }
+  }
+
   const { data: settingsRow } = await client
     .from("platform_settings")
     .select("settings")
@@ -390,5 +411,6 @@ export async function createPersistedVipWithdrawalRequest({
     allowedDays: validation.allowedDays,
     allowedDayLabels: validation.allowedDayLabels,
     message: "Withdrawal request created, cash reserved, and submitted to the manager for review.",
+    directInviteCount,
   };
 }
