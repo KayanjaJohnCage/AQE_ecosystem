@@ -15,7 +15,7 @@ Never expose SUPABASE_SERVICE_ROLE_KEY or CRON_SECRET to the browser.
 
 ## 2. Database migration order
 
-Apply the foundation migration first, then every root migration in filename order through 0036_profile_media_bucket.sql.
+Apply the foundation migration first, then every root migration in filename order through 0038_atomic_daily_qc_claim.sql.
 
 Do not skip or reorder migrations.
 
@@ -93,6 +93,8 @@ Before opening public traffic:
 - GET /api/health
 - Confirm production Supabase configuration is reported as ready.
 - Confirm the VIP salary cron is configured with CRON_SECRET.
+- Confirm CRON_SECRET is stored only as a server-side production environment variable.
+- Confirm notifications and upgraded-member state migrations 0037/0038 are applied before testing daily QC claims.
 - Confirm the deployment is using the intended production environment variables.
 
 ## 9. Business items requiring CEO confirmation
