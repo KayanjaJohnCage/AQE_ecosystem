@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { resolveMutationUserId } from "../../../lib/aqe/auth";
+import { requireAuthenticatedRoleAccess, resolveMutationUserId } from "../../../lib/aqe/auth";
 import { chargeChatQcFromDatabase } from "../../../lib/aqe/qc";
 import {
   persistDirectMessage,
@@ -110,7 +110,7 @@ export async function POST(request: Request) {
       const charge = await chargeChatQcFromDatabase(identity.userId, 1);
       if (!charge.ok) {
         return NextResponse.json(
-          { ok: false, reason: charge.reason ?? "Chat charge failed.", ...charge },
+          { ...charge, ok: false, reason: charge.reason ?? "Chat charge failed." },
           { status: 402 },
         );
       }
