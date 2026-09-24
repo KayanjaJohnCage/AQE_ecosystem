@@ -143,15 +143,15 @@ function positive(value: unknown, fallback: number) {
 }
 
 function normalizeSettings(value: Partial<AqePlatformSettings> = {}): AqePlatformSettings {
-  const tierPrices = value.tierPrices ?? {};
-  const renewalPrices = value.renewalPrices ?? {};
-  const pricing = value.pricing ?? {};
-  const originalTierPrices = pricing.originalTierPrices ?? {};
-  const currentTierPrices = pricing.currentTierPrices ?? {};
-  const promotionalLabels = pricing.promotionalLabels ?? {};
-  const deduction = pricing.deduction ?? {};
-  const teamLeaderRenewalCommission = pricing.teamLeaderRenewalCommission ?? {};
-  const withdrawal = value.withdrawal ?? {};
+  const tierPrices = (value.tierPrices ?? {}) as Partial<AqePlatformSettings["tierPrices"]>;
+  const renewalPrices = (value.renewalPrices ?? {}) as Partial<AqePlatformSettings["renewalPrices"]>;
+  const pricing = (value.pricing ?? {}) as Partial<AqePlatformSettings["pricing"]>;
+  const originalTierPrices = (pricing.originalTierPrices ?? {}) as Partial<AqePlatformSettings["pricing"]["originalTierPrices"]>;
+  const currentTierPrices = (pricing.currentTierPrices ?? {}) as Partial<AqePlatformSettings["pricing"]["currentTierPrices"]>;
+  const promotionalLabels = (pricing.promotionalLabels ?? {}) as Partial<AqePlatformSettings["pricing"]["promotionalLabels"]>;
+  const deduction = (pricing.deduction ?? {}) as Partial<AqePlatformSettings["pricing"]["deduction"]>;
+  const teamLeaderRenewalCommission = (pricing.teamLeaderRenewalCommission ?? {}) as Partial<AqePlatformSettings["pricing"]["teamLeaderRenewalCommission"]>;
+  const withdrawal = (value.withdrawal ?? {}) as Partial<AqePlatformSettings["withdrawal"]>;
 
   const normalizedTierPrices = {
     basic: positive(tierPrices.basic, defaults.tierPrices.basic),
