@@ -63,8 +63,8 @@ BEGIN
     AND transaction_type = 'chat_message'
     AND direction = 'OUT'
     AND status = 'COMPLETED'
-    AND created_at >= date_trunc('day', now() AT TIME ZONE 'Africa/Kampala')
-    AND created_at < date_trunc('day', now() AT TIME ZONE 'Africa/Kampala') + interval '1 day';
+    AND (created_at AT TIME ZONE 'Africa/Kampala')::date =
+        (now() AT TIME ZONE 'Africa/Kampala')::date;
 
   v_free_remaining := 0;
   v_charge_amount := p_message_count;
