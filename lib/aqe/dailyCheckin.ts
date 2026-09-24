@@ -6,25 +6,43 @@ export function getDailyRewardForDay(dayOfWeek: number): number {
 }
 
 export async function claimDailyReward(supabase: any, userId: string) {
-  const reward = getDailyRewardForDay(new Date().getDay());
-
   if (!supabase) {
     return {
-      ok: true,
+      ok: false,
       userId,
-      amount: reward,
-      balanceAfter: reward,
-      status: "COMPLETED",
-      message: "Demo mode: daily QC reward approved.",
+      amount: 0,
+      balanceAfter: 0,
+      status: "FAILED",
+      reason: "QC service is not configured.",
+    };
+  }
+
+  const { data, error } = await supabase.rpc(
+    "claim_daily_qc_reward_atomic",
+    { p_user_id: userId },
+  );
+
+  if (error) {
+    return {
+      ok: false,
+      userId,
+      amount: 0,
+      balanceAfter: 0,
+      status: "FAILED",
+      reason: error.message,
     };
   }
 
   return {
     ok: true,
     userId,
-    amount: reward,
-    balanceAfter: reward,
+    amount: Number(data?.amount ?? 0),
+    balanceAfter: Number(data?.balanceAfter ?? 0),
     status: "COMPLETED",
-    message: "Daily QC reward processed.",
+    alreadyClaimed: Boolean(data?.alreadyClaimed),
+    claimDate: data?.claimDate ?? null,
+    message: data?.alreadyClaimed
+      ? "Daily QC reward has already been claimed today."
+      : "Daily QC reward processed.",
   };
 }
