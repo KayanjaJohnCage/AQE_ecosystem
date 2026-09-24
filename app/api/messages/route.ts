@@ -133,3 +133,35 @@ export async function POST(request: Request) {
     );
   }
 }
+
+
+export async function PATCH(request: Request) {
+  try {
+    const access = await requireAuthenticatedRoleAccess(request, ["customer", "manager", "admin"]);
+    if (!access.ok || !access.session?.userId) {
+      return NextResponse.json({ ok: false, reason: access.reason ?? "Authentication required." }, { status: 401 });
+    }
+
+    const body = await request.json().catch(() => ({}));
+    const messageId = String(body.messageId ?? "").trim();
+    if (!messageId) return NextResponse.json({ ok: false, reason: "Message ID is required." }, { status: 400 });
+
+    const client = createServerSupabaseClient();
+    if (!client) return NextResponse.json({ ok: false, reason: "Messaging service is not configured." }, { status: 503 });
+
+    const updated = await client
+      .from("direct_messages")
+      .update({ read_at: new Date().toISOString() })
+      .eq("id", messageId)
+      .eq("recipient_id", access.session.userId)
+      .is("read_at", null)
+      .select("id,read_at")
+      .maybeSingle();
+
+    if (updated.error) return NextResponse.json({ ok: false, reason: updated.error.message }, { status: 500 });
+    if (!updated.data) return NextResponse.json({ ok: false, reason: "Message not found or already read." }, { status: 404 });
+    return NextResponse.json({ ok: true, message: updated.data });
+  } catch (error) {
+    return NextResponse.json({ ok: false, reason: error instanceof Error ? error.message : "Message update failed." }, { status: 400 });
+  }
+}
