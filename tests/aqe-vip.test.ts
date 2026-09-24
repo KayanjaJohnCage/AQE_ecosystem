@@ -42,7 +42,7 @@ describe("VIP withdraw schedule", () => {
         { dayOfWeek: 3, isWithdrawalDay: true },
         { dayOfWeek: 5, isWithdrawalDay: true },
       ],
-      now: new Date("2026-09-09T12:00:00Z"),
+      now: new Date("2026-09-23T12:00:00Z"),
     });
 
     expect(result.ok).toBe(true);
