@@ -171,7 +171,7 @@ export async function POST(request: Request) {
       ? await authClient.auth.signInWithPassword({ email, password })
       : { data: { session: null } };
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       ok: true,
       mode: "supabase",
       user: data.user,
@@ -181,6 +181,18 @@ export async function POST(request: Request) {
       requestedTier,
       upgradeRequired: requestedTier !== "basic",
     });
+
+    if (signedIn.session?.access_token) {
+      response.cookies.set("aqe-access-token", signedIn.session.access_token, {
+        httpOnly: true,
+        sameSite: "lax",
+        secure: process.env.NODE_ENV === "production",
+        path: "/",
+        maxAge: signedIn.session.expires_in ?? 3600,
+      });
+    }
+
+    return response;
   } catch (error) {
     return NextResponse.json(
       {
