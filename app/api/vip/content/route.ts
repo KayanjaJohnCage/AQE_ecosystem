@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { resolveAuthenticatedSession, resolveMutationUserId } from "../../../lib/aqe/auth";
-import { createServerSupabaseClient } from "../../../lib/supabaseServer";
+import { resolveAuthenticatedSession, resolveMutationUserId } from "../../../../lib/aqe/auth";
+import { createServerSupabaseClient } from "../../../../lib/supabaseServer";
 
 export async function GET(request: Request) {
   try {
