@@ -28,7 +28,7 @@ describe("VIP withdraw schedule", () => {
         .allowed,
     ).toBe(false);
     expect(
-      isVipWithdrawalAllowed(schedule, new Date("2026-09-09T12:00:00Z"))
+      isVipWithdrawalAllowed(schedule, new Date("2026-09-23T12:00:00Z"))
         .allowed,
     ).toBe(true);
   });
