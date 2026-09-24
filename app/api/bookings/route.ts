@@ -99,7 +99,20 @@ export async function POST(request: Request) {
     const providerId = String(body.providerId ?? "").trim();
     const service = String(body.service ?? "").trim();
     const amount = Number(body.amount ?? 0);
-    const currency = String(body.currency ?? "USD")
+    const client = createServerSupabaseClient();
+    const settingsRow = client
+      ? await client
+          .from("platform_settings")
+          .select("settings")
+          .eq("id", 1)
+          .maybeSingle()
+      : { data: null };
+    const configuredCurrency = String(
+      settingsRow.data?.settings?.walletCurrency ?? "UGX",
+    )
+      .trim()
+      .toUpperCase();
+    const currency = String(body.currency ?? configuredCurrency)
       .trim()
       .toUpperCase();
 
