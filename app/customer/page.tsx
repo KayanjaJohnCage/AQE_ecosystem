@@ -230,6 +230,7 @@ export default function CustomerPage() {
   const [vipContentEnabled, setVipContentEnabled] = useState(false);
   const [vipContentFeedback, setVipContentFeedback] = useState("");
   const [vipMediaAccess, setVipMediaAccess] = useState<"public" | "subscribers_only">("public");
+  const [registrationPhoto, setRegistrationPhoto] = useState<File | null>(null);
 
   async function subscribeToVipContent(profile: ProfileCard) {
     if (!profile.userId || profile.tier !== "vip" || !profile.vipContent?.enabled) return;
@@ -634,7 +635,14 @@ export default function CustomerPage() {
       }
     }
 
-    if (payload.ok) setAuthOpen(false);
+    if (payload.ok) {
+      if (registrationPhoto && profileCategory === "independent" && payload.session?.access_token) {
+        setMessage("Account created. Uploading your first profile photo...");
+        await uploadProfileMedia(registrationPhoto);
+      }
+      setRegistrationPhoto(null);
+      setAuthOpen(false);
+    }
   }
 
   async function signOut() {
@@ -2264,6 +2272,18 @@ export default function CustomerPage() {
                     <option value="client">Client account</option>
                     <option value="independent">Independent profile</option>
                   </select>
+                  {profileCategory === "independent" ? (
+                    <label className="registration-photo-picker">
+                      <span>First profile photo <small>Required for independent profiles</small></span>
+                      <input
+                        className="auth-input"
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp"
+                        required
+                        onChange={(event) => setRegistrationPhoto(event.target.files?.[0] ?? null)}
+                      />
+                    </label>
+                  ) : null}
                   <div className="aqe-registration-section"><strong>Public profile basics</strong><span>Membership tier and profile category are independent choices.</span></div>
                   <input className="auth-input" value={headline} onChange={(event) => setHeadline(event.target.value)} placeholder="Profile headline" />
                   <input className="auth-input" value={languages} onChange={(event) => setLanguages(event.target.value)} placeholder="Languages (English, Luganda, Swahili...)" />
