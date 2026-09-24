@@ -37,6 +37,9 @@ describe("VIP withdraw schedule", () => {
     const result = createVipWithdrawalRequest({
       userId: "u-123",
       amount: 500,
+      recipientName: "Test User",
+      recipientAccount: "0700000000",
+      paymentMethod: "AIRTEL_MONEY",
       schedule: [
         { dayOfWeek: 1, isWithdrawalDay: true },
         { dayOfWeek: 3, isWithdrawalDay: true },
