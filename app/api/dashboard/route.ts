@@ -74,7 +74,8 @@ export async function GET(request: Request) {
       .select("amount,currency,reference_type,created_at")
       .eq("user_id", session.userId)
       .eq("direction", "CREDIT")
-      .not("reference_type", "in", '("WALLET_DEPOSIT","WITHDRAWAL_REFUND")');
+      .neq("reference_type", "WALLET_DEPOSIT")
+      .neq("reference_type", "WITHDRAWAL_REFUND");
 
     if (earningLedger.error) {
       return NextResponse.json(
