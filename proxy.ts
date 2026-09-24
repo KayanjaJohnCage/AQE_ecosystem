@@ -20,14 +20,12 @@ export function proxy(request: NextRequest) {
     request.cookies.get("sb-refresh-token"),
   );
 
-  const hasSessionHeader = Boolean(
-    request.headers.get("authorization") ||
-    request.headers.get("x-user-id") ||
-    request.headers.get("x-user-role"),
-  );
-
+  // Production UI access must be backed by a session cookie. Client-supplied
+  // identity/role headers are never sufficient to enter protected consoles.
+  const hasSessionHeader = Boolean(request.headers.get("authorization"));
   const isDevelopment = process.env.NEXT_PUBLIC_APP_ENV !== "production";
-  if (!hasSessionCookie && !hasSessionHeader && !isDevelopment) {
+  const hasProductionSession = hasSessionCookie || hasSessionHeader;
+  if (!hasProductionSession && !isDevelopment) {
     const loginUrl = new URL("/customer", request.url);
     return NextResponse.redirect(loginUrl);
   }
