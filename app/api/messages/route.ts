@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { resolveMutationUserId } from "../../../lib/aqe/auth";
+import { chargeChatQcFromDatabase } from "../../../lib/aqe/qc";
 import {
   persistDirectMessage,
   validateCommunityText,
@@ -96,6 +97,23 @@ export async function POST(request: Request) {
             ? text.reason
             : "Recipient ID is required.";
       return NextResponse.json({ ok: false, reason }, { status: 400 });
+    }
+
+    // The server is the source of truth for chat charging. The client cannot
+    // bypass QC by calling the message endpoint directly.
+    const supabaseConfigured = Boolean(
+      process.env.NEXT_PUBLIC_SUPABASE_URL &&
+      process.env.SUPABASE_SERVICE_ROLE_KEY,
+    );
+
+    if (supabaseConfigured) {
+      const charge = await chargeChatQcFromDatabase(identity.userId, 1);
+      if (!charge.ok) {
+        return NextResponse.json(
+          { ok: false, reason: charge.reason ?? "Chat charge failed.", ...charge },
+          { status: 402 },
+        );
+      }
     }
 
     const result = await persistDirectMessage({
