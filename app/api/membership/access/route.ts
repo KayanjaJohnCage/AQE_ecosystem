@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { requireAuthenticatedRoleAccess } from "../../../lib/aqe/auth";
-import { getMembershipAccess } from "../../../lib/aqe/membershipAccess";
+import { requireAuthenticatedRoleAccess } from "../../../../lib/aqe/auth";
+import { getMembershipAccess } from "../../../../lib/aqe/membershipAccess";
 
 export async function GET(request: Request) {
   try {
