@@ -136,11 +136,15 @@ export function getSessionFromRequest(request: Request): AqeSession {
     request.headers.get("x-user-id") ?? request.headers.get("user-id") ?? "";
   const email =
     request.headers.get("x-user-email") ?? request.headers.get("email") ?? "";
-  const roleHeader =
-    request.headers.get("x-user-role") ??
-    request.headers.get("x-role") ??
-    request.headers.get("role") ??
-    "";
+  // In production, client-supplied identity/role headers are never trusted.
+  // They remain available only for local development compatibility.
+  const isProduction = process.env.NEXT_PUBLIC_APP_ENV === "production";
+  const roleHeader = isProduction
+    ? ""
+    : request.headers.get("x-user-role") ??
+      request.headers.get("x-role") ??
+      request.headers.get("role") ??
+      "";
   const cookies = request.headers.get("cookie") ?? "";
   const cookieValues = Object.fromEntries(
     cookies.split(";").flatMap((entry) => {
@@ -165,8 +169,15 @@ export function getSessionFromRequest(request: Request): AqeSession {
   const role =
     normalizeRole(roleHeader) ?? tokenRole ?? cookieRole ?? "customer";
 
+  // Production authentication requires a real bearer/session cookie token.
+  // Header-only identity is a development convenience and must not authorize
+  // requests against the live application.
+  const authenticated = isProduction
+    ? Boolean(resolvedBearerToken)
+    : Boolean(resolvedBearerToken || userId);
+
   return {
-    authenticated: Boolean(resolvedBearerToken || userId),
+    authenticated,
     userId: userId || undefined,
     email: email || undefined,
     role,
@@ -179,12 +190,29 @@ export async function resolveAuthenticatedSession(
 ): Promise<AqeSession> {
   const requestSession = getSessionFromRequest(request);
 
+  const isProduction = process.env.NEXT_PUBLIC_APP_ENV === "production";
+
   if (!requestSession.token || requestSession.token.startsWith("mock-")) {
+    if (isProduction) {
+      return {
+        authenticated: false,
+        role: "customer",
+      };
+    }
     return requestSession;
   }
 
   const anonClient = createAnonSupabaseClient();
-  if (!anonClient) return requestSession;
+  if (!anonClient) {
+    if (isProduction) {
+      return {
+        authenticated: false,
+        role: "customer",
+        token: requestSession.token,
+      };
+    }
+    return requestSession;
+  }
 
   const { data, error } = await anonClient.auth.getUser(requestSession.token);
   if (error || !data.user) {
@@ -194,12 +222,6 @@ export async function resolveAuthenticatedSession(
       role: "customer",
     };
   }
-
-  const claims = {
-    ...data.user.app_metadata,
-    ...data.user.user_metadata,
-    role: data.user.user_metadata?.role,
-  };
 
   // Never trust role headers or user metadata for authorization after a real
   // Supabase session has been verified. Production roles come from the
