@@ -133,13 +133,19 @@ BEGIN
     -- Renewals are chained after the user's latest active membership period,
     -- preventing overlapping paid periods while preserving one commission event
     -- for each successful renewal payment.
-    SELECT GREATEST(now(), COALESCE(MAX(expires_at), now()))
+    SELECT expires_at
       INTO v_renewal_start
     FROM public.subscriptions
     WHERE user_id = v_order.user_id
       AND status = 'active'
       AND expires_at > now()
+    ORDER BY expires_at DESC
+    LIMIT 1
     FOR UPDATE;
+
+    IF v_renewal_start IS NULL THEN
+      v_renewal_start := now();
+    END IF;
 
     INSERT INTO public.subscriptions(user_id,tier,status,started_at,expires_at,amount,currency)
     VALUES(v_order.user_id,v_tier,'active',v_renewal_start,v_renewal_start+interval '30 days',v_order.amount,v_order.currency)
