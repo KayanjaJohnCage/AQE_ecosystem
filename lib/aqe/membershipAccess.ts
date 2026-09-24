@@ -12,6 +12,7 @@ export async function getMembershipAccess(
   userId: string,
 ): Promise<MembershipAccess | null> {
   const client = createServerSupabaseClient();
+  if (!client) return null;
   const { data, error } = await client
     .from("profiles")
     .select("user_id,tier,membership_status")
