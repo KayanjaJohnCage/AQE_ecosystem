@@ -117,7 +117,20 @@ export async function POST(request: Request) {
       );
     }
 
-    result.profile.services = sanitized.services;
+    Object.assign(result.profile, {
+      services: sanitized.services,
+      contentCategories: sanitized.contentCategories,
+      age: sanitized.age,
+      gender: sanitized.gender,
+      pronouns: sanitized.pronouns,
+      headline: sanitized.headline,
+      languages: sanitized.languages,
+      area: sanitized.area,
+      availability: sanitized.availability,
+      visibility: sanitized.visibility,
+      socialPlatforms: sanitized.socialPlatforms,
+      contactMethods: sanitized.contactMethods,
+    });
     const persisted = await persistProfileRecord(result.profile);
 
     return NextResponse.json({
