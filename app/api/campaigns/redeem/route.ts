@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { resolveAuthenticatedSession } from "../../../lib/aqe/auth";
-import { createServerSupabaseClient } from "../../../lib/supabaseServer";
+import { resolveAuthenticatedSession } from "../../../../lib/aqe/auth";
+import { createServerSupabaseClient } from "../../../../lib/supabaseServer";
 
 export async function POST(request: Request) {
   try {
