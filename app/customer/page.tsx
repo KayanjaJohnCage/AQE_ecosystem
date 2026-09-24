@@ -122,6 +122,9 @@ export default function CustomerPage() {
     tier: "basic",
     bookings: 0,
     earnings: 0,
+    totalEarnings: 0,
+    pendingEarnings: 0,
+    earningsBySource: {} as Record<string, number>,
   });
   const [authOpen, setAuthOpen] = useState(false);
   const [upgradeOpen, setUpgradeOpen] = useState(false);
@@ -658,6 +661,9 @@ export default function CustomerPage() {
       tier: "basic",
       bookings: 0,
       earnings: 0,
+      totalEarnings: 0,
+      pendingEarnings: 0,
+      earningsBySource: {},
     });
   }
 
@@ -1623,6 +1629,9 @@ export default function CustomerPage() {
                 onViewEarnings={() => navigateTo("referrals")}
                 qcBalance={data.qcBalance}
                 walletBalance={data.walletBalance}
+                totalEarnings={Number(data.totalEarnings ?? data.earnings ?? 0)}
+                pendingEarnings={Number(data.pendingEarnings ?? 0)}
+                earningsBySource={data.earningsBySource ?? {}}
               />
               {false && <div className="prototype-screen-stack">
               <article className="prototype-hero-card wallet-hero">
