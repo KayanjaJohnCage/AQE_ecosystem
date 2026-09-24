@@ -76,6 +76,12 @@ export async function POST(request: Request) {
       } else if (paymentKind === "wallet_deposit") {
         if (currency !== expectedCurrency) return NextResponse.json({ ok: false, reason: `Wallet deposits must use ${expectedCurrency}.` }, { status: 400 });
       } else if (paymentKind === "subscription_renewal") {
+        const currentProfile = client
+          ? await client.from("profiles").select("tier").eq("user_id", identity.userId).maybeSingle()
+          : { data: null };
+        if (currentProfile.data?.tier && normalizeTier(currentProfile.data.tier) !== requestedTier) {
+          return NextResponse.json({ ok: false, reason: "Renewal tier must match your current membership tier. Upgrade first if you want a different tier." }, { status: 400 });
+        }
         const renewal = Number(settings.renewalPrices?.[requestedTier] ?? 0);
         if (!Number.isFinite(renewal) || amount !== renewal || currency !== expectedCurrency) {
           return NextResponse.json({ ok: false, reason: `The ${requestedTier} renewal must use ${expectedCurrency} ${renewal.toLocaleString()}.` }, { status: 400 });
