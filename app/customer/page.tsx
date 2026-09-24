@@ -359,7 +359,7 @@ export default function CustomerPage() {
       })
       .catch(() => undefined);
 
-    if (session.access_token || user.id) {
+    if ((session.access_token || user.id) && user.id) {
       fetch(`/api/vip/content?vipUserId=${encodeURIComponent(user.id)}`, { headers })
         .then(async (response) => {
           if (!response.ok) return;
