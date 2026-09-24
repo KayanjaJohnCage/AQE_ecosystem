@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { readStoredSession } from "../../lib/clientSession";
+import { readStoredSession } from "../../../lib/clientSession";
 
 type Campaign = { id: string; name: string; description?: string; status: string };
 type RewardItem = {
