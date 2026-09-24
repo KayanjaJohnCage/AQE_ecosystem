@@ -6,6 +6,9 @@ type Props = {
   onViewEarnings: () => void;
   qcBalance: number;
   walletBalance: number;
+  totalEarnings: number;
+  pendingEarnings: number;
+  earningsBySource: Record<string, number>;
 };
 
 export function WalletScreen({
@@ -16,18 +19,26 @@ export function WalletScreen({
   onViewEarnings,
   qcBalance,
   walletBalance,
+  totalEarnings,
+  pendingEarnings,
+  earningsBySource,
 }: Props) {
   return (
     <div className="aqe-wallet-screen">
       <h1>Wallet</h1>
-      <p>Your cash wallet, QC balance, daily chat allowance and account activity.</p>
+      <p>Your cash wallet, QC balance and the earnings you have generated across AQE.</p>
 
       <div className="aqe-wallet-grid">
         <article>
-          <span>Wallet</span>
-          <strong>
-            {currency} {walletBalance.toLocaleString()}
-          </strong>
+          <span>Total earnings</span>
+          <strong>{currency} {totalEarnings.toLocaleString()}</strong>
+          <small>All credited ecosystem earnings</small>
+          <button type="button" onClick={onViewEarnings}>View earnings</button>
+        </article>
+
+        <article>
+          <span>Available wallet</span>
+          <strong>{currency} {walletBalance.toLocaleString()}</strong>
           <div className="aqe-wallet-actions">
             <button type="button" onClick={onDeposit}>Deposit</button>
             <button type="button" onClick={onWithdraw}>Withdraw</button>
@@ -35,24 +46,37 @@ export function WalletScreen({
         </article>
 
         <article>
-          <span>QC balance</span>
-          <strong>{qcBalance}</strong>
-          <button type="button" onClick={onRechargeQc}>Recharge QC</button>
+          <span>Pending wallet</span>
+          <strong>{currency} {pendingEarnings.toLocaleString()}</strong>
+          <small>Currently reserved or pending</small>
         </article>
 
         <article>
-          <span>Chat allowance today</span>
-          <strong>0 / 5</strong>
-          <small>5 free chat messages daily</small>
+          <span>QC balance</span>
+          <strong>{qcBalance}</strong>
+          <button type="button" onClick={onRechargeQc}>Recharge QC</button>
         </article>
       </div>
 
       <section className="aqe-ledger">
         <div>
-          <strong>Recent ledger</strong>
+          <strong>Where your earnings came from</strong>
           <button type="button" onClick={onViewEarnings}>View earnings</button>
         </div>
-        <p>No wallet activity yet.</p>
+        {Object.keys(earningsBySource).length ? (
+          <div className="feature-list">
+            {Object.entries(earningsBySource)
+              .sort(([, a], [, b]) => b - a)
+              .map(([source, amount]) => (
+                <div key={source}>
+                  <strong>{source}</strong>
+                  <span>{currency} {amount.toLocaleString()}</span>
+                </div>
+              ))}
+          </div>
+        ) : (
+          <p>No earnings have been credited yet.</p>
+        )}
       </section>
     </div>
   );
