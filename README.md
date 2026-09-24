@@ -18,7 +18,7 @@ The application foundation and server-side business workflows are implemented. T
 
 1. Install dependencies with `npm install`.
 2. Copy `.env.example` to `.env.local` and fill the Supabase values.
-3. Apply `supabase/migrations/001_aqe_foundation.sql`, then root `migrations/0001_init.sql` through the latest migration (`0036_profile_media_bucket.sql`) in filename order.
+3. Apply `supabase/migrations/001_aqe_foundation.sql`, then root `migrations/0001_init.sql` through the latest migration (`0039_membership_aware_qc_chat.sql`) in filename order.
 4. Run `npm test`, `npm run typecheck`, and `npm run build`.
 5. Start the app with `npm run dev`.
 6. Check `/api/health` before accepting real traffic.
@@ -40,7 +40,7 @@ The foundation migration lives in `supabase/migrations/` and the follow-up migra
 
 The root migration files are not automatically discovered by `supabase db push`. If using the Supabase CLI, move or consolidate the follow-up files into `supabase/migrations/` with unique timestamp prefixes before running `supabase db push`; do not keep and apply duplicate copies.
 
-The current migration sequence extends through `0038_atomic_daily_qc_claim.sql`. Apply migrations strictly in filename order. The latest migrations add atomic withdrawals, profile media limits/boosts, receipts, campaigns, VIP salary, renewal commissions, separate VIP creator-content subscriptions, subscriber-only media RLS, renewal chaining, and the private media storage bucket.
+The current migration sequence extends through `0039_membership_aware_qc_chat.sql`. Migration `0039` enforces the current membership rule: upgraded members are free for QC chat while registered/unupgraded members are charged. Apply migrations strictly in filename order. The latest migrations add atomic withdrawals, profile media limits/boosts, receipts, campaigns, VIP salary, renewal commissions, separate VIP creator-content subscriptions, subscriber-only media RLS, renewal chaining, and the private media storage bucket.
 
 ## Important rules
 
