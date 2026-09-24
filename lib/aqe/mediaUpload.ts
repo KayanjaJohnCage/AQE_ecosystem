@@ -95,7 +95,7 @@ export async function createMediaUploadUrl({
 
   const limits = await getMediaLimitContext(userId, kind);
   if (!limits.ok) return limits;
-  if (limits.limited && sizeBytes > limits.maxBytes) {
+  if (limits.limited && limits.maxBytes !== undefined && sizeBytes > limits.maxBytes) {
     return { ok: false, reason: kind + " exceeds the " + limits.tier + " plan's maximum file size." };
   }
 
