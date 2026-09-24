@@ -360,6 +360,17 @@ export default function CustomerPage() {
       .catch(() => undefined);
 
     if (session.access_token || user.id) {
+      fetch(`/api/vip/content?vipUserId=${encodeURIComponent(user.id)}`, { headers })
+        .then(async (response) => {
+          if (!response.ok) return;
+          const payload = await response.json();
+          if (payload.settings) {
+            setVipContentPrice(String(payload.settings.monthly_price ?? ""));
+            setVipContentEnabled(Boolean(payload.settings.enabled));
+          }
+        })
+        .catch(() => undefined);
+
       fetch("/api/profile/media", { headers })
         .then(async (response) => {
           if (!response.ok) return;
