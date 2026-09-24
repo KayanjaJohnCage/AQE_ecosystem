@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { claimDailyReward } from "../../../../lib/aqe/dailyCheckin";
 import { resolveMutationUserId } from "../../../../lib/aqe/auth";
-import { getSupabaseClient } from "../../../../lib/supabaseClient";
+import { createServerSupabaseClient } from "../../../../lib/supabaseServer";
 
 export async function POST(request: Request) {
   try {
@@ -19,7 +19,7 @@ export async function POST(request: Request) {
     }
 
     const userId = identity.userId;
-    const supabase = getSupabaseClient();
+    const supabase = createServerSupabaseClient();
 
     if (!supabase) {
       return NextResponse.json({ ok: false, reason: "QC service is not configured." }, { status: 503 });
