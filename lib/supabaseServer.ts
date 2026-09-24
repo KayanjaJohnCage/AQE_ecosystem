@@ -5,6 +5,9 @@ export function createServerSupabaseClient() {
   const serviceRole = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
   if (!url || !serviceRole) {
+    if (process.env.NODE_ENV === "production") {
+      throw new Error("Production Supabase server configuration is missing.");
+    }
     return null;
   }
 
@@ -22,6 +25,9 @@ export function createAnonSupabaseClient() {
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
   if (!url || !anonKey) {
+    if (process.env.NODE_ENV === "production") {
+      throw new Error("Production Supabase public configuration is missing.");
+    }
     return null;
   }
 
