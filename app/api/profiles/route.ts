@@ -20,7 +20,7 @@ export async function GET(request: Request) {
     const ageMax = Number(url.searchParams.get("ageMax") || 0);
 
     let profileQuery = client.from("profiles").select(
-      "id,user_id,display_name,bio,country,location,area,category,content_categories,services,age,gender,headline,languages,pronouns,availability,visibility,social_platforms,contact_methods,tier,verification_status,avatar_url"
+      "id,user_id,display_name,bio,country,location,area,category,content_categories,services,age,gender,headline,languages,pronouns,availability,visibility,social_platforms,contact_methods,tier,verification_status,avatar_url,updated_at"
     ).eq("visibility", "public").order("updated_at", { ascending: false }).limit(100);
 
     if (query) profileQuery = profileQuery.or(
