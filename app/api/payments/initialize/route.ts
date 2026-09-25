@@ -32,6 +32,13 @@ export async function POST(request: Request) {
     const paymentKind = String(body.kind ?? body.paymentKind ?? "wallet_deposit").trim().toLowerCase();
 
 
+    if (paymentKind === "wallet_deposit" && amount < 5000) {
+      return NextResponse.json(
+        { ok: false, reason: "Minimum wallet deposit is UGX 5,000." },
+        { status: 400 },
+      );
+    }
+
     if (!Number.isFinite(amount) || amount <= 0) {
       return NextResponse.json(
         { ok: false, reason: "Payment amount must be greater than zero." },
