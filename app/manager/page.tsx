@@ -415,12 +415,12 @@ export default function ManagerPage() {
                 amount?: number;
                 currency?: string;
                 reference?: string;
-                metadata?: { requestedTier?: string };
+                metadata?: { requestedTier?: string; paymentKind?: string; fundingSource?: string };
                 status?: string;
               }) => ({
                 id: payment.id,
                 title: `${payment.currency || "UGX"} ${payment.amount ?? 0} • ${payment.user_id || "member"}`,
-                meta: `${payment.reference || "No reference"} • Upgrade: ${(payment.metadata?.requestedTier || "premium").toUpperCase()}`,
+                meta: `${payment.reference || "No reference"} • ${payment.metadata?.paymentKind === "wallet_deposit" ? "Reference: WALLET" : `Reference: UPGRADE • ${(payment.metadata?.requestedTier || "premium").toUpperCase()}`}`,
                 value: payment.status || "pending",
               }),
             );
@@ -554,7 +554,9 @@ export default function ManagerPage() {
     setReviewMessage(
       payload.ok
         ? status === "confirmed"
-          ? `Payment confirmed. User upgraded to ${(payload.upgradedTier || "paid").toUpperCase()}.`
+          ? payload.payment?.paymentKind === "wallet_deposit"
+            ? "Wallet deposit confirmed. Cash was credited to the member wallet."
+            : `Payment confirmed. User upgraded to ${(payload.upgradedTier || payload.payment?.upgradedTier || "paid").toUpperCase()}.`
           : "Payment rejected."
         : payload.reason || "Payment review failed.",
     );
