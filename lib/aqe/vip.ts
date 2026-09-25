@@ -54,23 +54,11 @@ export function getWithdrawalDayPolicy(
   tier: WithdrawalTier,
   schedule: VipScheduleEntry[],
 ) {
-  if (tier === "basic" || tier === "premium") {
-    return {
-      allowedDays: [0, 6],
-      labels: ["Sunday", "Saturday"],
-      rule: "Basic and Premium withdrawals are available on weekends only.",
-    };
-  }
-
-  const allowedDays = getConfiguredVipWithdrawalDays(schedule);
-  const fallbackDays = allowedDays.length === 3 ? allowedDays : [1, 3, 5];
-
+  const policy = getWithdrawalPolicy(tier);
   return {
-    allowedDays: fallbackDays,
-    labels: fallbackDays.map((day) =>
-      ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"][day],
-    ),
-    rule: "VIP withdrawals are available on three configured days each week.",
+    allowedDays: policy.allowedDays,
+    labels: policy.labels,
+    rule: policy.rule,
   };
 }
 
@@ -92,7 +80,45 @@ export function isVipWithdrawalAllowed(
   };
 }
 
-export const DEFAULT_WITHDRAWAL_SERVICE_CHARGE_RATE = 0.08;
+export const DEFAULT_WITHDRAWAL_SERVICE_CHARGE_RATE = 0.10;
+export const MIN_WITHDRAWAL_AMOUNT = 30_000;
+export const MAX_WITHDRAWAL_AMOUNT = 5_000_000;
+
+const WITHDRAWAL_COOLDOWN_HOURS: Record<WithdrawalTier, number> = {
+  basic: 24,
+  premium: 48,
+  vip: 24,
+};
+
+export function getWithdrawalCooldownHours(tier: WithdrawalTier) {
+  return WITHDRAWAL_COOLDOWN_HOURS[tier];
+}
+
+export function getWithdrawalPolicy(tier: WithdrawalTier) {
+  const cooldownHours = getWithdrawalCooldownHours(tier);
+  if (tier === "basic") {
+    return {
+      allowedDays: [0, 6],
+      labels: ["Sunday", "Saturday"],
+      cooldownHours,
+      rule: "Basic withdrawals are available on weekends only, with at least 1 day between withdrawal applications.",
+    };
+  }
+  if (tier === "premium") {
+    return {
+      allowedDays: [0, 1, 2, 3, 4, 5, 6],
+      labels: ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
+      cooldownHours,
+      rule: "Premium withdrawals are available once every 2 days.",
+    };
+  }
+  return {
+    allowedDays: [0, 1, 2, 3, 4, 5, 6],
+    labels: ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
+    cooldownHours,
+    rule: "VIP withdrawals are available once every day, with at least 1 day between withdrawal applications.",
+  };
+}
 
 export function calculateWithdrawalAmounts(
   amount: number,
@@ -124,6 +150,7 @@ export function createVipWithdrawalRequest({
   currency = "UGX",
   now = new Date(),
   serviceChargeRate = DEFAULT_WITHDRAWAL_SERVICE_CHARGE_RATE,
+  lastWithdrawalAt,
 }: {
   userId: string;
   amount: number;
@@ -135,6 +162,7 @@ export function createVipWithdrawalRequest({
   currency?: string;
   now?: Date;
   serviceChargeRate?: number;
+  lastWithdrawalAt?: Date | string | null;
 }) {
   const validation = isVipWithdrawalAllowed(schedule, now, tier);
 
@@ -166,15 +194,45 @@ export function createVipWithdrawalRequest({
     };
   }
 
-  if (Number(amount) <= 0) {
+  if (Number(amount) < MIN_WITHDRAWAL_AMOUNT) {
     return {
       ok: false,
       status: "REJECTED",
       userId,
       amount,
       tier,
-      reason: "Withdrawal amount must be greater than zero.",
+      reason: "Minimum withdrawal amount is UGX 30,000.",
     };
+  }
+
+  if (Number(amount) > MAX_WITHDRAWAL_AMOUNT) {
+    return {
+      ok: false,
+      status: "REJECTED",
+      userId,
+      amount,
+      tier,
+      reason: "Maximum withdrawal amount is UGX 5,000,000.",
+    };
+  }
+
+  if (lastWithdrawalAt) {
+    const previous = new Date(lastWithdrawalAt).getTime();
+    const elapsedHours = (now.getTime() - previous) / (60 * 60 * 1000);
+    const cooldownHours = getWithdrawalCooldownHours(tier);
+    if (!Number.isFinite(previous) || elapsedHours < cooldownHours) {
+      const remainingHours = Math.max(1, Math.ceil(cooldownHours - elapsedHours));
+      return {
+        ok: false,
+        status: "REJECTED",
+        userId,
+        amount,
+        tier,
+        reason: "Withdrawal frequency limit reached. Please wait until the required interval has passed.",
+        remainingHours,
+        cooldownHours,
+      };
+    }
   }
 
   if (!recipientName?.trim()) {
@@ -350,6 +408,7 @@ export async function createPersistedVipWithdrawalRequest({
     paymentMethod,
     currency,
     serviceChargeRate,
+    lastWithdrawalAt: lastWithdrawal?.created_at ?? null,
   });
 
   if (!validation.ok) return { ...validation, source: "supabase" };
