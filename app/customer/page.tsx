@@ -198,6 +198,11 @@ export default function CustomerPage() {
       vipSalaryDay: 20,
       withdrawalBefore20th: false,
     },
+    footer: {
+      about: "",
+      contact: { email: "", phone: "", whatsapp: "" },
+      links: [] as Array<{ label: string; url: string }>,
+    },
     customerContent: {
       home: {} as Record<string, unknown>,
       rewards: {} as Record<string, unknown>,
@@ -1213,6 +1218,62 @@ export default function CustomerPage() {
                   </button>
                 ))}
               </div>
+              <footer className="aqe-website-footer">
+                <div className="aqe-footer-brand">AQE AfriQueerEcosystem</div>
+                <div className="aqe-footer-grid">
+                  {platformSettings.footer.about.trim() ? (
+                    <section>
+                      <h3>About AQE</h3>
+                      <p>{platformSettings.footer.about}</p>
+                    </section>
+                  ) : null}
+                  {(platformSettings.footer.contact.email ||
+                    platformSettings.footer.contact.phone ||
+                    platformSettings.footer.contact.whatsapp) ? (
+                    <section>
+                      <h3>Contact AQE</h3>
+                      <div className="aqe-footer-contact">
+                        {platformSettings.footer.contact.email ? (
+                          <a href={`mailto:${platformSettings.footer.contact.email}`}>{platformSettings.footer.contact.email}</a>
+                        ) : null}
+                        {platformSettings.footer.contact.phone ? (
+                          <a href={`tel:${platformSettings.footer.contact.phone}`}>{platformSettings.footer.contact.phone}</a>
+                        ) : null}
+                        {platformSettings.footer.contact.whatsapp ? (
+                          <a
+                            href={platformSettings.footer.contact.whatsapp.startsWith("http")
+                              ? platformSettings.footer.contact.whatsapp
+                              : `https://wa.me/${platformSettings.footer.contact.whatsapp.replace(/[^0-9]/g, "")}`}
+                            target="_blank"
+                            rel="noreferrer"
+                          >
+                            WhatsApp
+                          </a>
+                        ) : null}
+                      </div>
+                    </section>
+                  ) : null}
+                  {platformSettings.footer.links.length ? (
+                    <section>
+                      <h3>Links</h3>
+                      <nav className="aqe-footer-links" aria-label="AQE website links">
+                        {platformSettings.footer.links.map((link) => (
+                          <a key={`${link.label}-${link.url}`} href={link.url} target="_blank" rel="noreferrer">
+                            {link.label}
+                          </a>
+                        ))}
+                      </nav>
+                    </section>
+                  ) : null}
+                </div>
+                {!platformSettings.footer.about.trim() &&
+                !platformSettings.footer.contact.email &&
+                !platformSettings.footer.contact.phone &&
+                !platformSettings.footer.contact.whatsapp &&
+                !platformSettings.footer.links.length ? (
+                  <p className="aqe-footer-empty">AQE website information and official links will appear here.</p>
+                ) : null}
+              </footer>
             </>
           )}
 
