@@ -7,6 +7,18 @@ import styles from "./page.module.css";
 type Tier = "basic" | "premium" | "vip";
 type PaymentMethod = "AIRTEL_MONEY" | "MOBILE_MONEY" | "CARD";
 
+type WithdrawalRow = {
+  id: string;
+  tier: Tier;
+  amount: number;
+  currency: string;
+  service_charge_amount: number;
+  net_amount: number;
+  status: string;
+  statusLabel: string;
+  created_at: string;
+};
+
 const tierLabels: Record<Tier, string> = {
   basic: "Basic",
   premium: "Premium",
@@ -57,6 +69,7 @@ export default function VipPage() {
   const [message, setMessage] = useState("");
   const [success, setSuccess] = useState(false);
   const [requestId, setRequestId] = useState("");
+  const [withdrawals, setWithdrawals] = useState<WithdrawalRow[]>([]);
 
   useEffect(() => {
     const { session, user } = readStoredSession();
@@ -89,7 +102,25 @@ export default function VipPage() {
       .catch(() => undefined);
 
     // Withdrawal service charge is fixed by the CEO policy at 10%.
+
+    void loadWithdrawals(headers);
   }, []);
+
+  async function loadWithdrawals(headers?: HeadersInit) {
+    try {
+      const requestHeaders: HeadersInit = headers ?? {};
+      const response = await fetch("/api/vip/withdrawals", {
+        headers: requestHeaders,
+      });
+      if (!response.ok) return;
+      const payload = await response.json().catch(() => ({}));
+      if (Array.isArray(payload.withdrawals)) {
+        setWithdrawals(payload.withdrawals as WithdrawalRow[]);
+      }
+    } catch {
+      // The withdrawal form remains usable if history cannot be loaded.
+    }
+  }
 
   const numericAmount = Number(amount || 0);
   const serviceCharge = useMemo(
@@ -177,9 +208,10 @@ export default function VipPage() {
       setSuccess(true);
       setRequestId(String(payload.requestId || ""));
       setMessage(
-        "Withdrawal request sent to the manager. Your request is now pending review.",
+        "Withdrawal request sent to the manager. Your request is now awaiting review.",
       );
       setAmount("");
+      await loadWithdrawals(headers);
     } catch (error) {
       setMessage(
         error instanceof Error
@@ -378,6 +410,35 @@ export default function VipPage() {
             ) : null}
           </div>
         ) : null}
+
+        <section className={styles.history}>
+          <div className={styles.sectionHeading}>
+            <div>
+              <span className={styles.sectionEyebrow}>WITHDRAWAL STATUS</span>
+              <h2>Your recent requests</h2>
+            </div>
+          </div>
+          <div className={styles.historyList}>
+            {withdrawals.length ? withdrawals.map((withdrawal) => (
+              <article key={withdrawal.id} className={styles.historyItem}>
+                <div>
+                  <strong>{withdrawal.statusLabel}</strong>
+                  <small>{new Date(withdrawal.created_at).toLocaleString()}</small>
+                </div>
+                <div className={styles.historyAmount}>
+                  <strong>UGX {Number(withdrawal.amount).toLocaleString()}</strong>
+                  <small>You receive UGX {Number(withdrawal.net_amount).toLocaleString()}</small>
+                </div>
+              </article>
+            )) : (
+              <p className={styles.historyEmpty}>No withdrawal requests yet.</p>
+            )}
+          </div>
+          <p className={styles.historyHint}>
+            AWAITING REVIEW means submitted. UNDER REVIEW means Management is processing it.
+            SUCCEED means the approved net amount has already been sent to your registered account.
+          </p>
+        </section>
 
         <button
           className="primary-button"
