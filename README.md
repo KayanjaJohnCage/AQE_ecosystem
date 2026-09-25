@@ -18,7 +18,7 @@ The application foundation and server-side business workflows are implemented. T
 
 1. Install dependencies with `npm install`.
 2. Copy `.env.example` to `.env.local` and fill the Supabase values.
-3. Apply `supabase/migrations/001_aqe_foundation.sql`, then root `migrations/0001_init.sql` through the latest migration (`0044_asset_room_pin_and_prize_fix.sql`) in filename order.
+3. Apply `supabase/migrations/001_aqe_foundation.sql`, then root `migrations/0001_init.sql` through the latest migration (`0045_ceo_withdrawal_policy.sql`) in filename order.
 4. Run `npm test`, `npm run typecheck`, and `npm run build`.
 5. Start the app with `npm run dev`.
 6. Check `/api/health` before accepting real traffic.
@@ -40,7 +40,17 @@ The foundation migration lives in `supabase/migrations/` and the follow-up migra
 
 The root migration files are not automatically discovered by `supabase db push`. If using the Supabase CLI, move or consolidate the follow-up files into `supabase/migrations/` with unique timestamp prefixes before running `supabase db push`; do not keep and apply duplicate copies.
 
-The current migration sequence extends through `0044_asset_room_pin_and_prize_fix.sql`. Migration `0039` enforces the membership-aware QC chat rule. Migrations `0041`–`0044` add wallet-funded purchases, the PIN-locked VIP Asset Room and invite-based VIP salary, configurable referral prizes/claims, and secure PIN helpers. Apply migrations strictly in filename order. The latest migrations also add atomic withdrawals, profile media limits/boosts, receipts, campaigns, renewal commissions, separate VIP creator-content subscriptions, subscriber-only media RLS, renewal chaining, and the private media storage bucket.
+The current migration sequence extends through `0045_ceo_withdrawal_policy.sql`. Migration `0039` enforces the membership-aware QC chat rule. Migrations `0041`–`0044` add wallet-funded purchases, the PIN-locked VIP Asset Room and invite-based VIP salary, configurable referral prizes/claims, and secure PIN helpers. Migration `0045` enforces the CEO withdrawal policy: UGX 30,000–5,000,000 limits, 10% service charge, tier-specific withdrawal frequency, the existing two-direct-invite requirement for Basic/Premium, and Team Leader fee credit when Management marks a successfully paid withdrawal as SUCCEED. Apply migrations strictly in filename order. The latest migrations also add atomic withdrawals, profile media limits/boosts, receipts, campaigns, renewal commissions, separate VIP creator-content subscriptions, subscriber-only media RLS, renewal chaining, and the private media storage bucket.
+
+## Withdrawal status mapping
+
+The CEO's customer-facing status flow is represented in the database as:
+
+- `PENDING` → **AWAITING REVIEW**
+- `APPROVED` → **UNDER REVIEW**
+- `PAID` → **SUCCEED**
+
+Management must only mark `PAID` after the approved net payout has actually been sent to the member's registered destination. At `PAID`, the 10% service charge is credited to the member's direct Team Leader when a direct Team Leader exists.
 
 ## Important rules
 
@@ -48,6 +58,7 @@ The current migration sequence extends through `0044_asset_room_pin_and_prize_fi
 - QC and wallet operations must be server-side.
 - VIP-specific access is controlled by the server, not browser state.
 - Use Supabase Storage and database records for all media.
+- Never treat a browser-supplied tier as authoritative for withdrawal eligibility.
 
 ## Production boundaries
 
@@ -62,6 +73,6 @@ Verify with `npm run typecheck`, `npm test`, and `npm run build`. Use `npm run d
 
 ## Cron secret
 
-AQE uses `CRON_SECRET` to protect server-side scheduled endpoints such as the VIP salary job. Vercel sends this value as `Authorization: Bearer <CRON_SECRET>` when it invokes a configured cron route. Keep the secret only in the hosting provider's server environment; never put it in `NEXT_PUBLIC_*`, browser code, Git, or screenshots.
+AQE uses `CRON_SECRET` to protect server-side scheduled endpoints such as the VIP salary job. Vercel sends this value as `Authorization: Bearer <CRON_SECRET>` when it invokes a configured cron route. Keep the secret only in the hosting provider's server environment; never put it in `NEXT_PUBLIC_*`, Git, or screenshots.
 
 Generate a long random value (Vercel recommends at least 16 characters), set the same value in the production environment, and redeploy. If `CRON_SECRET` is missing or the Authorization header does not match, AQE returns HTTP 401 and the scheduled job does not run.
