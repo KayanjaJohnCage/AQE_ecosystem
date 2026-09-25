@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import {
   requireAuthenticatedRoleAccess,
+  resolveAuthenticatedSession,
   resolveMutationUserId,
 } from "../../../../lib/aqe/auth";
 import {
@@ -84,16 +85,6 @@ export async function POST(request: Request) {
 
 export async function GET(request: Request) {
   try {
-    const access = await requireAuthenticatedRoleAccess(request, [
-      "manager",
-      "admin",
-    ]);
-    if (!access.ok)
-      return NextResponse.json(
-        { ok: false, reason: access.reason },
-        { status: 403 },
-      );
-
     const client = createServerSupabaseClient();
     if (!client)
       return NextResponse.json(
@@ -101,7 +92,25 @@ export async function GET(request: Request) {
         { status: 503 },
       );
 
-    const { data, error } = await client
+    const managerAccess = await requireAuthenticatedRoleAccess(request, [
+      "manager",
+      "admin",
+    ]);
+    const isManager = managerAccess.ok;
+    let userId: string | null = null;
+
+    if (!isManager) {
+      const session = await resolveAuthenticatedSession(request);
+      if (!session.authenticated || !session.userId) {
+        return NextResponse.json(
+          { ok: false, reason: "Authentication required." },
+          { status: 401 },
+        );
+      }
+      userId = session.userId;
+    }
+
+    let query = client
       .from("vip_withdrawal_requests")
       .select(
         "id, user_id, tier, payment_method, recipient_name, recipient_account, currency, amount, service_charge_rate, service_charge_amount, net_amount, status, created_at, reviewed_at, reviewed_by, review_reason",
@@ -109,16 +118,32 @@ export async function GET(request: Request) {
       .order("created_at", { ascending: false })
       .limit(50);
 
+    if (userId) query = query.eq("user_id", userId);
+
+    const { data, error } = await query;
+
     if (error)
       return NextResponse.json(
         { ok: false, reason: error.message },
         { status: 500 },
       );
 
+    const withdrawals = (data ?? []).map((row) => ({
+      ...row,
+      statusLabel:
+        row.status === "PENDING"
+          ? "AWAITING REVIEW"
+          : row.status === "APPROVED"
+            ? "UNDER REVIEW"
+            : row.status === "PAID"
+              ? "SUCCEED"
+              : row.status,
+    }));
+
     return NextResponse.json({
       ok: true,
       source: "supabase",
-      withdrawals: data ?? [],
+      withdrawals,
     });
   } catch (error) {
     return NextResponse.json(
