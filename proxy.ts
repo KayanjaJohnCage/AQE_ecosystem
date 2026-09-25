@@ -1,10 +1,22 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-const protectedPrefixes = ["/manager", "/vip"];
+const protectedPrefixes = ["/aqe-control", "/vip"];
 
 export function proxy(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
+
+  // The legacy /manager URL is never the customer-facing entry point.
+  // Send it to the restricted manager sign-in instead of exposing the console.
+  if (pathname === "/manager" || pathname.startsWith("/manager/")) {
+    return NextResponse.redirect(new URL("/aqe-control/login", request.url));
+  }
+
+  // The login page itself must remain reachable without an existing session.
+  if (pathname === "/aqe-control/login" || pathname.startsWith("/aqe-control/login/")) {
+    return NextResponse.next();
+  }
+
   const matchedPrefix = protectedPrefixes.find(
     (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
   );
@@ -38,5 +50,5 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/manager/:path*", "/vip/:path*"],
+  matcher: ["/manager/:path*", "/aqe-control/:path*", "/vip/:path*"],
 };
