@@ -394,6 +394,10 @@ export default function VipPage() {
             UGX 30,000. Maximum: UGX 5,000,000.
           </p>
           <p>
+            Processing can take up to 24 hours. When the status becomes SUCCEED,
+            the approved net amount has already been sent to your registered account.
+          </p>
+          <p>
             Make sure the number/card and registered name are correct before
             sending your request.
           </p>
