@@ -2326,3 +2326,37 @@ body {
   color: #9a5a00;
   font-weight: 700;
 }
+
+/* AQE referral prizes + VIP Asset Room */
+.aqe-prizes-room{margin-top:24px}
+.aqe-prize-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:14px}
+.aqe-prize-card{overflow:hidden;border:1px solid #252540;border-radius:16px;background:#12121a}
+.aqe-prize-card.locked{opacity:.72}
+.aqe-prize-image{position:relative;display:grid;place-items:center;min-height:130px;background:linear-gradient(135deg,#26152e,#101018)}
+.aqe-prize-image img{width:100%;height:130px;object-fit:cover;display:block}
+.aqe-prize-image span{font-size:38px;color:#f9e076}
+.aqe-prize-image b{position:absolute;top:8px;right:8px;border-radius:999px;padding:5px 8px;background:rgba(0,0,0,.72);color:#f9e076;font-size:9px}
+.aqe-prize-body{padding:13px}
+.aqe-prize-body h3{margin:5px 0 8px;font-size:15px}
+.aqe-prize-body>strong{display:block;font-size:11px;color:#d4af37}
+.aqe-prize-body small{display:block;margin-top:8px;color:#9a9ab0}
+.aqe-prize-actions{display:flex;gap:7px;margin-top:12px}
+.aqe-prize-actions button,.asset-room-pin-form button,.asset-room-salary-card button{border:0;border-radius:10px;padding:9px 11px;background:linear-gradient(135deg,#d4af37,#f9e076);color:#17130a;font-weight:800;cursor:pointer}
+.aqe-prize-actions button+button{background:#211a2d;color:#f0f0f5;border:1px solid #3a3150}
+.aqe-prize-claim-status{margin-top:10px;border-radius:10px;padding:9px;background:#171724;color:#d8d8e7;font-size:11px}
+.asset-room-hero,.asset-room-pin-card,.asset-room-salary-card{border:1px solid #29293e;border-radius:18px;background:linear-gradient(145deg,#15131e,#0e0e15);padding:20px}
+.asset-room-hero h2{margin:8px 0}
+.asset-room-hero>strong{display:block;font-size:28px;color:#f9e076;margin-top:14px}
+.asset-room-hero>small{display:block;color:#9898ad;margin-top:5px}
+.asset-room-lock{display:inline-block;border:1px solid rgba(249,224,118,.35);border-radius:999px;padding:5px 8px;color:#f9e076;font-size:9px;font-weight:800}
+.asset-room-pin-form{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.asset-room-pin-form input{flex:1;min-width:130px;padding:10px;border-radius:10px;border:1px solid #303047;background:#0d0d14;color:#fff}
+.asset-room-feedback{margin-top:12px;color:#f9e076;font-size:12px}
+.asset-room-balance-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:12px}
+.asset-room-balance-grid>div{border:1px solid #29293e;border-radius:14px;padding:14px;background:#12121a}
+.asset-room-balance-grid span,.asset-room-balance-grid small{display:block;color:#9292a8;font-size:10px}
+.asset-room-balance-grid strong{display:block;margin:7px 0;font-size:16px}
+.asset-room-salary-card{display:flex;justify-content:space-between;align-items:center;gap:14px;margin-top:12px}
+.asset-room-salary-card h3,.asset-room-pin-card h3{margin:4px 0}
+.asset-room-salary-card p{margin:5px 0;color:#a8a6b8;font-size:12px}
+@media(max-width:640px){.aqe-prize-grid,.asset-room-balance-grid{grid-template-columns:1fr}.asset-room-salary-card{display:block}.asset-room-salary-card button{margin-top:10px}}
