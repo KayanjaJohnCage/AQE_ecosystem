@@ -30,6 +30,11 @@ export type AqePlatformSettings = {
     premium: { imagesPerMonth: number; videosPerMonth: number; maxImageSizeMB: number; maxVideoSizeMB: number };
     vip: { imagesPerMonth: number; videosPerMonth: number; maxImageSizeMB: number; maxVideoSizeMB: number };
   };
+  commercial: {
+    profileBoostPrices: { daily: number; weekly: number; monthly: number };
+    marketplaceCommissionRate: number;
+    vipContentCommissionRate: number;
+  };
   profileBoosts: {
     enabled: boolean;
     managerCanGrant: boolean;
@@ -76,6 +81,11 @@ const defaults: AqePlatformSettings = {
     basic: { imagesPerMonth: 10, videosPerMonth: 2, maxImageSizeMB: 5, maxVideoSizeMB: 75 },
     premium: { imagesPerMonth: 30, videosPerMonth: 10, maxImageSizeMB: 8, maxVideoSizeMB: 100 },
     vip: { imagesPerMonth: 100, videosPerMonth: 30, maxImageSizeMB: 12, maxVideoSizeMB: 150 },
+  },
+  commercial: {
+    profileBoostPrices: { daily: 0, weekly: 0, monthly: 0 },
+    marketplaceCommissionRate: 0,
+    vipContentCommissionRate: 0,
   },
   profileBoosts: {
     enabled: true,
@@ -152,6 +162,8 @@ function normalizeSettings(value: Partial<AqePlatformSettings> = {}): AqePlatfor
   const deduction = (pricing.deduction ?? {}) as Partial<AqePlatformSettings["pricing"]["deduction"]>;
   const teamLeaderRenewalCommission = (pricing.teamLeaderRenewalCommission ?? {}) as Partial<AqePlatformSettings["pricing"]["teamLeaderRenewalCommission"]>;
   const withdrawal = (value.withdrawal ?? {}) as Partial<AqePlatformSettings["withdrawal"]>;
+  const commercial = (value.commercial ?? {}) as Partial<AqePlatformSettings["commercial"]>;
+  const profileBoostPrices = (commercial.profileBoostPrices ?? {}) as Partial<AqePlatformSettings["commercial"]["profileBoostPrices"]>;
 
   const normalizedTierPrices = {
     basic: positive(tierPrices.basic, defaults.tierPrices.basic),
@@ -241,6 +253,21 @@ function normalizeSettings(value: Partial<AqePlatformSettings> = {}): AqePlatfor
         maxImageSizeMB: positive(value.mediaLimits?.vip?.maxImageSizeMB, defaults.mediaLimits.vip.maxImageSizeMB),
         maxVideoSizeMB: positive(value.mediaLimits?.vip?.maxVideoSizeMB, defaults.mediaLimits.vip.maxVideoSizeMB),
       },
+    },
+    commercial: {
+      profileBoostPrices: {
+        daily: positive(profileBoostPrices.daily, defaults.commercial.profileBoostPrices.daily),
+        weekly: positive(profileBoostPrices.weekly, defaults.commercial.profileBoostPrices.weekly),
+        monthly: positive(profileBoostPrices.monthly, defaults.commercial.profileBoostPrices.monthly),
+      },
+      marketplaceCommissionRate:
+        Number(commercial.marketplaceCommissionRate) >= 0 && Number(commercial.marketplaceCommissionRate) <= 1
+          ? Number(commercial.marketplaceCommissionRate)
+          : defaults.commercial.marketplaceCommissionRate,
+      vipContentCommissionRate:
+        Number(commercial.vipContentCommissionRate) >= 0 && Number(commercial.vipContentCommissionRate) <= 1
+          ? Number(commercial.vipContentCommissionRate)
+          : defaults.commercial.vipContentCommissionRate,
     },
     profileBoosts: {
       enabled: Boolean(value.profileBoosts?.enabled ?? defaults.profileBoosts.enabled),
