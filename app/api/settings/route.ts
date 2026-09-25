@@ -68,8 +68,8 @@ const defaults: AqePlatformSettings = {
   about: "AQE is a community ecosystem for connection, profiles, bookings, and trusted creator tools.",
   contact: "Contact an AQE manager for payment and account support.",
   withdrawal: {
-    serviceChargeRate: 0.08,
-    serviceChargeLabel: "8% withdrawal service charge",
+    serviceChargeRate: 0.10,
+    serviceChargeLabel: "10% withdrawal service charge",
   },
   pricing: {
     originalTierPrices: { basic: 125000, premium: 250000, vip: 500000 },
