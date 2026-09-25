@@ -4,6 +4,8 @@ export async function POST() {
   const response = NextResponse.json({ ok: true });
   for (const name of [
     "aqe-access-token",
+    "aqe-manager-session",
+    "aqe-google-verified",
     "sb-access-token",
     "supabase-auth-token",
     "sb-refresh-token",
