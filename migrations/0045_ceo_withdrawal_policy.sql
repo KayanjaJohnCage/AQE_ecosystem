@@ -6,7 +6,7 @@
 -- VIP: one application every 1 day.
 -- Basic/Premium retain the existing minimum of two direct invites.
 -- On successful payment, the 10% fee is credited to the member's direct Team Leader.
--- Historical completed withdrawals keep their recorded fee; pending requests are recalculated to 10%.
+-- Historical completed withdrawals keep their recorded fee; pending/under-review requests are recalculated to 10%.
 
 ALTER TABLE public.vip_withdrawal_requests
   ALTER COLUMN service_charge_rate SET DEFAULT 0.10;
@@ -50,6 +50,7 @@ AS $$
 DECLARE
   v_wallet public.cash_wallet%ROWTYPE;
   v_withdrawal public.vip_withdrawal_requests%ROWTYPE;
+  v_profile_tier text;
   v_last_created_at timestamptz;
   v_fee numeric;
   v_net numeric;
@@ -57,8 +58,19 @@ DECLARE
   v_direct_invites integer := 0;
   v_cooldown_hours integer := 24;
 BEGIN
-  IF lower(COALESCE(p_tier, '')) NOT IN ('basic', 'premium', 'vip') THEN
+  SELECT tier
+  INTO v_profile_tier
+  FROM public.profiles
+  WHERE user_id = p_user_id;
+
+  IF v_profile_tier IS NULL OR v_profile_tier NOT IN ('basic', 'premium', 'vip') THEN
     RAISE EXCEPTION 'A valid membership tier is required for withdrawals.';
+  END IF;
+
+  -- The server-side profile tier is authoritative; do not allow a client to
+  -- submit a different tier to bypass tier-specific withdrawal rules.
+  IF lower(COALESCE(p_tier, '')) <> v_profile_tier THEN
+    RAISE EXCEPTION 'Withdrawal tier does not match the member profile.';
   END IF;
 
   IF p_currency <> 'UGX' THEN
@@ -73,11 +85,12 @@ BEGIN
     RAISE EXCEPTION 'Maximum withdrawal amount is UGX 5,000,000.';
   END IF;
 
+  -- The CEO policy fixes the service charge at 10%.
   IF p_service_charge_rate IS NULL OR p_service_charge_rate <> 0.10 THEN
     RAISE EXCEPTION 'Withdrawal service charge must be 10%.';
   END IF;
 
-  IF lower(p_tier) IN ('basic', 'premium') THEN
+  IF v_profile_tier IN ('basic', 'premium') THEN
     SELECT COUNT(*)
     INTO v_direct_invites
     FROM public.profiles
@@ -88,12 +101,12 @@ BEGIN
     END IF;
   END IF;
 
-  IF lower(p_tier) = 'basic'
+  IF v_profile_tier = 'basic'
      AND EXTRACT(DOW FROM v_kampala_date) NOT IN (0, 6) THEN
     RAISE EXCEPTION 'Basic withdrawals are available on weekends only.';
   END IF;
 
-  v_cooldown_hours := CASE lower(p_tier)
+  v_cooldown_hours := CASE v_profile_tier
     WHEN 'premium' THEN 48
     ELSE 24
   END;
@@ -138,7 +151,7 @@ BEGIN
     currency, amount, service_charge_rate, service_charge_amount, net_amount, status
   )
   VALUES (
-    p_user_id, lower(p_tier), p_payment_method, trim(p_recipient_name),
+    p_user_id, v_profile_tier, p_payment_method, trim(p_recipient_name),
     trim(p_recipient_account), p_currency, p_amount, 0.10,
     v_fee, v_net, 'PENDING'
   )
@@ -196,6 +209,7 @@ DECLARE
   v_leader uuid;
   v_leader_wallet public.cash_wallet%ROWTYPE;
   v_refund boolean := false;
+  v_fee_credited numeric := 0;
   v_leader_after numeric;
 BEGIN
   IF p_status NOT IN ('APPROVED', 'REJECTED', 'PAID', 'CANCELLED') THEN
@@ -211,11 +225,22 @@ BEGIN
     RAISE EXCEPTION 'Withdrawal request not found.';
   END IF;
 
-  IF v_withdrawal.status <> 'PENDING' THEN
-    RAISE EXCEPTION 'Only pending withdrawals can be processed.';
+  -- CEO status flow:
+  -- PENDING = AWAITING REVIEW
+  -- APPROVED = UNDER REVIEW
+  -- PAID = SUCCEED (payout already sent)
+  -- Rejection/cancellation may occur before payout.
+  IF v_withdrawal.status = 'PENDING' THEN
+    IF p_status NOT IN ('APPROVED', 'REJECTED', 'CANCELLED') THEN
+      RAISE EXCEPTION 'Pending withdrawals must be approved, rejected, or cancelled.';
+    END IF;
+  ELSIF v_withdrawal.status = 'APPROVED' THEN
+    IF p_status NOT IN ('PAID', 'REJECTED', 'CANCELLED') THEN
+      RAISE EXCEPTION 'Under-review withdrawals must be marked paid, rejected, or cancelled.';
+    END IF;
+  ELSE
+    RAISE EXCEPTION 'Withdrawal has already reached a final state.';
   END IF;
-
-  v_refund := p_status IN ('REJECTED', 'CANCELLED');
 
   SELECT * INTO v_wallet
   FROM public.cash_wallet
@@ -229,6 +254,8 @@ BEGIN
   IF v_wallet.pending_balance < v_withdrawal.amount THEN
     RAISE EXCEPTION 'Pending withdrawal balance is inconsistent.';
   END IF;
+
+  v_refund := p_status IN ('REJECTED', 'CANCELLED');
 
   IF v_refund THEN
     UPDATE public.cash_wallet
@@ -250,8 +277,9 @@ BEGIN
     ON CONFLICT (user_id, payment_order_id, direction) DO NOTHING;
 
   ELSIF p_status = 'PAID' THEN
-    -- PAID is the system's persisted equivalent of the CEO's SUCCEED state:
-    -- management confirms that the net payout has already been sent.
+    -- The member's gross amount was reserved at application time. When
+    -- management marks SUCCEED/PAID, the reserved gross leaves pending balance.
+    -- The member receives net_amount; the service charge goes to the Team Leader.
     UPDATE public.cash_wallet
     SET pending_balance = pending_balance - v_withdrawal.amount,
         updated_at = now()
@@ -262,8 +290,10 @@ BEGIN
     FROM public.profiles
     WHERE user_id = v_withdrawal.user_id;
 
-    IF v_leader IS NOT NULL AND v_leader <> v_withdrawal.user_id
+    IF v_leader IS NOT NULL
+       AND v_leader <> v_withdrawal.user_id
        AND v_withdrawal.service_charge_amount > 0 THEN
+
       INSERT INTO public.cash_wallet(
         user_id, available_balance, pending_balance, currency
       )
@@ -279,24 +309,33 @@ BEGIN
         RAISE EXCEPTION 'Team Leader wallet currency does not match the withdrawal currency.';
       END IF;
 
-      v_leader_after := v_leader_wallet.available_balance
-        + v_withdrawal.service_charge_amount;
+      IF NOT EXISTS (
+        SELECT 1
+        FROM public.cash_wallet_ledger
+        WHERE user_id = v_leader
+          AND reference_type = 'TEAM_LEADER_WITHDRAWAL_FEE'
+          AND reference_id = v_withdrawal.id::text
+      ) THEN
+        v_leader_after := v_leader_wallet.available_balance
+          + v_withdrawal.service_charge_amount;
 
-      UPDATE public.cash_wallet
-      SET available_balance = v_leader_after,
-          updated_at = now()
-      WHERE user_id = v_leader;
+        UPDATE public.cash_wallet
+        SET available_balance = v_leader_after,
+            updated_at = now()
+        WHERE user_id = v_leader;
 
-      INSERT INTO public.cash_wallet_ledger (
-        user_id, payment_order_id, amount, direction, currency,
-        balance_after, reference_type, reference_id
-      )
-      VALUES (
-        v_leader, v_withdrawal.id, v_withdrawal.service_charge_amount,
-        'CREDIT', v_withdrawal.currency, v_leader_after,
-        'TEAM_LEADER_WITHDRAWAL_FEE', v_withdrawal.id::text
-      )
-      ON CONFLICT (user_id, payment_order_id, direction) DO NOTHING;
+        INSERT INTO public.cash_wallet_ledger (
+          user_id, payment_order_id, amount, direction, currency,
+          balance_after, reference_type, reference_id
+        )
+        VALUES (
+          v_leader, v_withdrawal.id, v_withdrawal.service_charge_amount,
+          'CREDIT', v_withdrawal.currency, v_leader_after,
+          'TEAM_LEADER_WITHDRAWAL_FEE', v_withdrawal.id::text
+        );
+
+        v_fee_credited := v_withdrawal.service_charge_amount;
+      END IF;
     END IF;
   END IF;
 
@@ -314,8 +353,7 @@ BEGIN
     'grossAmount', v_withdrawal.amount,
     'serviceChargeAmount', v_withdrawal.service_charge_amount,
     'netAmount', v_withdrawal.net_amount,
-    'teamLeaderFeeCredited',
-      CASE WHEN p_status = 'PAID' THEN v_withdrawal.service_charge_amount ELSE 0 END
+    'teamLeaderFeeCredited', v_fee_credited
   );
 END;
 $$;
