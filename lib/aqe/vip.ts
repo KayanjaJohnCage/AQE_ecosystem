@@ -366,6 +366,18 @@ export async function createPersistedVipWithdrawalRequest({
     }
   }
 
+  const { data: lastWithdrawal, error: lastWithdrawalError } = await client
+    .from("vip_withdrawal_requests")
+    .select("created_at")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (lastWithdrawalError) {
+    return { ok: false, status: "REJECTED", reason: lastWithdrawalError.message };
+  }
+
   const { data: settingsRow } = await client
     .from("platform_settings")
     .select("settings")
