@@ -48,6 +48,11 @@ type PlatformSettings = {
     marketplaceCommissionRate: number;
     vipContentCommissionRate: number;
   };
+  footer: {
+    about: string;
+    contact: { email: string; phone: string; whatsapp: string };
+    links: Array<{ label: string; url: string }>;
+  };
   pricing: {
     originalTierPrices: { basic: number; premium: number; vip: number };
     currentTierPrices: { basic: number; premium: number; vip: number };
@@ -201,6 +206,11 @@ export default function ManagerPage() {
       profileBoostPrices: { daily: 0, weekly: 0, monthly: 0 },
       marketplaceCommissionRate: 0,
       vipContentCommissionRate: 0,
+    },
+    footer: {
+      about: "",
+      contact: { email: "", phone: "", whatsapp: "" },
+      links: [],
     },
     pricing: {
       originalTierPrices: { basic: 125000, premium: 250000, vip: 500000 },
@@ -851,6 +861,155 @@ export default function ManagerPage() {
                     rows={3}
                   />
                 </label>
+                <h4>Website footer</h4>
+                <p className="manager-subtitle">
+                  This information is customer-facing. The CEO can provide the About AQE text, contact details, and website/social links; the manager can update them here without changing the application code.
+                </p>
+                <label>
+                  About AQE
+                  <textarea
+                    value={settings.footer.about}
+                    onChange={(event) =>
+                      setSettings({
+                        ...settings,
+                        footer: { ...settings.footer, about: event.target.value },
+                      })
+                    }
+                    rows={5}
+                    placeholder="Paste the official AQE About Us information here."
+                  />
+                </label>
+                <div className="manager-two-column">
+                  <label>
+                    Contact email
+                    <input
+                      type="email"
+                      value={settings.footer.contact.email}
+                      onChange={(event) =>
+                        setSettings({
+                          ...settings,
+                          footer: {
+                            ...settings.footer,
+                            contact: { ...settings.footer.contact, email: event.target.value },
+                          },
+                        })
+                      }
+                      placeholder="CEO-provided email"
+                    />
+                  </label>
+                  <label>
+                    Contact phone
+                    <input
+                      value={settings.footer.contact.phone}
+                      onChange={(event) =>
+                        setSettings({
+                          ...settings,
+                          footer: {
+                            ...settings.footer,
+                            contact: { ...settings.footer.contact, phone: event.target.value },
+                          },
+                        })
+                      }
+                      placeholder="CEO-provided phone"
+                    />
+                  </label>
+                  <label>
+                    WhatsApp
+                    <input
+                      value={settings.footer.contact.whatsapp}
+                      onChange={(event) =>
+                        setSettings({
+                          ...settings,
+                          footer: {
+                            ...settings.footer,
+                            contact: { ...settings.footer.contact, whatsapp: event.target.value },
+                          },
+                        })
+                      }
+                      placeholder="CEO-provided WhatsApp number or link"
+                    />
+                  </label>
+                </div>
+                <div className="manager-footer-links">
+                  <div className="manager-table-header">
+                    <h4>Website links</h4>
+                    <button
+                      type="button"
+                      className="manager-action-button"
+                      onClick={() =>
+                        setSettings({
+                          ...settings,
+                          footer: {
+                            ...settings.footer,
+                            links: [...settings.footer.links, { label: "", url: "" }],
+                          },
+                        })
+                      }
+                    >
+                      Add link
+                    </button>
+                  </div>
+                  {settings.footer.links.length === 0 ? (
+                    <p className="manager-subtitle">No footer links configured yet.</p>
+                  ) : null}
+                  {settings.footer.links.map((link, index) => (
+                    <div className="manager-footer-link-row" key={index}>
+                      <label>
+                        Link label
+                        <input
+                          value={link.label}
+                          onChange={(event) =>
+                            setSettings({
+                              ...settings,
+                              footer: {
+                                ...settings.footer,
+                                links: settings.footer.links.map((item, itemIndex) =>
+                                  itemIndex === index ? { ...item, label: event.target.value } : item,
+                                ),
+                              },
+                            })
+                          }
+                          placeholder="Instagram, Website, Facebook..."
+                        />
+                      </label>
+                      <label>
+                        URL
+                        <input
+                          type="url"
+                          value={link.url}
+                          onChange={(event) =>
+                            setSettings({
+                              ...settings,
+                              footer: {
+                                ...settings.footer,
+                                links: settings.footer.links.map((item, itemIndex) =>
+                                  itemIndex === index ? { ...item, url: event.target.value } : item,
+                                ),
+                              },
+                            })
+                          }
+                          placeholder="https://..."
+                        />
+                      </label>
+                      <button
+                        type="button"
+                        className="manager-row-actions-button"
+                        onClick={() =>
+                          setSettings({
+                            ...settings,
+                            footer: {
+                              ...settings.footer,
+                              links: settings.footer.links.filter((_, itemIndex) => itemIndex !== index),
+                            },
+                          })
+                        }
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ))}
+                </div>
+
                 <h4>Commercial values not fixed by the current business sheet</h4>
                 <p className="manager-subtitle">
                   These values are intentionally configurable. Keep them at zero until the business owner provides a price or commission rule; no value is invented by AQE.
