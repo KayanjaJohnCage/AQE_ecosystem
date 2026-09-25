@@ -2372,3 +2372,120 @@ body {
 .aqe-control-login-card button{border:0;border-radius:11px;padding:12px;background:linear-gradient(135deg,#d4af37,#f9e076);color:#17130a;font-weight:900;cursor:pointer}
 .aqe-control-error{padding:10px;border:1px solid #6c3040;border-radius:9px;background:#29141b;color:#ffb7c5;font-size:12px}
 .aqe-control-loading{font-size:13px;color:#d4af37}
+
+
+/* AQE website footer and full wordmark. */
+.aqe-header-logo{
+  display:block;
+  max-width:70vw;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  font-size:16px;
+  letter-spacing:.55px;
+  line-height:1.15;
+}
+.aqe-website-footer{
+  margin:28px 0 10px;
+  padding:24px 18px 22px;
+  border:1px solid #1a1a2e;
+  border-radius:22px;
+  background:
+    radial-gradient(circle at 100% 0%,rgba(139,92,246,.10),transparent 34%),
+    linear-gradient(145deg,#11111a,#0d0d13);
+}
+.aqe-footer-brand{
+  font-size:18px;
+  font-weight:800;
+  letter-spacing:.4px;
+  background:linear-gradient(90deg,#e11d48,#8b5cf6);
+  background-clip:text;
+  -webkit-background-clip:text;
+  -webkit-text-fill-color:transparent;
+}
+.aqe-footer-grid{
+  display:grid;
+  gap:18px;
+  margin-top:20px;
+}
+.aqe-footer-grid section{
+  min-width:0;
+}
+.aqe-footer-grid h3{
+  margin:0 0 8px;
+  color:#f0f0f5;
+  font-size:12px;
+  font-weight:800;
+  letter-spacing:.8px;
+  text-transform:uppercase;
+}
+.aqe-footer-grid p{
+  margin:0;
+  color:#9292a8;
+  font-size:12px;
+  line-height:1.7;
+  white-space:pre-line;
+}
+.aqe-footer-contact,
+.aqe-footer-links{
+  display:grid;
+  gap:7px;
+}
+.aqe-footer-contact a,
+.aqe-footer-links a{
+  color:#b8b8d4;
+  font-size:12px;
+  line-height:1.5;
+  text-decoration:none;
+  overflow-wrap:anywhere;
+}
+.aqe-footer-contact a:hover,
+.aqe-footer-links a:hover{
+  color:#f9e076;
+}
+.aqe-footer-empty{
+  margin:18px 0 0;
+  padding-top:14px;
+  border-top:1px solid #1a1a2e;
+  color:#4b4b6b;
+  font-size:11px;
+  line-height:1.5;
+}
+.manager-footer-links{
+  display:grid;
+  gap:10px;
+  margin-top:8px;
+}
+.manager-footer-link-row{
+  display:grid;
+  grid-template-columns:1fr 1.6fr auto;
+  gap:10px;
+  align-items:end;
+  padding:12px;
+  border:1px solid #29293a;
+  border-radius:12px;
+  background:rgba(255,255,255,.02);
+}
+.manager-row-actions-button{
+  border:1px solid rgba(251,113,133,.3);
+  border-radius:8px;
+  background:#101018;
+  color:#fda4af;
+  padding:8px 10px;
+  cursor:pointer;
+  font-size:11px;
+}
+@media (max-width:600px){
+  .aqe-header-logo{
+    font-size:14px;
+    letter-spacing:.35px;
+  }
+  .manager-footer-link-row{
+    grid-template-columns:1fr;
+  }
+}
+@media (min-width:700px){
+  .aqe-footer-grid{
+    grid-template-columns:1.5fr 1fr 1fr;
+  }
+}
