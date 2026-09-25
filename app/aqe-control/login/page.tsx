@@ -1,10 +1,10 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { getSupabaseClient } from "../../../lib/supabaseClient";
 
-export default function AqeControlLogin() {
+function AqeControlLoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [googleEmail, setGoogleEmail] = useState("");
@@ -102,5 +102,13 @@ export default function AqeControlLogin() {
         <small>Being signed in to the authorized Google account on this device does not bypass the manager password.</small>
       </section>
     </main>
+  );
+}
+
+export default function AqeControlLogin() {
+  return (
+    <Suspense fallback={<main className="aqe-control-login"><section className="aqe-control-login-card"><h1>Loading manager sign in…</h1></section></main>}>
+      <AqeControlLoginContent />
+    </Suspense>
   );
 }
