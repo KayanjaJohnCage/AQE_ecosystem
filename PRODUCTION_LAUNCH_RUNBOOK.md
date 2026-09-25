@@ -41,10 +41,13 @@ Use a controlled test account and verify:
 5. The upgrading member's cash wallet is not incorrectly credited by the membership payment.
 6. QC recharge credits only QC.
 7. Wallet deposit credits only cash.
+8. Deposit reference `WALLET` credits the cash wallet; deposit reference `UPGRADE` activates only the selected Basic/Premium/VIP tier after manager confirmation.
+9. A wallet-funded upgrade or QC recharge debits the cash wallet atomically.
 8. Membership renewal uses the configured tier renewal price and chains after the current active period.
 9. VIP creator-content payment unlocks only the selected VIP's subscriber-only content.
 10. Creator-content earnings reach the selected VIP wallet once.
 11. Duplicate confirmation does not duplicate money.
+12. Wallet-funded membership/QC payments cannot spend more than the available wallet balance.
 
 ## 5. Withdrawal smoke test
 
@@ -59,7 +62,21 @@ Verify:
 - Manager-only finalization works.
 - Withdrawal receipt is generated.
 
-## 6. Media smoke test
+## 6. VIP Asset Room and prize smoke test
+
+Verify:
+
+- VIP salary is calculated as UGX 10,000 per direct invite and is separate from 12% direct/indirect referral earnings.
+- Salary is stored in the VIP Asset Room, not directly in the cash wallet.
+- VIP can set/change a 4–6 digit PIN and the PIN is never stored in plaintext.
+- Asset Room unlock expires and salary cannot be withdrawn before the 20th.
+- Salary withdrawal moves the salary to the cash wallet atomically.
+- Ref-1 requires 6 direct invites and is available to all tiers.
+- Ref-2, Ref-3, Ref-4, Ref-5, Ref-6, Ref-8, Ref-9 and Ref-10 are VIP-only with the CEO-provided invite thresholds.
+- Prize physical/cash requests are manager-controlled and cash conversion credits the wallet only once.
+- Admin/manager prize CRUD works and inactive prizes are hidden from customers.
+
+## 7. Media smoke test
 
 Verify:
 
@@ -72,7 +89,7 @@ Verify:
 - Active subscriber receives access.
 - Expired subscriber loses access.
 
-## 7. Membership/content smoke test
+## 8. Membership/content smoke test
 
 Verify separately:
 
@@ -82,7 +99,7 @@ Verify separately:
 - Creator-content renewal.
 - Membership upgrade does not automatically subscribe a user to another VIP's creator content.
 
-## 8. Hosting gate
+## 9. Hosting gate
 
 Before opening public traffic:
 
@@ -97,7 +114,7 @@ Before opening public traffic:
 - Confirm notifications and upgraded-member state migrations 0037/0038 are applied before testing daily QC claims.
 - Confirm the deployment is using the intended production environment variables.
 
-## 9. Business items requiring CEO confirmation
+## 10. Business items requiring CEO confirmation
 
 Do not invent these values:
 
