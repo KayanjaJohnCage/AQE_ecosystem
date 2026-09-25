@@ -181,19 +181,6 @@ export function createVipWithdrawalRequest({
 
   const date = getEastAfricaDateParts(now);
 
-  if (tier === "vip" && date.day < 20) {
-    return {
-      ok: false,
-      status: "REJECTED",
-      userId,
-      amount,
-      tier,
-      reason: "VIP earnings cannot be withdrawn before the 20th of the month.",
-      allowedDays: validation.allowedDays,
-      allowedDayLabels: validation.labels,
-    };
-  }
-
   if (Number(amount) < MIN_WITHDRAWAL_AMOUNT) {
     return {
       ok: false,
@@ -384,14 +371,9 @@ export async function createPersistedVipWithdrawalRequest({
     .eq("id", 1)
     .maybeSingle();
 
-  const configuredRate = Number(
-    settingsRow?.settings?.withdrawal?.serviceChargeRate ??
-      DEFAULT_WITHDRAWAL_SERVICE_CHARGE_RATE,
-  );
-  const serviceChargeRate =
-    Number.isFinite(configuredRate) && configuredRate >= 0 && configuredRate <= 1
-      ? configuredRate
-      : DEFAULT_WITHDRAWAL_SERVICE_CHARGE_RATE;
+  // The CEO policy fixes the withdrawal service charge at 10%.
+  // The database migration also enforces this value at the transaction boundary.
+  const serviceChargeRate = DEFAULT_WITHDRAWAL_SERVICE_CHARGE_RATE;
 
   const { data: scheduleRows, error: scheduleError } = await client
     .from("vip_withdrawal_schedule")
