@@ -15,7 +15,7 @@ Never expose SUPABASE_SERVICE_ROLE_KEY or CRON_SECRET to the browser.
 
 ## 2. Database migration order
 
-Apply the foundation migration first, then every root migration in filename order through 0038_atomic_daily_qc_claim.sql.
+Apply the foundation migration first, then every root migration in filename order through 0045_ceo_withdrawal_policy.sql.
 
 Do not skip or reorder migrations.
 
@@ -53,12 +53,16 @@ Use a controlled test account and verify:
 
 Verify:
 
-- 8% service charge.
+- 10% service charge.
+- Minimum withdrawal is UGX 30,000 and maximum is UGX 5,000,000.
+- Basic withdrawals are weekends only; Premium is once every 2 days; VIP is once every 1 day.
+- At least 1 day passes between withdrawal applications.
+- Basic/Premium members still require at least 2 direct invites.
 - Gross amount is reserved atomically.
 - Rejection/cancellation refunds the reserved amount.
-- PAID removes the pending reservation.
-- VIP withdrawals before the 20th are rejected.
-- VIP withdrawal day rules are enforced by the application.
+- PAID is the persisted SUCCEED state and is used only after the net payout has been sent.
+- The 10% service charge is credited once to the member's direct Team Leader on successful payout.
+- VIP Asset Room salary remains separately restricted to the 20th; that restriction does not block ordinary VIP cash-wallet withdrawals.
 - Manager-only finalization works.
 - Withdrawal receipt is generated.
 
