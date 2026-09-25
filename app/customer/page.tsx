@@ -265,7 +265,6 @@ export default function CustomerPage() {
             walletBalance: Math.max(0, previous.walletBalance - Number(profile.vipContent?.monthlyPrice ?? 0)),
           }));
           setProfileActionMessage("VIP content subscription activated using your cash wallet.");
-          await loadProfiles();
           return;
         }
         if (walletResponse.status !== 400) {
