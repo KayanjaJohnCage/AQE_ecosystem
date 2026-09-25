@@ -67,7 +67,7 @@ export function AqeNavigation({
     </aside>
     <header className="aqe-original-header">
       <button className="aqe-header-icon" type="button" onClick={onOpenDrawer} aria-label="Open menu"><i className="fas fa-bars" /></button>
-      <div className="aqe-header-logo">AQE</div>
+      <div className="aqe-header-logo">AQE AfriQueerEcosystem</div>
       <div className="aqe-header-actions">
         <button className="currency-badge" type="button" onClick={onAccount}>{walletCurrency}</button>
         <button className="aqe-header-icon" type="button" onClick={onAccount} aria-label="Notifications"><i className="fas fa-bell" /></button>
