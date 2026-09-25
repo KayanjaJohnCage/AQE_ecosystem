@@ -244,6 +244,40 @@ export default function CustomerPage() {
       setAuthOpen(true);
       return;
     }
+    if (data.walletBalance >= Number(profile.vipContent.monthlyPrice)) {
+      setProfileActionMessage("Paying for VIP content from your cash wallet...");
+      try {
+        const headers: HeadersInit = { "Content-Type": "application/json" };
+        if (session.access_token) headers.authorization = `Bearer ${session.access_token}`;
+        if (user.id) headers["x-user-id"] = user.id;
+        const walletResponse = await fetch("/api/wallet/pay", {
+          method: "POST",
+          headers,
+          body: JSON.stringify({
+            paymentKind: "vip_content_subscription",
+            vipUserId: profile.userId,
+          }),
+        });
+        const walletPayload = await walletResponse.json().catch(() => ({}));
+        if (walletResponse.ok && walletPayload.ok) {
+          setData((previous) => ({
+            ...previous,
+            walletBalance: Math.max(0, previous.walletBalance - Number(profile.vipContent?.monthlyPrice ?? 0)),
+          }));
+          setProfileActionMessage("VIP content subscription activated using your cash wallet.");
+          await loadProfiles();
+          return;
+        }
+        if (walletResponse.status !== 400) {
+          setProfileActionMessage(walletPayload.reason || "Wallet payment failed.");
+          return;
+        }
+      } catch (error) {
+        setProfileActionMessage(error instanceof Error ? error.message : "Wallet payment failed.");
+        return;
+      }
+    }
+
     setProfileActionMessage("Creating your VIP content subscription payment...");
     try {
       const headers: HeadersInit = { "Content-Type": "application/json" };
