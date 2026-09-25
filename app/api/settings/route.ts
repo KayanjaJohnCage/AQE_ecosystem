@@ -207,13 +207,10 @@ function normalizeSettings(value: Partial<AqePlatformSettings> = {}): AqePlatfor
     about: String(value.about || defaults.about),
     contact: String(value.contact || defaults.contact),
     withdrawal: {
-      serviceChargeRate:
-        Number(withdrawal.serviceChargeRate) >= 0 && Number(withdrawal.serviceChargeRate) <= 1
-          ? Number(withdrawal.serviceChargeRate)
-          : defaults.withdrawal.serviceChargeRate,
-      serviceChargeLabel: String(
-        withdrawal.serviceChargeLabel || defaults.withdrawal.serviceChargeLabel,
-      ),
+      // The CEO policy fixes withdrawals at a 10% service charge.
+      // Do not allow manager/API settings to silently change the financial rule.
+      serviceChargeRate: 0.10,
+      serviceChargeLabel: "10% withdrawal service charge",
     },
     pricing: {
       originalTierPrices: {
