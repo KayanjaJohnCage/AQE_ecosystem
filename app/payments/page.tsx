@@ -278,6 +278,25 @@ function PaymentsPageContent() {
       return;
     }
 
+    if (
+      mode === "deposit" &&
+      depositReference === "wallet" &&
+      currency === "UGX" &&
+      normalizedAmount < 5000
+    ) {
+      setError("Minimum wallet deposit is UGX 5,000.");
+      return;
+    }
+
+    if (
+      paymentMethod === "AQE_MANAGER" &&
+      (mode === "deposit" || mode === "upgrade") &&
+      (!senderName.trim() || !senderPhone.trim())
+    ) {
+      setError("Enter your registered sender name and sending phone number.");
+      return;
+    }
+
     if (!/^[A-Z]{3}$/.test(currency)) {
       setError("Choose a valid three-letter currency.");
       return;
