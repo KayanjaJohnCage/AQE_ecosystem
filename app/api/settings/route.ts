@@ -35,6 +35,11 @@ export type AqePlatformSettings = {
     marketplaceCommissionRate: number;
     vipContentCommissionRate: number;
   };
+  footer: {
+    about: string;
+    contact: { email: string; phone: string; whatsapp: string };
+    links: Array<{ label: string; url: string }>;
+  };
   profileBoosts: {
     enabled: boolean;
     managerCanGrant: boolean;
@@ -86,6 +91,11 @@ const defaults: AqePlatformSettings = {
     profileBoostPrices: { daily: 0, weekly: 0, monthly: 0 },
     marketplaceCommissionRate: 0,
     vipContentCommissionRate: 0,
+  },
+  footer: {
+    about: "",
+    contact: { email: "", phone: "", whatsapp: "" },
+    links: [],
   },
   profileBoosts: {
     enabled: true,
@@ -164,6 +174,8 @@ function normalizeSettings(value: Partial<AqePlatformSettings> = {}): AqePlatfor
   const withdrawal = (value.withdrawal ?? {}) as Partial<AqePlatformSettings["withdrawal"]>;
   const commercial = (value.commercial ?? {}) as Partial<AqePlatformSettings["commercial"]>;
   const profileBoostPrices = (commercial.profileBoostPrices ?? {}) as Partial<AqePlatformSettings["commercial"]["profileBoostPrices"]>;
+  const footer = (value.footer ?? {}) as Partial<AqePlatformSettings["footer"]>;
+  const footerContact = (footer.contact ?? {}) as Partial<AqePlatformSettings["footer"]["contact"]>;
 
   const normalizedTierPrices = {
     basic: positive(tierPrices.basic, defaults.tierPrices.basic),
@@ -269,6 +281,23 @@ function normalizeSettings(value: Partial<AqePlatformSettings> = {}): AqePlatfor
           ? Number(commercial.vipContentCommissionRate)
           : defaults.commercial.vipContentCommissionRate,
     },
+    footer: {
+      about: String(footer.about ?? defaults.footer.about),
+      contact: {
+        email: String(footerContact.email ?? defaults.footer.contact.email),
+        phone: String(footerContact.phone ?? defaults.footer.contact.phone),
+        whatsapp: String(footerContact.whatsapp ?? defaults.footer.contact.whatsapp),
+      },
+      links: Array.isArray(footer.links)
+        ? footer.links
+            .map((link) => ({
+              label: String((link as { label?: unknown })?.label ?? "").trim(),
+              url: String((link as { url?: unknown })?.url ?? "").trim(),
+            }))
+            .filter((link) => link.label && link.url)
+            .slice(0, 12)
+        : [],
+    },
     profileBoosts: {
       enabled: Boolean(value.profileBoosts?.enabled ?? defaults.profileBoosts.enabled),
       managerCanGrant: Boolean(value.profileBoosts?.managerCanGrant ?? defaults.profileBoosts.managerCanGrant),
@@ -340,6 +369,14 @@ export async function PATCH(request: Request) {
       pricing: {
         ...existing.settings.pricing,
         ...(incoming.pricing ?? {}),
+      },
+      footer: {
+        ...existing.settings.footer,
+        ...(incoming.footer ?? {}),
+        contact: {
+          ...existing.settings.footer.contact,
+          ...(incoming.footer?.contact ?? {}),
+        },
       },
     });
 
