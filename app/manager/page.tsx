@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { readStoredSession } from "../../lib/clientSession";
 import ProfileBoostManager from "./components/ProfileBoostManager";
 import CampaignManager from "./components/CampaignManager";
+import PrizeManager from "./components/PrizeManager";
 
 type ManagerData = {
   users: number;
@@ -1046,6 +1047,8 @@ export default function ManagerPage() {
                 </div>
               </section>
             </>
+          ) : active === "Tasks & Rewards" ? (
+            <PrizeManager />
           ) : (
             <section className="manager-card manager-detail">
               <div className="manager-table-header">
