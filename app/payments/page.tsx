@@ -108,6 +108,9 @@ function PaymentsPageContent() {
   const [authenticated, setAuthenticated] = useState(false);
   const [accountName, setAccountName] = useState("AQE Member");
   const [mode, setMode] = useState<PaymentMode>("upgrade");
+  const [depositReference, setDepositReference] = useState<"wallet" | "upgrade">("wallet");
+  const [walletBalance, setWalletBalance] = useState(0);
+  const [walletPayLoading, setWalletPayLoading] = useState(false);
   const [requestedTier, setRequestedTier] = useState<
     "basic" | "premium" | "vip"
   >("premium");
@@ -236,11 +239,25 @@ function PaymentsPageContent() {
     }
   };
 
+  useEffect(() => {
+    if (!authenticated) return;
+    const { session, user } = readStoredSession();
+    const headers: HeadersInit = {};
+    if (session.access_token) headers.authorization = `Bearer ${session.access_token}`;
+    if (user.id) headers["x-user-id"] = user.id;
+    fetch("/api/wallet", { headers }).then(async (response) => {
+      if (!response.ok) return;
+      const payload = await response.json();
+      setWalletBalance(Number(payload.wallet?.available_balance ?? 0));
+    }).catch(() => undefined);
+  }, [authenticated]);
+
   const selectMode = (next: PaymentMode) => {
     setError("");
     setResult(null);
     setMode(next);
     if (next === "deposit") {
+      setDepositReference("wallet");
       setAmount("");
       setCurrency(preferredCurrency(settings.walletCurrency));
     }
@@ -292,9 +309,23 @@ function PaymentsPageContent() {
             : mode === "qc"
               ? qcPackageId
               : `membership-${requestedTier}`,
-        tier: mode === "upgrade" ? requestedTier : "basic",
-        kind: mode === "upgrade" ? "membership_upgrade" : mode === "qc" ? "qc_recharge" : "wallet_deposit",
-        paymentKind: mode === "upgrade" ? "membership_upgrade" : mode === "qc" ? "qc_recharge" : "wallet_deposit",
+        tier: mode === "upgrade" || (mode === "deposit" && depositReference === "upgrade") ? requestedTier : "basic",
+        kind:
+          mode === "upgrade"
+            ? "membership_upgrade"
+            : mode === "qc"
+              ? "qc_recharge"
+              : depositReference === "upgrade"
+                ? "membership_upgrade"
+                : "wallet_deposit",
+        paymentKind:
+          mode === "upgrade"
+            ? "membership_upgrade"
+            : mode === "qc"
+              ? "qc_recharge"
+              : depositReference === "upgrade"
+                ? "membership_upgrade"
+                : "wallet_deposit",
         qcAmount: mode === "qc" ? Number(qcAmount) : undefined,
         provider: paymentMethod,
         reference: `AQE-${Date.now()}`,
@@ -491,30 +522,41 @@ function PaymentsPageContent() {
         <section className="aqe-payment-section">
           <div className="aqe-payment-section-heading">
             <div>
-              <span className="aqe-payment-kicker">AQE MONEY ACCOUNT</span>
-              <h2>Deposit wallet cash</h2>
-              <p>
-                Both payment methods create a pending request. Wallet funds
-                are credited only after confirmation.
-              </p>
+              <span className="aqe-payment-kicker">PAYMENT DEPOSIT REFERENCE</span>
+              <h2>What is this deposit for?</h2>
+              <p>Select exactly where the confirmed money should go.</p>
             </div>
-            <span className="aqe-payment-secure-pill">
-              <i className="fas fa-shield-alt" /> Confirmation required
-            </span>
+            <span className="aqe-payment-secure-pill"><i className="fas fa-shield-alt" /> Manager confirmed</span>
           </div>
-          <label className="aqe-payment-field">
-            <span>Deposit amount</span>
-            <div className="aqe-payment-input-wrap">
-              <b>{currencySymbol(currency)}</b>
-              <input
-                type="number"
-                min="1000"
-                value={amount}
-                placeholder="10000"
-                onChange={(event) => setAmount(event.target.value)}
-              />
+          <div className="aqe-payment-method-grid">
+            <button type="button" className={`aqe-payment-method ${depositReference === "wallet" ? "selected" : ""}`} onClick={() => { setDepositReference("wallet"); setAmount(""); }}>
+              <div className="aqe-payment-method-icon manager"><i className="fas fa-wallet" /></div>
+              <div><strong>Wallet</strong><span>Confirmed amount is credited to your cash wallet.</span></div>
+              <i className="fas fa-check-circle" />
+            </button>
+            <button type="button" className={`aqe-payment-method ${depositReference === "upgrade" ? "selected" : ""}`} onClick={() => { setDepositReference("upgrade"); setAmount(String(convertFromUgx(settings.tierPrices[requestedTier], currency))); }}>
+              <div className="aqe-payment-method-icon mukuru"><i className="fas fa-crown" /></div>
+              <div><strong>Upgrade</strong><span>Confirmed amount activates the selected Basic, Premium or VIP tier.</span></div>
+              <i className="fas fa-check-circle" />
+            </button>
+          </div>
+          {depositReference === "upgrade" ? (
+            <div className="aqe-payment-plan-grid">
+              {plans.map((plan) => (
+                <button type="button" key={plan.id} className={`aqe-payment-plan-card ${plan.tone} ${requestedTier === plan.id ? "selected" : ""}`} onClick={() => { setRequestedTier(plan.id); setAmount(String(convertFromUgx(settings.tierPrices[plan.id], currency))); }}>
+                  <strong>{plan.name}</strong><small>{money(settings.tierPrices[plan.id], currency)}</small><span>{requestedTier === plan.id ? "Selected" : "Select"}</span>
+                </button>
+              ))}
             </div>
-          </label>
+          ) : (
+            <label className="aqe-payment-field">
+              <span>Wallet deposit amount</span>
+              <div className="aqe-payment-input-wrap">
+                <b>{currencySymbol(currency)}</b>
+                <input type="number" min="1000" value={amount} placeholder="10000" onChange={(event) => setAmount(event.target.value)} />
+              </div>
+            </label>
+          )}
         </section>
       ) : null}
 
@@ -646,7 +688,9 @@ function PaymentsPageContent() {
                 ? `${selectedPlan.name} membership`
                 : mode === "qc"
                   ? `${Math.round(normalizedAmount / settings.qcExchangeRate)} QC recharge`
-                  : "AQE wallet deposit"}
+                  : depositReference === "upgrade"
+                    ? `${selectedPlan.name} membership upgrade`
+                    : "AQE wallet deposit"}
             </h2>
           </div>
           <strong>{money(normalizedAmount, currency)}</strong>
@@ -661,6 +705,10 @@ function PaymentsPageContent() {
           <b>{currency}</b>
         </div>
         <div className="aqe-payment-summary-row">
+          <span>Deposit reference</span>
+          <b>{mode === "deposit" ? (depositReference === "wallet" ? "WALLET" : `UPGRADE • ${requestedTier.toUpperCase()}`) : mode === "upgrade" ? "UPGRADE" : "QC RECHARGE"}</b>
+        </div>
+                <div className="aqe-payment-summary-row">
           <span>Reference</span>
           <b>Generated securely after order creation</b>
         </div>
@@ -684,6 +732,29 @@ function PaymentsPageContent() {
             <i className="fas fa-exclamation-circle" />
             <span>{error}</span>
           </div>
+        ) : null}
+
+        {(mode === "upgrade" || mode === "qc") && authenticated ? (
+          <button type="button" className="aqe-payment-submit" disabled={walletPayLoading || walletBalance < normalizedAmount} onClick={async () => {
+            setWalletPayLoading(true); setError(""); setResult(null);
+            try {
+              const { session, user } = readStoredSession();
+              const headers: HeadersInit = { "Content-Type": "application/json" };
+              if (session.access_token) headers.authorization = `Bearer ${session.access_token}`;
+              if (user.id) headers["x-user-id"] = user.id;
+              const response = await fetch("/api/wallet/pay", { method: "POST", headers, body: JSON.stringify({
+                paymentKind: mode === "upgrade" ? "membership_upgrade" : "qc_recharge",
+                tier: requestedTier, qcAmount: mode === "qc" ? Number(qcAmount) : undefined,
+              }) });
+              const payload = await response.json().catch(() => ({}));
+              if (!response.ok || !payload.ok) setError(String(payload.reason || "Wallet payment failed."));
+              else { setResult(payload); setWalletBalance((value) => Math.max(0, value - normalizedAmount)); }
+            } catch (error) { setError(error instanceof Error ? error.message : "Wallet payment failed."); }
+            finally { setWalletPayLoading(false); }
+          }}>
+            <i className={`fas ${walletPayLoading ? "fa-spinner fa-spin" : "fa-wallet"}`} />
+            {walletPayLoading ? "Paying from wallet..." : `Pay from wallet • ${money(normalizedAmount, currency)}`}
+          </button>
         ) : null}
 
         <button
