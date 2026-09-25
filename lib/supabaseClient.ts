@@ -10,8 +10,8 @@ export function getSupabaseClient() {
 
   return createClient(url, anonKey, {
     auth: {
-      persistSession: false,
-      autoRefreshToken: false,
+      persistSession: true,
+      autoRefreshToken: true,
     },
   });
 }

@@ -44,6 +44,13 @@ export async function POST(request: Request) {
       );
     }
 
+    if (paymentKind === "wallet_deposit" && amount < 5000) {
+      return NextResponse.json(
+        { ok: false, reason: "Minimum wallet deposit is UGX 5,000." },
+        { status: 400 },
+      );
+    }
+
     {
       const client = createServerSupabaseClient();
       const configured = client
@@ -97,6 +104,21 @@ export async function POST(request: Request) {
         }
       } else {
         return NextResponse.json({ ok: false, reason: "Unsupported payment type." }, { status: 400 });
+      }
+    }
+
+    const senderDetails =
+      body.senderDetails && typeof body.senderDetails === "object"
+        ? (body.senderDetails as { name?: unknown; phone?: unknown })
+        : null;
+    if (paymentKind === "wallet_deposit" || paymentKind === "membership_upgrade") {
+      const senderName = String(senderDetails?.name ?? "").trim();
+      const senderPhone = String(senderDetails?.phone ?? "").trim();
+      if (!senderName || !senderPhone) {
+        return NextResponse.json(
+          { ok: false, reason: "Sender registered name and sending phone number are required for Manager Direct payments." },
+          { status: 400 },
+        );
       }
     }
 

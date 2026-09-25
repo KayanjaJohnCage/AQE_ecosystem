@@ -25,6 +25,11 @@ export function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
+  const hasManagerGate = Boolean(request.cookies.get("aqe-manager-session"));
+  if (matchedPrefix === "/aqe-control" && !hasManagerGate) {
+    return NextResponse.redirect(new URL("/aqe-control/login", request.url));
+  }
+
   const hasSessionCookie = Boolean(
     request.cookies.get("aqe-access-token") ||
     request.cookies.get("sb-access-token") ||

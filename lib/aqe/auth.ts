@@ -1,3 +1,4 @@
+import { createHmac, timingSafeEqual } from "node:crypto";
 import {
   createAnonSupabaseClient,
   createServerSupabaseClient,
@@ -120,6 +121,57 @@ export function resolveRoleFromToken(
     return resolveRoleFromClaims(payload);
   } catch {
     return null;
+  }
+}
+
+function managerSecret() {
+  const secret = process.env.AQE_MANAGER_SESSION_SECRET || process.env.CRON_SECRET;
+  if (!secret && process.env.NEXT_PUBLIC_APP_ENV === "production") {
+    throw new Error("AQE manager session secret is not configured.");
+  }
+  return secret || "dev-only-aqe-manager-session-secret";
+}
+
+function managerCookie(request: Request) {
+  const cookies = request.headers.get("cookie") ?? "";
+  const match = cookies.match(/(?:^|; )aqe-manager-session=([^;]+)/);
+  return match ? decodeURIComponent(match[1]) : "";
+}
+
+function encodeManagerPayload(value: string) {
+  return Buffer.from(value).toString("base64url");
+}
+
+export function createManagerGateToken(userId: string) {
+  const payload = encodeManagerPayload(
+    JSON.stringify({ sub: userId, exp: Math.floor(Date.now() / 1000) + 1800 }),
+  );
+  const signature = createHmac("sha256", managerSecret()).update(payload).digest("base64url");
+  return `${payload}.${signature}`;
+}
+
+export function verifyManagerGateToken(request: Request, expectedUserId?: string) {
+  const token = managerCookie(request);
+  if (!token) return false;
+  const [payload, signature] = token.split(".");
+  if (!payload || !signature) return false;
+  try {
+    const expected = createHmac("sha256", managerSecret()).update(payload).digest("base64url");
+    const a = Buffer.from(signature);
+    const b = Buffer.from(expected);
+    if (a.length !== b.length || !timingSafeEqual(a, b)) return false;
+    const parsed = JSON.parse(Buffer.from(payload, "base64url").toString("utf8")) as {
+      sub?: string;
+      exp?: number;
+    };
+    return Boolean(
+      parsed.sub &&
+        parsed.exp &&
+        parsed.exp > Math.floor(Date.now() / 1000) &&
+        (!expectedUserId || parsed.sub === expectedUserId),
+    );
+  } catch {
+    return false;
   }
 }
 
@@ -293,6 +345,16 @@ export async function requireAuthenticatedRoleAccess(
     return {
       ok: false as const,
       reason: `Access denied for role ${session.role}.`,
+    };
+  }
+
+  if (
+    (session.role === "manager" || session.role === "admin") &&
+    !verifyManagerGateToken(request, session.userId)
+  ) {
+    return {
+      ok: false as const,
+      reason: "Manager console password verification is required.",
     };
   }
 
