@@ -2360,3 +2360,15 @@ body {
 .asset-room-salary-card h3,.asset-room-pin-card h3{margin:4px 0}
 .asset-room-salary-card p{margin:5px 0;color:#a8a6b8;font-size:12px}
 @media(max-width:640px){.aqe-prize-grid,.asset-room-balance-grid{grid-template-columns:1fr}.asset-room-salary-card{display:block}.asset-room-salary-card button{margin-top:10px}}
+
+.aqe-control-login,.aqe-control-loading{min-height:100vh;display:grid;place-items:center;padding:24px;background:#08080d;color:#f4f1f8}
+.aqe-control-login-card{width:min(440px,100%);padding:28px;border:1px solid #29293e;border-radius:20px;background:linear-gradient(145deg,#15131e,#0d0d14);box-shadow:0 24px 80px rgba(0,0,0,.35)}
+.aqe-control-login-card h1{margin:7px 0 8px;font-size:28px}
+.aqe-control-login-card p{color:#a5a2b2;font-size:13px;line-height:1.6;margin-bottom:22px}
+.aqe-control-login-card form{display:grid;gap:14px}
+.aqe-control-login-card label{display:grid;gap:7px;font-size:12px;font-weight:700}
+.aqe-control-login-card input{width:100%;box-sizing:border-box;border:1px solid #34344a;border-radius:10px;padding:12px;background:#0a0a10;color:#fff;outline:none}
+.aqe-control-login-card input:focus{border-color:#d4af37}
+.aqe-control-login-card button{border:0;border-radius:11px;padding:12px;background:linear-gradient(135deg,#d4af37,#f9e076);color:#17130a;font-weight:900;cursor:pointer}
+.aqe-control-error{padding:10px;border:1px solid #6c3040;border-radius:9px;background:#29141b;color:#ffb7c5;font-size:12px}
+.aqe-control-loading{font-size:13px;color:#d4af37}
