@@ -8,6 +8,7 @@ import {
 } from "../../lib/clientSession";
 import { AqeNavigation } from "./components/AqeNavigation";
 import { AssetRoomScreen } from "./components/AssetRoomScreen";
+import { PrizesScreen } from "./components/PrizesScreen";
 import { ShopScreen } from "./components/ShopScreen";
 import { WalletScreen } from "./components/WalletScreen";
 import type { CustomerView } from "./types";
@@ -1799,7 +1800,8 @@ export default function CustomerPage() {
                     Open raffle
                   </button>
                 </div>
-              </div>
+              </div>              <PrizesScreen />
+
             </div>
           )}
 
