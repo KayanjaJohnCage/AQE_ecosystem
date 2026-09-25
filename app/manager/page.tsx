@@ -402,7 +402,7 @@ export default function ManagerPage() {
                 id: withdrawal.id,
                 title: `${(withdrawal.tier || "basic").toUpperCase()} payout · ${withdrawal.recipient_name || "member"}`,
                 meta: `${withdrawal.payment_method || "MOBILE_MONEY"} · ${withdrawal.recipient_name || "No name"} · ${withdrawal.recipient_account || "No destination"}`,
-                value: `${withdrawal.status || "PENDING"} · Gross ${withdrawal.currency || "UGX"} ${Number(withdrawal.amount || 0).toLocaleString()} · Fee ${Number(withdrawal.service_charge_amount || 0).toLocaleString()} (${(Number(withdrawal.service_charge_rate ?? 0.08) * 100).toFixed(0)}%) · Net payout ${withdrawal.currency || "UGX"} ${Number(withdrawal.net_amount || 0).toLocaleString()}`,
+                value: `${withdrawal.status || "PENDING"} · Gross ${withdrawal.currency || "UGX"} ${Number(withdrawal.amount || 0).toLocaleString()} · Fee ${Number(withdrawal.service_charge_amount || 0).toLocaleString()} (${(Number(withdrawal.service_charge_rate ?? 0.10) * 100).toFixed(0)}%) · Net payout ${withdrawal.currency || "UGX"} ${Number(withdrawal.net_amount || 0).toLocaleString()}`,
               }),
             );
           }
@@ -1279,6 +1279,17 @@ export default function ManagerPage() {
                 <Metric label="SUPPORT" value={data.support} />
               </div>
 
+              {active === "Withdrawals" ? (
+                <div className="manager-review-message">
+                  <strong>CEO withdrawal policy:</strong> UGX 30,000 minimum · UGX
+                  5,000,000 maximum · 10% service charge · Basic weekends only ·
+                  Premium every 2 days · VIP every 1 day · at least 1 day between
+                  applications. The 10% fee is credited to the member's direct
+                  Team Leader when the payout is marked Succeed after the money
+                  has been sent.
+                </div>
+              ) : null}
+
               <div className="manager-list-table">
                 {rows.map((row: ManagerRow) => (
                   <div key={`${active}-${row.title}`} className="manager-row">
@@ -1333,7 +1344,7 @@ export default function ManagerPage() {
                             reviewWithdrawal(row.id!, "PAID")
                           }
                         >
-                          Mark Paid
+                          Mark Succeed — payout sent
                         </button>
                       ) : null}
                       {active === "Withdrawals" &&
