@@ -365,12 +365,6 @@ export async function createPersistedVipWithdrawalRequest({
     return { ok: false, status: "REJECTED", reason: lastWithdrawalError.message };
   }
 
-  const { data: settingsRow } = await client
-    .from("platform_settings")
-    .select("settings")
-    .eq("id", 1)
-    .maybeSingle();
-
   // The CEO policy fixes the withdrawal service charge at 10%.
   // The database migration also enforces this value at the transaction boundary.
   const serviceChargeRate = DEFAULT_WITHDRAWAL_SERVICE_CHARGE_RATE;
