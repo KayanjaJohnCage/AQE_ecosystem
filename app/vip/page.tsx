@@ -398,6 +398,12 @@ export default function VipPage() {
             the approved net amount has already been sent to your registered account.
           </p>
           <p>
+            The 10% service charge is credited to your direct Team Leader's
+            balance when Management marks the withdrawal SUCCEED after the payout
+            has been sent. If you are a Team Leader, the same rule applies to
+            your own withdrawal.
+          </p>
+          <p>
             Make sure the number/card and registered name are correct before
             sending your request.
           </p>
