@@ -33,9 +33,10 @@ export async function GET(request: Request) {
       .gt("expires_at", new Date().toISOString()).maybeSingle();
     if (!accessSession) return NextResponse.json({ ok: false, reason: "Asset Room is locked. Enter your PIN again." }, { status: 403 });
 
-    const [{ data: wallet }, { count: directInvites }] = await Promise.all([
+    const [{ data: wallet }, { count: directInvites }, { data: settingsRow }] = await Promise.all([
       client.from("cash_wallet").select("available_balance,pending_balance,currency").eq("user_id", session.userId).maybeSingle(),
       client.from("profiles").select("user_id", { count: "exact", head: true }).eq("referred_by", session.userId),
+      client.from("platform_settings").select("settings").eq("id", 1).maybeSingle(),
     ]);
     const salaryBalance = Number(room?.salary_balance ?? 0);
     const walletBalance = Number(wallet?.available_balance ?? 0);
@@ -47,6 +48,7 @@ export async function GET(request: Request) {
       withdrawnSalaryTotal: Number(room?.withdrawn_salary_total ?? 0),
       walletBalance, pendingWallet, netWorth: walletBalance + salaryBalance + pendingWallet,
       salaryWithdrawable: day >= 20,
+      salaryPerInvite: Number(settingsRow?.settings?.pricing?.vipSalary ?? 10000),
     });
   } catch (error) {
     return NextResponse.json({ ok: false, reason: error instanceof Error ? error.message : "Asset Room unavailable." }, { status: 500 });
