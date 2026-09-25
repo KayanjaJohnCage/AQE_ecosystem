@@ -74,7 +74,7 @@ export function PrizesScreen() {
         {prizes.map((prize) => {
           const claimed = Boolean(prize.claim);
           return (
-            <article key={prize.id} className={\`aqe-prize-card \${prize.eligible ? "eligible" : "locked"}\`}>
+            <article key={prize.id} className={`aqe-prize-card ${prize.eligible ? "eligible" : "locked"}`}>
               <div className="aqe-prize-image">
                 {prize.image_url ? <img src={prize.image_url} alt={prize.reward_description || prize.title} /> : <span><i className="fas fa-gift" /></span>}
                 {prize.tier_scope === "vip" ? <b>VIP</b> : <b>ALL TIERS</b>}
@@ -86,7 +86,7 @@ export function PrizesScreen() {
                 {!prize.eligible ? <small><i className="fas fa-lock" /> {prize.lockedReason}</small> : null}
                 {prize.eligible && prize.reward_type === "none" ? <small>Not available</small> : null}
                 {claimed ? (
-                  <div className="aqe-prize-claim-status">Request: {prize.claim?.status} {prize.claim?.cash_amount ? \`• UGX \${Number(prize.claim.cash_amount).toLocaleString()}\` : ""}</div>
+                  <div className="aqe-prize-claim-status">Request: {prize.claim?.status} {prize.claim?.cash_amount ? `• UGX ${Number(prize.claim.cash_amount).toLocaleString()}` : ""}</div>
                 ) : prize.eligible && prize.reward_type !== "none" ? (
                   <div className="aqe-prize-actions">
                     <button type="button" disabled={busy === prize.id + "physical"} onClick={() => claim(prize.id, "physical")}>Request prize</button>
