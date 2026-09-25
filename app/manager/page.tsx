@@ -43,6 +43,11 @@ type PlatformSettings = {
   referralRates: { direct: number; indirect: number };
   about: string;
   contact: string;
+  commercial: {
+    profileBoostPrices: { daily: number; weekly: number; monthly: number };
+    marketplaceCommissionRate: number;
+    vipContentCommissionRate: number;
+  };
   pricing: {
     originalTierPrices: { basic: number; premium: number; vip: number };
     currentTierPrices: { basic: number; premium: number; vip: number };
@@ -192,6 +197,11 @@ export default function ManagerPage() {
     referralRates: { direct: 0.1, indirect: 0.05 },
     about: "",
     contact: "",
+    commercial: {
+      profileBoostPrices: { daily: 0, weekly: 0, monthly: 0 },
+      marketplaceCommissionRate: 0,
+      vipContentCommissionRate: 0,
+    },
     pricing: {
       originalTierPrices: { basic: 125000, premium: 250000, vip: 500000 },
       currentTierPrices: { basic: 65000, premium: 150000, vip: 250000 },
@@ -841,6 +851,30 @@ export default function ManagerPage() {
                     rows={3}
                   />
                 </label>
+                <h4>Commercial values not fixed by the current business sheet</h4>
+                <p className="manager-subtitle">
+                  These values are intentionally configurable. Keep them at zero until the business owner provides a price or commission rule; no value is invented by AQE.
+                </p>
+                <div className="manager-two-column">
+                  {(["daily", "weekly", "monthly"] as const).map((period) => (
+                    <label key={`boost-price-${period}`}>
+                      {period.toUpperCase()} profile boost price ({settings.walletCurrency})
+                      <input type="number" min="0" value={settings.commercial.profileBoostPrices[period]}
+                        onChange={(event) => setSettings({ ...settings, commercial: { ...settings.commercial, profileBoostPrices: { ...settings.commercial.profileBoostPrices, [period]: Number(event.target.value) } } })} />
+                    </label>
+                  ))}
+                  <label>
+                    Marketplace commission (%)
+                    <input type="number" min="0" max="100" step="0.01" value={settings.commercial.marketplaceCommissionRate * 100}
+                      onChange={(event) => setSettings({ ...settings, commercial: { ...settings.commercial, marketplaceCommissionRate: Number(event.target.value) / 100 } })} />
+                  </label>
+                  <label>
+                    VIP content commission (%)
+                    <input type="number" min="0" max="100" step="0.01" value={settings.commercial.vipContentCommissionRate * 100}
+                      onChange={(event) => setSettings({ ...settings, commercial: { ...settings.commercial, vipContentCommissionRate: Number(event.target.value) / 100 } })} />
+                  </label>
+                </div>
+
                 <h4>Promotion pricing</h4>
                 <p className="manager-subtitle">
                   Original prices, live promotional prices, and customer-facing promotion labels are manager controlled.
