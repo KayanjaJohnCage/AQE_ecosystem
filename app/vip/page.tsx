@@ -14,10 +14,13 @@ const tierLabels: Record<Tier, string> = {
 };
 
 const tierSchedules: Record<Tier, string> = {
-  basic: "Saturday & Sunday",
-  premium: "Saturday & Sunday",
-  vip: "3 days a week",
+  basic: "Weekends only",
+  premium: "Once every 2 days",
+  vip: "Once every 1 day",
 };
+
+const MIN_WITHDRAWAL = 30_000;
+const MAX_WITHDRAWAL = 5_000_000;
 
 const paymentMethods: Array<{
   value: PaymentMethod;
@@ -49,7 +52,7 @@ export default function VipPage() {
   const [paymentMethod, setPaymentMethod] =
     useState<PaymentMethod>("AIRTEL_MONEY");
   const [amount, setAmount] = useState("");
-  const [serviceChargeRate, setServiceChargeRate] = useState(0.08);
+  const [serviceChargeRate] = useState(0.10);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [success, setSuccess] = useState(false);
@@ -85,19 +88,7 @@ export default function VipPage() {
       })
       .catch(() => undefined);
 
-    fetch("/api/settings")
-      .then(async (response) => {
-        if (!response.ok) return;
-        const payload = await response.json();
-        const rate = Number(
-          payload.settings?.withdrawal?.serviceChargeRate ?? 0.08,
-        );
-
-        if (Number.isFinite(rate) && rate >= 0 && rate <= 1) {
-          setServiceChargeRate(rate);
-        }
-      })
-      .catch(() => undefined);
+    // Withdrawal service charge is fixed by the CEO policy at 10%.
   }, []);
 
   const numericAmount = Number(amount || 0);
@@ -122,6 +113,18 @@ export default function VipPage() {
       setMessage(
         "Enter the number, the name registered to that number, and a valid amount.",
       );
+      return;
+    }
+
+    if (numericAmount < MIN_WITHDRAWAL) {
+      setSuccess(false);
+      setMessage("Minimum withdrawal amount is UGX 30,000.");
+      return;
+    }
+
+    if (numericAmount > MAX_WITHDRAWAL) {
+      setSuccess(false);
+      setMessage("Maximum withdrawal amount is UGX 5,000,000.");
       return;
     }
 
@@ -310,7 +313,7 @@ export default function VipPage() {
                 }
                 placeholder="0"
                 inputMode="decimal"
-                min="0.01"
+                min={MIN_WITHDRAWAL}
                 step="0.01"
                 type="text"
                 required
@@ -348,9 +351,15 @@ export default function VipPage() {
             {(serviceChargeRate * 100).toFixed(0)}% service charge.
           </p>
           <p>
-            {tier === "vip"
-              ? "VIP withdrawals are available three times a week. VIP earnings cannot be withdrawn before the 20th of the month."
-              : "Basic and Premium withdrawals are available on weekends only."}
+            {tier === "basic"
+              ? "Basic withdrawals are available on weekends only."
+              : tier === "premium"
+                ? "Premium withdrawals are available once every 2 days."
+                : "VIP withdrawals are available once every 1 day."}
+          </p>
+          <p>
+            At least 1 day must pass between withdrawal applications. Minimum:
+            UGX 30,000. Maximum: UGX 5,000,000.
           </p>
           <p>
             Make sure the number/card and registered name are correct before
