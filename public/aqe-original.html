@@ -7370,7 +7370,7 @@ window.addEventListener('DOMContentLoaded', init);
 
       if(!RULES[plan] || amount!== (kind==='subscription'?RULES[plan].initial:RULES[plan].renewal)){toast('Membership payments must use the selected plan amount.');return;}
 
-    }else if(amount<10000){toast('Minimum wallet deposit is UGX 10,000.');return;}
+    }else if(amount<5000){toast('Minimum wallet deposit is UGX 5,000.');return;}
 
     if(!phone){toast('Enter the mobile money number used for the deposit.');return;}
 
@@ -7982,7 +7982,7 @@ window.addEventListener('DOMContentLoaded', init);
 
     pay.amount=String(amount);pay.senderName=name;pay.senderNumber=num;
 
-    if(amount<10000){alert('Minimum deposit: 10,000 UGX');return;}
+    if(amount<5000){alert('Minimum deposit: 10,000 UGX');return;}
 
     if(!name){alert('Enter sender registered name');return;}
 
@@ -10104,7 +10104,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
     var amount=Number((document.getElementById('aqeExactAmount')||{}).value||0);
     var name=((document.getElementById('aqeExactSenderName')||{}).value||'').trim();
     var num=((document.getElementById('aqeExactSenderNumber')||{}).value||'').trim();
-    if(!amount||amount<10000){notify('Minimum payment is UGX 10,000','error');return;}
+    if(!amount||amount<5000){notify('Minimum payment is UGX 10,000','error');return;}
     if(!name){notify('Enter sender registered name','error');return;}
     if(!num){notify('Enter sender mobile money number','error');return;}
     var s=session();
@@ -10150,7 +10150,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 
   window.processWithdraw=async function(){
     var amount=Number((document.getElementById('withdrawAmount')||{}).value||0);
-    if(!amount||amount<10000){notify('Minimum withdrawal is UGX 10,000','error');return;}
+    if(!amount||amount<5000){notify('Minimum withdrawal is UGX 10,000','error');return;}
     var s=session();if(!s||!s.access_token){notify('Please sign in first','error');return;}
     try{
       var r=await api('/api/vip/withdrawals',{method:'POST',body:JSON.stringify({amount:amount})});
@@ -10279,7 +10279,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
     window.aqeExactSaveAndContinue=async function(){
       var ctx=window.__aqePaymentContext||{};
       var amount=Number((E('aqeExactAmount')||{}).value||0),name=String((E('aqeExactSenderName')||{}).value||'').trim(),num=String((E('aqeExactSenderNumber')||{}).value||'').trim(),currency=pc();
-      var min=10000;
+      var min=5000;
       if(!amount||amount<min){toast('Minimum payment is '+money(min,currency),'error');return}
       if(!name){toast('Enter sender registered name','error');return}
       if(!num){toast('Enter sender mobile money number','error');return}
@@ -10781,5 +10781,218 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 })();
 </script>
 
+<script id="aqe-original-backend-bridge">
+(function(){
+  "use strict";
+
+  var API_BASE="";
+  function session(){
+    try{return JSON.parse(localStorage.getItem("aqe_next_session")||"null")||null}catch(_){return null}
+  }
+  function headers(){
+    var h={"Content-Type":"application/json"},s=session();
+    if(s&&s.access_token)h.Authorization="Bearer "+s.access_token;
+    if(window.aqeAssetRoomToken)h["x-asset-room-token"]=window.aqeAssetRoomToken;
+    return h;
+  }
+  async function get(path){
+    var r=await fetch(API_BASE+path,{headers:headers(),cache:"no-store"});
+    var p=await r.json().catch(function(){return {}});
+    if(!r.ok||p.ok===false)throw new Error(p.reason||p.message||("Request failed ("+r.status+")"));
+    return p;
+  }
+  async function post(path,body){
+    var r=await fetch(API_BASE+path,{method:"POST",headers:headers(),body:JSON.stringify(body)});
+    var p=await r.json().catch(function(){return {}});
+    if(!r.ok||p.ok===false)throw new Error(p.reason||p.message||("Request failed ("+r.status+")"));
+    return p;
+  }
+  function current(){return window.state&&state.currentUser?state.currentUser:null}
+  function esc(v){return String(v==null?"":v).replace(/[&<>'"]/g,function(x){return({"&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;",'"':"&quot;"})[x]})}
+  function money(v){return "UGX "+Number(v||0).toLocaleString()}
+  function toast(m,type){if(typeof window.showToast==="function")window.showToast(m,type||"success");else if(typeof window.toast==="function")window.toast(m);else alert(m)}
+
+  async function syncCustomer(){
+    try{
+      var d=await get("/api/dashboard");
+      var c=d.customer||d;
+      var u=current();
+      if(u){
+        if(c.tier)u.tier=String(c.tier).toLowerCase();
+        if(c.walletBalance!=null){u.wallet=u.wallet||{};u.wallet.UGX=Number(c.walletBalance)||0}
+        if(c.qc!=null)u.qc=Number(c.qc)||0;
+        if(c.qcBalance!=null)u.qc=Number(c.qcBalance)||0;
+        if(typeof window.updateUIForUser==="function")window.updateUIForUser();
+      }
+      var w=document.getElementById("aqeWalletValue"),q=document.getElementById("aqeQcValue");
+      if(w)w.textContent=Number(c.walletBalance||u&&u.wallet&&u.wallet.UGX||0).toLocaleString();
+      if(q)q.textContent=Number(c.qcBalance!=null?c.qcBalance:(u&&u.qc)||0);
+    }catch(_){}
+  }
+
+  window.processDeposit=async function(){
+    var u=current(); if(!u){toast("Please sign in first.","error");return}
+    var amount=Number(document.getElementById("depositAmount")&&document.getElementById("depositAmount").value||0);
+    var phone=String(document.getElementById("depositPhone")&&document.getElementById("depositPhone").value||u.phone||"").trim();
+    var name=String(document.getElementById("depositSenderName")&&document.getElementById("depositSenderName").value||u.name||"").trim();
+    var method=String(document.getElementById("aqeDepositMethod")&&document.getElementById("aqeDepositMethod").value||"MukuruPay");
+    var rawKind=String(document.getElementById("aqePaymentKind")&&document.getElementById("aqePaymentKind").value||"wallet_deposit");
+    var plan=String(document.getElementById("aqePaymentPlan")&&document.getElementById("aqePaymentPlan").value||"");
+    var kind=rawKind==="subscription"?"membership_upgrade":rawKind==="renewal"?"subscription_renewal":rawKind;
+    if(!Number.isFinite(amount)||amount<=0){toast("Enter a valid amount.","error");return}
+    if(kind==="wallet_deposit"&&amount<5000){toast("Minimum wallet deposit is UGX 5,000.","error");return}
+    if(!name){toast("Enter the sender registered name.","error");return}
+    if(!phone){toast("Enter the sending phone number.","error");return}
+    var provider=method==="AQE_MANAGER"?"AQE_MANAGER":"MukuruPay";
+    try{
+      var body={amount:amount,currency:"UGX",qcPackageId:kind==="membership_upgrade"?"membership-"+plan:"wallet_deposit",tier:plan||"basic",kind:kind,paymentKind:kind,provider:provider,reference:(document.getElementById("depositModal")&&document.getElementById("depositModal").dataset.reference)||("AQE-"+Date.now()),senderDetails:{name:name,phone:phone,number:phone,network:(window.pay&&window.pay.network)||"MTN"}};
+      var p=await post(provider==="AQE_MANAGER"?"/api/payments/manager-direct":"/api/payments/initialize",body);
+      var order=p.order||p;
+      if(typeof window.closeDeposit==="function")window.closeDeposit();
+      toast((provider==="AQE_MANAGER"?"Manager deposit request submitted. Reference: ":"Payment order created. Reference: ")+(order.reference||p.reference||"—"),"success");
+      await syncCustomer();
+      if(typeof window.renderPaymentHistory==="function")window.renderPaymentHistory();
+    }catch(e){toast(e.message||"Payment request failed.","error")}
+  };
+
+  window.aqeConfirmWithdraw=async function(){
+    var u=current(); if(!u){toast("Please sign in first.","error");return}
+    var amount=Number(document.getElementById("aqeWithdrawAmount")&&document.getElementById("aqeWithdrawAmount").value||0);
+    var name=String(document.getElementById("aqeWithdrawName")&&document.getElementById("aqeWithdrawName").value||u.name||"").trim();
+    var account=String(document.getElementById("aqeWithdrawAccount")&&document.getElementById("aqeWithdrawAccount").value||document.getElementById("aqeWithdrawPhone")&&document.getElementById("aqeWithdrawPhone").value||u.phone||"").trim();
+    var method=String(document.getElementById("aqeWithdrawMethod")&&document.getElementById("aqeWithdrawMethod").value||"MOBILE_MONEY");
+    if(!Number.isFinite(amount)||amount<=0){toast("Enter a valid withdrawal amount.","error");return}
+    if(!name||!account){toast("Enter recipient name and phone/card number.","error");return}
+    try{
+      var p=await post("/api/vip/withdrawals",{amount:amount,currency:"UGX",tier:(u.tier||"basic").toLowerCase(),recipientName:name,recipientAccount:account,paymentMethod:method});
+      toast("Withdrawal submitted for manager review.","success");
+      await renderWithdrawments();
+      await syncCustomer();
+    }catch(e){toast(e.message||"Withdrawal request failed.","error")}
+  };
+
+  async function renderWithdrawments(){
+    var box=document.getElementById("aqeWithdrawStatus");if(!box)return;
+    try{
+      var p=await get("/api/vip/withdrawals"),rows=p.withdrawals||[];
+      if(!rows.length){box.innerHTML='<div class="aqe-update-card">No withdrawal requests yet.</div>';return}
+      box.innerHTML=rows.slice(0,8).map(function(x){
+        return '<div class="aqe-prod-row"><div><b>'+esc(x.statusLabel||x.status)+'</b><div class="xs ca5">'+money(x.amount)+' · Fee '+money(x.service_charge_amount)+' · Net '+money(x.net_amount)+'</div><div class="xs ca5">'+esc(x.payment_method||"")+" · "+esc(x.recipient_account||"")+'</div></div><span class="aqe-prod-pill '+(x.status==="PAID"?"ok":x.status==="REJECTED"?"bad":"warn")+'">'+esc(x.statusLabel||x.status)+'</span></div>'
+      }).join("");
+    }catch(e){box.innerHTML='<div class="aqe-update-card">'+esc(e.message)+'</div>'}
+  }
+
+  function installWithdrawalFields(){
+    var card=document.getElementById("aqeWithdrawAmount");
+    if(!card||document.getElementById("aqeWithdrawName"))return;
+    var host=card.parentElement;
+    var oldPhone=document.getElementById("aqeWithdrawPhone");
+    var wrap=document.createElement("div");
+    wrap.innerHTML='<input id="aqeWithdrawName" class="inp" type="text" style="margin-top:10px" placeholder="Recipient registered name">'+
+      '<select id="aqeWithdrawMethod" class="inp" style="margin-top:10px"><option value="MOBILE_MONEY">Mobile Money</option><option value="AIRTEL_MONEY">Airtel Money</option><option value="CARD">Card</option></select>'+
+      '<input id="aqeWithdrawAccount" class="inp" type="tel" style="margin-top:10px" placeholder="Phone number / card number">';
+    if(oldPhone)oldPhone.style.display="none";
+    host.insertBefore(wrap,oldPhone?oldPhone.nextSibling:null);
+  }
+
+  async function renderPrizes(){
+    var box=document.getElementById("aqePrizeBody");if(!box)return;
+    try{
+      var p=await get("/api/prizes"),items=p.prizes||[];
+      if(!items.length){box.innerHTML='<div class="aqe-update-card">No active prizes are configured yet.</div>';return}
+      box.innerHTML=items.map(function(x){
+        var action=x.eligible
+          ? '<button class="aqe-update-action vip" onclick="window.aqeClaimPrize(\''+esc(x.id)+'\',\'physical\')">Claim physical</button>'+(x.cash_value?' <button class="aqe-update-action alt" onclick="window.aqeClaimPrize(\''+esc(x.id)+'\',\'cash\')">Cash conversion</button>':'')
+          : '<span class="aqe-update-lock">'+esc(x.lockedReason||"Not eligible")+'</span>';
+        return '<div class="aqe-update-card">'+(x.image_url?'<img src="'+esc(x.image_url)+'" alt="" style="width:100%;max-height:180px;object-fit:cover;border-radius:12px;margin-bottom:10px">':'')+
+          '<b>'+esc(x.title)+'</b><p class="aqe-update-muted">'+esc(x.reward_description||"Prize")+'</p><p class="aqe-update-muted">'+Number(x.invite_requirement||0)+' direct invites · '+esc(x.tier_scope||"VIP")+'</p>'+action+'</div>';
+      }).join("");
+    }catch(e){box.innerHTML='<div class="aqe-update-card">'+esc(e.message)+'</div>'}
+  }
+  window.aqeClaimPrize=async function(id,mode){
+    try{await post("/api/prizes/claims",{prizeId:id,mode:mode});toast("Prize claim submitted.","success");await renderPrizes()}catch(e){toast(e.message||"Prize claim failed.","error")}
+  };
+
+  async function renderCampaigns(){
+    var box=document.getElementById("aqeCampaignBody");if(!box)return;
+    try{
+      var p=await get("/api/campaigns"),campaigns=p.campaigns||[],packages=p.packages||[],codes=p.codes||[];
+      if(!campaigns.length){box.innerHTML='<div class="aqe-update-card">No active campaigns are available.</div>';return}
+      var html=campaigns.map(function(c){
+        var packs=packages.filter(function(x){return x.campaign_id===c.id});
+        return '<div class="aqe-update-card" style="margin-top:12px"><b>'+esc(c.name)+'</b><p class="aqe-update-muted">'+esc(c.description||"")+'</p>'+
+          packs.map(function(x){return '<div class="aqe-update-row"><span>'+esc(x.name)+' · '+Number(x.qc_amount||0)+' QC</span><button class="aqe-update-action" onclick="window.aqeRedeemPackage(\''+esc(x.id)+'\')">Claim</button></div>'}).join("")+
+          '<div class="aqe-update-row"><span>Campaign code</span><button class="aqe-update-action alt" onclick="window.aqeRedeemCode()">Enter code</button></div></div>';
+      }).join("");
+      box.innerHTML=html;
+    }catch(e){box.innerHTML='<div class="aqe-update-card">'+esc(e.message)+'</div>'}
+  }
+  window.aqeRedeemCode=async function(){var code=prompt("Campaign code");if(!code)return;try{await post("/api/campaigns/redeem",{code:code});toast("Campaign redeemed.","success");await renderCampaigns()}catch(e){toast(e.message||"Campaign redemption failed.","error")}};
+  window.aqeRedeemPackage=async function(id){try{await post("/api/campaigns/redeem",{packageId:id});toast("Campaign gift claimed.","success");await renderCampaigns()}catch(e){toast(e.message||"Campaign claim failed.","error")}};
+
+  async function renderMedia(){
+    var box=document.getElementById("aqeMediaList");if(!box)return;
+    try{
+      var p=await get("/api/profile/media"),items=p.media||[];
+      if(!items.length){box.innerHTML='<div class="aqe-update-card">No uploaded media yet.</div>';return}
+      box.innerHTML=items.map(function(x){
+        var media=x.type==="video"?'<video src="'+esc(x.url)+'" controls style="width:100%;border-radius:12px"></video>':'<img src="'+esc(x.url)+'" alt="" style="width:100%;max-height:220px;object-fit:cover;border-radius:12px">';
+        return '<div class="aqe-update-card">'+media+'<div class="aqe-update-row" style="margin-top:8px"><span>'+esc(x.moderationStatus||"pending")+'</span>'+(x.type==="image"?'<button class="aqe-update-action" onclick="window.aqeSetProfilePhoto(\''+esc(x.id)+'\')">Use as profile photo</button>':"")+'</div></div>';
+      }).join("");
+    }catch(e){box.innerHTML='<div class="aqe-update-card">'+esc(e.message)+'</div>}
+  }
+  window.aqeSetProfilePhoto=async function(id){try{await post("/api/media/profile-photo",{mediaId:id});toast("Profile photo updated.","success");await renderMedia()}catch(e){toast(e.message||"Profile photo update failed.","error")}};
+
+  window.aqeUploadMedia=async function(){
+    var input=document.getElementById("aqeMediaInput"),files=input&&input.files?[].slice.call(input.files):[];
+    if(!files.length){toast("Choose media first.","error");return}
+    if(!current()){toast("Please sign in first.","error");return}
+    var tier=String(current().tier||"basic").toLowerCase();
+    if(tier==="basic"){toast("Media uploads require Premium or VIP.","error");return}
+    try{
+      for(var i=0;i<files.length;i++){
+        var fd=new FormData();fd.append("file",files[i]);
+        var s=session();var h={};if(s&&s.access_token)h.Authorization="Bearer "+s.access_token;
+        var r=await fetch("/api/media/upload-file",{method:"POST",headers:h,body:fd}),p=await r.json().catch(function(){return {}});
+        if(!r.ok||p.ok===false)throw new Error(p.reason||"Upload failed.");
+      }
+      toast(files.length+" media item(s) uploaded and queued for moderation.","success");
+      input.value="";
+      await renderMedia();
+    }catch(e){toast(e.message||"Media upload failed.","error")}
+  };
+
+  async function renderAssetRoom(){
+    var box=document.getElementById("pxVaultList");if(!box)return;
+    try{
+      var p=await get("/api/asset-room");
+      if(p.locked){
+        box.innerHTML='<div class="px-card" style="margin-top:14px"><div class="px-label">PRIVATE ASSET ROOM</div><p class="px-sub">Enter your 4–6 digit PIN to unlock.</p><input id="aqeAssetPin" class="inp" inputmode="numeric" maxlength="6" placeholder="4–6 digit PIN"><button class="px-btn primary" style="margin-top:10px" onclick="window.aqeUnlockAssetRoom()">Unlock</button></div>';
+      }else{
+        box.innerHTML='<div class="px-row3" style="margin-top:14px"><div class="px-card"><div class="px-label">Wallet</div><div class="px-metric">'+money(p.walletBalance)+'</div></div><div class="px-card"><div class="px-label">Salary</div><div class="px-metric">'+money(p.salaryBalance)+'</div></div><div class="px-card"><div class="px-label">Net worth</div><div class="px-metric">'+money(p.netWorth)+'</div></div></div><div class="px-card" style="margin-top:12px"><div class="px-label">Direct invites</div><div class="px-metric">'+Number(p.directInvites||0)+'</div><div class="px-sub">Salary: '+money(p.salaryPerInvite||0)+' per direct invite</div></div>';
+      }
+    }catch(e){box.innerHTML='<div class="px-card" style="margin-top:14px">'+esc(e.message)+'</div>'}
+  }
+  window.aqeUnlockAssetRoom=async function(){var pin=String(document.getElementById("aqeAssetPin")&&document.getElementById("aqeAssetPin").value||"").trim();if(!/^\d{4,6}$/.test(pin)){toast("Enter a 4–6 digit PIN.","error");return}try{var p=await post("/api/asset-room",{action:"unlock",pin:pin});window.aqeAssetRoomToken=p.token;toast("Asset Room unlocked for 15 minutes.","success");await renderAssetRoom()}catch(e){toast(e.message||"Asset Room unlock failed.","error")}};
+  
+  function refresh(){syncCustomer();renderWithdrawments();renderPrizes();renderCampaigns();renderMedia();renderAssetRoom()}
+  var originalShow=window.showScreen;
+  if(originalShow&&!window.__aqeOriginalBackendBridge){
+    window.__aqeOriginalBackendBridge=true;
+    window.showScreen=function(id){
+      var result=originalShow.apply(this,arguments);
+      if(id==="screen-aqe-prizes")renderPrizes();
+      if(id==="screen-aqe-campaigns")renderCampaigns();
+      if(id==="screen-aqe-media")renderMedia();
+      if(id==="screen-aqe-withdraw"){installWithdrawalFields();renderWithdrawments()}
+      if(id==="screen-vault")renderAssetRoom();
+      return result;
+    };
+  }
+  document.addEventListener("DOMContentLoaded",function(){
+    setTimeout(function(){installWithdrawalFields();refresh()},350);
+  });
+})();
+</script>
 </body>
 </html>
