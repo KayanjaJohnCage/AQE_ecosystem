@@ -10792,6 +10792,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
   function headers(){
     var h={"Content-Type":"application/json"},s=session();
     if(s&&s.access_token)h.Authorization="Bearer "+s.access_token;
+    if(window.aqeAssetRoomToken)h["x-asset-room-token"]=window.aqeAssetRoomToken;
     return h;
   }
   async function get(path){
