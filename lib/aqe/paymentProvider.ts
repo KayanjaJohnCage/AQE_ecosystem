@@ -16,7 +16,7 @@ export function createPaymentProvider(env: Record<string, string | undefined>) {
       metadata?: Record<string, unknown>;
     }) => {
       const mode =
-        env.NEXT_PUBLIC_SUPABASE_URL && env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+        env.NEXT_PUBLIC_SUPABASE_URL && (env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || env.NEXT_PUBLIC_SUPABASE_ANON_KEY)
           ? "live"
           : "mock";
 
