@@ -600,6 +600,17 @@ export default function ManagerPage() {
     );
   }
 
+  async function saveManagerNumbers() {
+    const response = await fetch("/api/payments/manager-numbers", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ numbers: managerNumbers }),
+    });
+    const payload = await response.json().catch(() => ({}));
+    setReviewMessage(payload.ok ? "Manager payment numbers saved." : payload.reason || "Payment number update failed.");
+    if (Array.isArray(payload.numbers)) setManagerNumbers(payload.numbers);
+  }
+
   async function saveReceiver(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const { session, user } = readStoredSession();
