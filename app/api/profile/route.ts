@@ -24,7 +24,7 @@ export async function GET(request: Request) {
     const { data, error } = await client
       .from("profiles")
       .select(
-        "id, user_id, display_name, bio, phone, country, location, area, category, services, content_categories, age, gender, pronouns, headline, languages, availability, visibility, social_platforms, contact_methods, tier, verification_status, avatar_url, created_at, updated_at",
+        "id, user_id, display_name, bio, phone, country, nationality, location, area, category, services, content_categories, age, gender, pronouns, headline, languages, availability, visibility, social_platforms, contact_methods, tier, verification_status, avatar_url, created_at, updated_at",
       )
       .eq("user_id", identity.userId)
       .maybeSingle();
@@ -50,6 +50,7 @@ export async function GET(request: Request) {
         bio: data.bio,
         phone: data.phone,
         country: data.country,
+        nationality: data.nationality,
         location: data.location,
         category: data.category,
         services: Array.isArray(data.services) ? data.services : [],
@@ -180,6 +181,7 @@ export async function PATCH(request: Request) {
       bio: sanitized.bio ?? null,
       phone: sanitized.phone ?? null,
       country: sanitized.country ?? null,
+      nationality: sanitized.nationality ?? null,
       location: sanitized.location ?? null,
       area: sanitized.area ?? null,
       category: sanitized.category ?? null,
@@ -201,7 +203,7 @@ export async function PATCH(request: Request) {
       .from("profiles")
       .update(update)
       .eq("user_id", identity.userId)
-      .select("id,user_id,display_name,bio,phone,country,location,area,category,services,content_categories,age,gender,pronouns,headline,languages,availability,visibility,social_platforms,contact_methods,tier,verification_status,avatar_url,created_at,updated_at")
+      .select("id,user_id,display_name,bio,phone,country,nationality,location,area,category,services,content_categories,age,gender,pronouns,headline,languages,availability,visibility,social_platforms,contact_methods,tier,verification_status,avatar_url,created_at,updated_at")
       .maybeSingle();
 
     if (error) return NextResponse.json({ ok: false, reason: error.message }, { status: 500 });
