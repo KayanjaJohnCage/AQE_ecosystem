@@ -35,6 +35,14 @@ type ReceiverDetails = {
   instructions: string;
 };
 
+type ManagerPaymentNumber = {
+  id: string;
+  number: string;
+  name: string;
+  network: "Airtel" | "MTN";
+  status: "available" | "busy";
+};
+
 type PlatformSettings = {
   tierPrices: { basic: number; premium: number; vip: number };
   renewalPrices: { basic: number; premium: number; vip: number };
@@ -188,6 +196,7 @@ export default function ManagerPage() {
   const [liveRows, setLiveRows] = useState<Record<string, ManagerRow[]>>({});
   const [profileQuery, setProfileQuery] = useState("");
   const [reviewMessage, setReviewMessage] = useState("");
+  const [managerNumbers, setManagerNumbers] = useState<ManagerPaymentNumber[]>([]);
   const [receiver, setReceiver] = useState<ReceiverDetails>({
     receiverName: "",
     receiverPhone: "",
@@ -449,6 +458,14 @@ export default function ManagerPage() {
           setLiveRows(nextRows);
         },
       )
+      .catch(() => undefined);
+
+    fetch("/api/payments/manager-numbers")
+      .then(async (response) => {
+        if (!response.ok) return;
+        const payload = await response.json();
+        if (Array.isArray(payload.numbers)) setManagerNumbers(payload.numbers);
+      })
       .catch(() => undefined);
 
     fetch("/api/payments/receiver")
@@ -1196,6 +1213,34 @@ export default function ManagerPage() {
                     Save receiver details
                   </button>
                 </form>
+              </section>
+              <section className="manager-card manager-detail">
+                <div className="manager-table-header">
+                  <h3>Manager payment numbers</h3>
+                  <span className="status-pill">Customer selectable</span>
+                </div>
+                <p className="manager-subtitle">
+                  Only numbers marked Available are shown to customers. Switching a number to Busy immediately removes it from the customer selection list.
+                </p>
+                <div className="manager-list-table">
+                  {managerNumbers.map((item) => (
+                    <div key={item.id} className="manager-row">
+                      <div>
+                        <strong>{item.number}</strong>
+                        <span>{item.name} · {item.network}</span>
+                      </div>
+                      <div className="manager-row-actions">
+                        <em>{item.status}</em>
+                        <button type="button" onClick={() => updateManagerNumber(item.id, { status: item.status === "available" ? "busy" : "available" })}>
+                          Set {item.status === "available" ? "Busy" : "Available"}
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <button type="button" className="manager-action-button" onClick={saveManagerNumbers}>
+                  Save payment-number statuses
+                </button>
               </section>
               <section className="manager-card manager-detail">
                 <div className="manager-table-header">
