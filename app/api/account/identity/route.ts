@@ -49,7 +49,7 @@ export async function PATCH(request: Request) {
     const displayName = typeof body.displayName === "string" ? body.displayName.trim() : "";
     const email = typeof body.email === "string" ? body.email.trim().toLowerCase() : "";
     const password = typeof body.password === "string" ? body.password : "";
-    const authUpdates: Record<string, unknown> = {};
+    const authUpdates: { email?: string; password?: string } = {};
     if (email) authUpdates.email = email;
     if (password) {
       if (password.length < 8) return NextResponse.json({ ok:false, reason:"Password must be at least 8 characters." }, { status:400 });
