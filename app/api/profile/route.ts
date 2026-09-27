@@ -107,6 +107,7 @@ export async function POST(request: Request) {
       bio: sanitized.bio,
       phone: sanitized.phone,
       country: sanitized.country,
+      nationality: sanitized.nationality,
       location: sanitized.location,
       category: sanitized.category,
     });
