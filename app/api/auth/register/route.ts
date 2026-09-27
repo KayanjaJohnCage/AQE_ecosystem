@@ -123,6 +123,7 @@ export async function POST(request: Request) {
       displayName,
       phone,
       country,
+      nationality,
       location: city,
       bio,
       category,
