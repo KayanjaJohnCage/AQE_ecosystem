@@ -35,6 +35,7 @@ type ReceiverDetails = {
   instructions: string;
 };
 
+type TroubleshootRequest = { id: string; user_id: string; requested_change: string; details: string; qc_charge: number; status: string; created_at: string };
 type ManagerPaymentNumber = {
   id: string;
   number: string;
@@ -197,6 +198,7 @@ export default function ManagerPage() {
   const [profileQuery, setProfileQuery] = useState("");
   const [reviewMessage, setReviewMessage] = useState("");
   const [managerNumbers, setManagerNumbers] = useState<ManagerPaymentNumber[]>([]);
+  const [troubleshootRequests, setTroubleshootRequests] = useState<TroubleshootRequest[]>([]);
   const [receiver, setReceiver] = useState<ReceiverDetails>({
     receiverName: "",
     receiverPhone: "",
@@ -460,6 +462,14 @@ export default function ManagerPage() {
       )
       .catch(() => undefined);
 
+    fetch("/api/support/troubleshoot")
+      .then(async (response) => {
+        if (!response.ok) return;
+        const payload = await response.json();
+        if (Array.isArray(payload.requests)) setTroubleshootRequests(payload.requests);
+      })
+      .catch(() => undefined);
+
     fetch("/api/payments/manager-numbers")
       .then(async (response) => {
         if (!response.ok) return;
@@ -598,6 +608,17 @@ export default function ManagerPage() {
           : "Payment rejected."
         : payload.reason || "Payment review failed.",
     );
+  }
+
+  async function updateTroubleshoot(requestId: string, status: string) {
+    const response = await fetch("/api/support/troubleshoot", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ requestId, status }),
+    });
+    const payload = await response.json().catch(() => ({}));
+    setReviewMessage(payload.ok ? "Troubleshoot request " + status.toLowerCase() + "." : payload.reason || "Troubleshoot update failed.");
+    if (payload.ok) setTroubleshootRequests((items) => items.map((item) => item.id === requestId ? { ...item, status } : item));
   }
 
   async function saveManagerNumbers() {
@@ -1296,6 +1317,40 @@ export default function ManagerPage() {
                 </div>
               </section>
             </>
+          ) : active === "Customer Support" ? (
+            <>
+              <section className="manager-card manager-detail">
+                <div className="manager-table-header">
+                  <h3>Manager Troubleshoot Requests</h3>
+                  <span className="status-pill">5 QC per request</span>
+                </div>
+                <p className="manager-subtitle">Customers can request help changing account name, email or password before the seven-day window. Review the requested issue and update the account through the manager controls.</p>
+                <div className="manager-list-table">
+                  {troubleshootRequests.length ? troubleshootRequests.map((item) => (
+                    <div key={item.id} className="manager-row">
+                      <div>
+                        <strong>{item.requested_change.replaceAll("_"," ")}</strong>
+                        <span>{item.user_id} · {item.details}</span>
+                      </div>
+                      <div className="manager-row-actions">
+                        <em>{item.status}</em>
+                        {item.status === "OPEN" ? <button type="button" onClick={() => updateTroubleshoot(item.id, "IN_PROGRESS")}>Take request</button> : null}
+                        {item.status === "IN_PROGRESS" ? <button type="button" onClick={() => updateTroubleshoot(item.id, "RESOLVED")}>Mark resolved</button> : null}
+                      </div>
+                    </div>
+                  )) : <div className="manager-review-message">No manager troubleshoot requests.</div>}
+                </div>
+              </section>
+              <section className="manager-card manager-detail">
+                <div className="manager-table-header"><h3>Customer Support</h3></div>
+                <div className="manager-list-table">
+                  {(liveRows["Customer Support"] || tableSeeds["Customer Support"]).map((row: ManagerRow) => (
+                    <div key={"support-" + (row.id || row.title)} className="manager-row">
+                      <div><strong>{row.title}</strong><span>{row.meta}</span></div><div className="manager-row-actions"><em>{row.value}</em></div>
+                    </div>
+                  ))}
+                </div>
+              </section>
           ) : active === "Tasks & Rewards" ? (
             <PrizeManager />
           ) : (
