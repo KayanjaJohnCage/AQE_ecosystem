@@ -11193,5 +11193,38 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 })();
 </script>
 
+<script id="afriqueer-account-controls-patch">
+(function(){
+  "use strict";
+  function E(id){return document.getElementById(id)}
+  function session(){try{return JSON.parse(localStorage.getItem("aqe_next_session")||"null")||null}catch(_){return null}}
+  function headers(){var s=session(),h={"Content-Type":"application/json"};if(s&&s.access_token)h.Authorization="Bearer "+s.access_token;return h}
+  async function status(){
+    try{var r=await fetch("/api/account/identity",{headers:headers(),cache:"no-store"});return await r.json()}catch(_){return {}}
+  }
+  async function submitTroubleshoot(){
+    var type=E("aqeTroubleshootType"),details=E("aqeTroubleshootDetails"),msg=E("aqeTroubleshootMessage");
+    if(!type||!details)return;
+    if(details.value.trim().length<5){if(msg)msg.textContent="Describe the issue clearly.";return}
+    if(msg)msg.textContent="Submitting and charging 5 QC…";
+    try{
+      var r=await fetch("/api/support/troubleshoot",{method:"POST",headers:headers(),body:JSON.stringify({requestedChange:type.value,details:details.value.trim()})});
+      var p=await r.json().catch(function(){return {}});
+      if(!r.ok||!p.ok)throw new Error(p.reason||"Troubleshoot request failed.");
+      if(msg)msg.textContent="Request submitted. 5 QC charged. Manager support will review it.";
+      details.value="";
+    }catch(e){if(msg)msg.textContent=e.message||"Troubleshoot request failed."}
+  }
+  function install(){
+    var settings=E("screen-settings");if(!settings||E("aqeAccountControls"))return;
+    var box=document.createElement("div");box.id="aqeAccountControls";box.className="bga8 rxl b1 ba7 p4 mb4";
+    box.innerHTML='<div class="fw7 mb1">Account controls</div><div class="xs ca5 mb3">Services, content categories, social handles, contact references and other profile information can be updated anytime. Account name, email and password are limited to one change every 7 days.</div><div class="aqe-update-card"><b>Need an earlier name, email or password change?</b><p class="xs ca5 mt1">Submit a manager troubleshooting request for 5 QC.</p><select id="aqeTroubleshootType" class="inp mt2"><option value="account_name">Change account name</option><option value="email">Change email</option><option value="password">Change password</option><option value="other">Other account issue</option></select><textarea id="aqeTroubleshootDetails" class="inp mt2" rows="4" placeholder="Describe exactly what you need the manager to troubleshoot…"></textarea><button type="button" class="btn bp mt2" onclick="window.aqeSubmitTroubleshoot()">Request manager troubleshoot — 5 QC</button><div id="aqeTroubleshootMessage" class="xs ca5 mt2"></div></div>';
+    settings.firstElementChild&&settings.firstElementChild.appendChild(box);
+  }
+  window.aqeSubmitTroubleshoot=submitTroubleshoot;
+  if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",install);else setTimeout(install,300);
+})();
+</script>
+
 </body>
 </html>
