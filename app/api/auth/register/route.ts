@@ -22,6 +22,7 @@ export async function POST(request: Request) {
       .toUpperCase();
     const phone = String(body.phone ?? "").trim();
     const country = String(body.country ?? "").trim();
+    const nationality = String(body.nationality ?? "").trim();
     const city = String(body.city ?? "").trim();
     const bio = String(body.bio ?? "").trim();
     const category = String(body.category ?? "client").trim();
@@ -51,6 +52,7 @@ export async function POST(request: Request) {
         displayName,
         phone,
         country,
+        nationality,
         location: city,
         bio,
         category,
