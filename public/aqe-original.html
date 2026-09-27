@@ -11002,5 +11002,196 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
   });
 })();
 </script>
+
+<script id="afriqueer-production-readiness-patch">
+(function(){
+  "use strict";
+  function E(id){return document.getElementById(id)}
+  function esc(v){return String(v==null?"":v).replace(/[&<>'"]/g,function(x){return({"&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;",'"':"&quot;"})[x]})}
+  function session(){try{return JSON.parse(localStorage.getItem("aqe_next_session")||"null")||null}catch(_){return null}}
+  function current(){return window.state&&state.currentUser?state.currentUser:null}
+  function authHeaders(){var s=session(),h={"Content-Type":"application/json"};if(s&&s.access_token)h.Authorization="Bearer "+s.access_token;return h}
+
+  /* Registration: nationality is stored with the real registration payload. */
+  function installNationality(){
+    var country=E("regCountry");
+    if(country&&!E("regNationality")){
+      var wrap=document.createElement("div");
+      wrap.className="mt3";
+      wrap.innerHTML='<label class="aqe-auth-label">Nationality</label><input id="regNationality" type="text" placeholder="Your nationality" class="inp aqe-auth-input" autocomplete="country-name">';
+      country.parentElement&&country.parentElement.parentElement
+        ? country.parentElement.parentElement.appendChild(wrap)
+        : country.parentElement&&country.parentElement.appendChild(wrap);
+    }
+  }
+
+  /* Customer profile: expose only the requested escort profile fields. */
+  function profileInfo(p){
+    var s=p&&p.registrationSnapshot||{};
+    var profile=p&&p.profile||{};
+    function val(a,b,c){return (p&&p[a])||(profile&&profile[b])||(s&&s[c])||""}
+    var data=[
+      ["Membership tier", String(p&&p.tier||p&&p.profileTier||"basic").toUpperCase()],
+      ["Headline", val("headline","headline","headline")],
+      ["Gender", val("gender","gender","gender")],
+      ["Language", val("languages","languages","languages")],
+      ["Age", val("age","age","age")],
+      ["Pronouns", val("pronouns","pronouns","pronouns")],
+      ["Country", val("country","country","country")],
+      ["City / region", val("city","city","city")||val("location","location","city")],
+      ["Availability", val("availability","availability","availability")||val("avail","availability","availability")],
+      ["Phone number", val("phone","phone","phone")],
+      ["Contact references", val("contactMethods","contactMethods","contactMethods")],
+      ["Social handles", val("socialPlatforms","social","socialHandle")],
+      ["Content categories", val("contentCategories","contentCategories","contentCategories")],
+      ["Services", val("services","services","services")],
+      ["Timezone", val("timezone","timezone","timezone")]
+    ];
+    return data.map(function(row){
+      var v=row[1];
+      if(Array.isArray(v))v=v.join(", ");
+      else if(v&&typeof v==="object")v=Object.entries(v).map(function(e){return e[0]+": "+e[1]}).join(" · ");
+      return {label:row[0],value:String(v||"—")};
+    });
+  }
+
+  function renderProfileInfo(p){
+    var media=E("profileMediaGallery"),store=E("profileStore"),detail=E("profileDetail");
+    if(!detail)return;
+    var old=E("aqeProfileInfo");
+    if(old)old.remove();
+    var bio=E("profileBio");
+    if(bio&&bio.closest(".bga8"))bio.closest(".bga8").style.display="none";
+    if(!store)return;
+    var heading=store.previousElementSibling;
+    var wrap=document.createElement("div");
+    wrap.id="aqeProfileInfo";
+    wrap.className="bga8 b1 ba7 r2xl p4 mb4";
+    var rows=profileInfo(p);
+    var short=rows.slice(0,4);
+    function rowsHtml(items){return items.map(function(x){return '<div style="display:flex;justify-content:space-between;gap:14px;padding:9px 0;border-bottom:1px solid var(--a7)"><span class="xs ca5">'+esc(x.label)+'</span><span class="xs ca1" style="text-align:right;max-width:62%">'+esc(x.value)+'</span></div>'}).join("")}
+    wrap.innerHTML='<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px"><h4 style="font-size:12px;font-weight:700;color:var(--a5);text-transform:uppercase;letter-spacing:1px;margin:0">Profile information</h4><span class="xs ca5">Verified profile details</span></div><div id="aqeProfileInfoRows">'+rowsHtml(short)+'</div><div id="aqeProfileInfoMore" class="hidden" style="margin-top:0">'+rowsHtml(rows.slice(4))+'</div><button id="aqeProfileInfoToggle" type="button" class="btn bs2" style="margin-top:12px;padding:10px" onclick="window.aqeToggleProfileInfo()">View all information</button>';
+    if(heading)heading.parentNode.insertBefore(wrap,heading);else store.parentNode.insertBefore(wrap,store);
+  }
+  window.aqeToggleProfileInfo=function(){
+    var more=E("aqeProfileInfoMore"),btn=E("aqeProfileInfoToggle");
+    if(!more||!btn)return;
+    var open=!more.classList.contains("hidden");
+    more.classList.toggle("hidden",open);
+    btn.textContent=open?"View all information":"View less information";
+  };
+  var baseOpen=window.openProfile;
+  if(baseOpen&&!baseOpen.__afriqueerProfileInfo){
+    window.openProfile=function(id){
+      var result=baseOpen.apply(this,arguments);
+      try{
+        var p=window.state&&state.profiles&&state.profiles.find(function(x){return String(x.id)===String(id)});
+        if(p)renderProfileInfo(p);
+      }catch(_){}
+      return result;
+    };
+    window.openProfile.__afriqueerProfileInfo=true;
+  }
+
+  /* Manager payment numbers: only Available numbers are offered to customers. */
+  var managerNumbers=[];
+  async function loadManagerNumbers(){
+    try{
+      var r=await fetch("/api/payments/manager-numbers",{cache:"no-store"});
+      var p=await r.json();
+      managerNumbers=Array.isArray(p.numbers)?p.numbers.filter(function(x){return String(x.status).toLowerCase()==="available"}):[];
+    }catch(_){managerNumbers=[]}
+    renderManagerNumbers();
+  }
+  function renderManagerNumbers(){
+    var host=E("aqeManagerNumberPicker");if(!host)return;
+    if(!managerNumbers.length){host.innerHTML='<div class="xs ca5">No manager payment number is currently available. Please try again later or contact manager support.</div>';return}
+    host.innerHTML='<label class="aqe-pay-label">Choose available manager number</label><select id="aqeSelectedManagerNumber" class="inp" style="margin-top:6px">'+managerNumbers.map(function(x){return '<option value="'+esc(x.id)+'">'+esc(x.number)+' · '+esc(x.name)+' · '+esc(x.network)+'</option>'}).join("")+'</select><div class="xs ca5" style="margin-top:7px">Your selected number and payment request are sent to the manager for confirmation.</div>';
+    if(window.pay&&window.pay.managerNumberId)E("aqeSelectedManagerNumber").value=window.pay.managerNumberId;
+  }
+  function selectedManagerNumber(){
+    var id=E("aqeSelectedManagerNumber")&&E("aqeSelectedManagerNumber").value;
+    return managerNumbers.find(function(x){return String(x.id)===String(id)})||null;
+  }
+  var baseMethod=window.aqeExactMethod;
+  window.aqeExactMethod=function(method){
+    if(baseMethod)baseMethod.apply(this,arguments);
+    window.pay=window.pay||{};
+    window.pay.method=method;
+    var notice=E("aqeManagerNumberPicker");
+    if(method==="AQE_MANAGER"){
+      if(!notice){
+        var anchor=E("aqeExactMethodNote");
+        if(anchor){
+          notice=document.createElement("div");
+          notice.id="aqeManagerNumberPicker";
+          notice.className="aqe-pay-card";
+          notice.style.marginTop="10px";
+          anchor.parentNode.insertBefore(notice,anchor.nextSibling);
+        }
+      }
+      loadManagerNumbers();
+    }else if(notice){notice.innerHTML="";}
+  };
+  var baseExactSave=window.aqeExactSaveAndContinue;
+  window.aqeExactSaveAndContinue=async function(){
+    if(!window.pay||window.pay.method!=="AQE_MANAGER")return baseExactSave.apply(this,arguments);
+    var amount=Number((E("aqeExactAmount")||{}).value||0);
+    var name=((E("aqeExactSenderName")||{}).value||"").trim();
+    var num=((E("aqeExactSenderNumber")||{}).value||"").trim();
+    var receiver=selectedManagerNumber();
+    if(!amount||amount<5000){if(window.notify)window.notify("Minimum payment is UGX 5,000","error");else alert("Minimum payment is UGX 5,000");return}
+    if(!name){if(window.notify)window.notify("Enter sender registered name","error");return}
+    if(!num){if(window.notify)window.notify("Enter sender mobile money number","error");return}
+    if(!receiver){if(window.notify)window.notify("Choose an available manager payment number","error");return}
+    var s=session();if(!s||!s.access_token){if(window.notify)window.notify("Please sign in before creating a payment order","error");return}
+    var reference=(window.pay.reference)||("AQE-"+Date.now());
+    try{
+      var response=await fetch("/api/payments/manager-direct",{method:"POST",headers:authHeaders(),body:JSON.stringify({
+        amount:amount,currency:"UGX",qcPackageId:"wallet_deposit",tier:(current()&&current().tier)||"basic",kind:"wallet_deposit",paymentKind:"wallet_deposit",provider:"AQE_MANAGER",reference:reference,
+        senderDetails:{name:name,phone:num,number:num,network:receiver.network,managerNumber:receiver.number,managerName:receiver.name}
+      })});
+      var payload=await response.json().catch(function(){return {}});
+      if(!response.ok||!payload.ok)throw new Error(payload.reason||"Manager payment request failed.");
+      window.pay.reference=(payload.order&&payload.order.reference)||reference;
+      if(E("aqeExactReference"))E("aqeExactReference").textContent=window.pay.reference;
+      if(E("aqeExactTxn"))E("aqeExactTxn").textContent="Payment #"+((payload.order&&payload.order.id)||"AQE");
+      if(E("aqeExactAmount2"))E("aqeExactAmount2").textContent=amount.toLocaleString()+".00 UGX";
+      if(E("aqeExactNumberLabel"))E("aqeExactNumberLabel").textContent=receiver.network+" manager payment number";
+      if(E("aqeExactRecipient"))E("aqeExactRecipient").textContent=receiver.number;
+      if(E("aqeExactRecipientName"))E("aqeExactRecipientName").textContent=receiver.name;
+      if(E("aqeExactSender"))E("aqeExactSender").innerHTML=esc(name)+",<br>"+esc(num);
+      if(E("aqeExactStatus"))E("aqeExactStatus").textContent="Request submitted to the manager. Complete the transfer to the selected number on Mukuru, then keep the reference for confirmation.";
+      if(E("aqePayStep1"))E("aqePayStep1").classList.remove("on");
+      if(E("aqePayStep2"))E("aqePayStep2").classList.add("on");
+      try{if(navigator.clipboard)await navigator.clipboard.writeText(receiver.number)}catch(_){}
+      window.open("https://www.mukuru.com/send-money/","_blank","noopener,noreferrer");
+    }catch(e){if(window.notify)window.notify(e.message||"Manager payment request failed","error");else alert(e.message||"Manager payment request failed")}
+  };
+
+  /* Registration bridge: send nationality to the production registration endpoint. */
+  var oldRegister=window.handleRegister;
+  if(oldRegister&&!oldRegister.__afriqueerNationality){
+    window.handleRegister=async function(){
+      installNationality();
+      var nat=E("regNationality")&&E("regNationality").value.trim();
+      var originalFetch=window.fetch;
+      var payloadBody=null;
+      /* The production registration bridge constructs its own body, so add nationality
+         to the existing form snapshot used by the profile sync layer. */
+      try{localStorage.setItem("aqe_pending_nationality",nat||"")}catch(_){}
+      return oldRegister.apply(this,arguments);
+    };
+    window.handleRegister.__afriqueerNationality=true;
+  }
+
+  function boot(){
+    installNationality();
+    if(E("aqePayMethodManager")&&window.pay&&window.pay.method==="AQE_MANAGER")window.aqeExactMethod("AQE_MANAGER");
+  }
+  if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",boot);else setTimeout(boot,0);
+})();
+</script>
+
 </body>
 </html>
