@@ -1,5 +1,6 @@
 import './globals.css'
 import { ReactNode } from 'react'
+import { SpeedInsights } from '@vercel/speed-insights/next'
 
 export const metadata = {
   title: 'AQE Ecosystem',
@@ -17,6 +18,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       </head>
       <body>
         {children}
+        <SpeedInsights />
       </body>
     </html>
   )
