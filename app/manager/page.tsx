@@ -610,6 +610,27 @@ export default function ManagerPage() {
     );
   }
 
+  async function managerIdentityUpdate(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    const userId = String(form.get("userId") || "").trim();
+    const field = String(form.get("field") || "");
+    const value = String(form.get("value") || "");
+    const body: Record<string, string> = { userId };
+    if (field === "displayName") body.displayName = value;
+    if (field === "email") body.email = value;
+    if (field === "password") body.password = value;
+    if (!userId || !value) { setReviewMessage("User ID and new value are required."); return; }
+    const response = await fetch("/api/account/identity", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    const payload = await response.json().catch(() => ({}));
+    setReviewMessage(payload.ok ? "Account identity updated for " + userId + "." : payload.reason || "Manager identity update failed.");
+    if (payload.ok) event.currentTarget.reset();
+  }
+
   async function updateTroubleshoot(requestId: string, status: string) {
     const response = await fetch("/api/support/troubleshoot", {
       method: "PATCH",
@@ -1340,6 +1361,16 @@ export default function ManagerPage() {
                     </div>
                   )) : <div className="manager-review-message">No manager troubleshoot requests.</div>}
                 </div>
+              </section>
+              <section className="manager-card manager-detail">
+                <div className="manager-table-header"><h3>Manager identity update</h3><span className="status-pill">Authorized manager only</span></div>
+                <p className="manager-subtitle">Use the request's user ID to update the customer's account name, email or password on their behalf.</p>
+                <form className="manager-settings-form" onSubmit={managerIdentityUpdate}>
+                  <label>User ID<input name="userId" placeholder="Customer user ID" required /></label>
+                  <label>Field<select name="field" defaultValue="displayName"><option value="displayName">Account name</option><option value="email">Email</option><option value="password">Password</option></select></label>
+                  <label>New value<input name="value" type="text" placeholder="New value" required /></label>
+                  <button type="submit" className="manager-action-button">Update account</button>
+                </form>
               </section>
               <section className="manager-card manager-detail">
                 <div className="manager-table-header"><h3>Customer Support</h3></div>
