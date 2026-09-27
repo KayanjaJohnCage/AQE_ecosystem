@@ -10,6 +10,7 @@ export type ProfileRecord = {
   bio?: string;
   phone?: string;
   country?: string;
+  nationality?: string;
   location?: string;
   category?: string;
   services?: string[];
@@ -44,6 +45,7 @@ export function createProfileRecord({
   bio,
   phone,
   country,
+  nationality,
   location,
   category,
   services,
@@ -66,6 +68,7 @@ export function createProfileRecord({
   bio?: string;
   phone?: string;
   country?: string;
+  nationality?: string;
   location?: string;
   category?: string;
   services?: string[];
@@ -96,6 +99,7 @@ export function createProfileRecord({
       bio,
       phone,
       country,
+      nationality,
       location,
       category,
       services,
@@ -229,6 +233,7 @@ export async function getProfileByUserId(userId: string) {
         bio: data.bio ?? undefined,
         phone: data.phone ?? undefined,
         country: data.country ?? undefined,
+        nationality: data.nationality ?? undefined,
         location: data.location ?? undefined,
         category: data.category ?? undefined,
         services: Array.isArray(data.services) ? data.services : undefined,
@@ -271,6 +276,8 @@ export function sanitizeProfilePayload(input: Record<string, unknown>) {
     phone: typeof input.phone === "string" ? input.phone.trim() : undefined,
     country:
       typeof input.country === "string" ? input.country.trim() : undefined,
+    nationality:
+      typeof input.nationality === "string" ? input.nationality.trim().slice(0, 100) : undefined,
     location:
       typeof input.location === "string" ? input.location.trim() : undefined,
     area:
