@@ -136,6 +136,7 @@ export async function persistProfileRecord(profile: ProfileRecord) {
       bio: profile.bio ?? null,
       phone: profile.phone ?? null,
       country: profile.country ?? null,
+      nationality: profile.nationality ?? null,
       location: profile.location ?? null,
       category: profile.category ?? null,
       services: profile.services ?? [],
