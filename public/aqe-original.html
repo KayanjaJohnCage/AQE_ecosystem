@@ -11488,5 +11488,20 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 })();
 </script>
 
+<script id="afriqueer-password-reset-bridge">
+(function(){
+  window.handleForgot=async function(){
+    var input=document.getElementById("forgotEmail"),email=input&&input.value.trim().toLowerCase();
+    if(!email){if(window.notify)window.notify("Enter your email","error");else if(window.showToast)window.showToast("Enter your email","error");return}
+    try{
+      var r=await fetch("/api/auth/reset-password",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email:email})});
+      var p=await r.json().catch(function(){return {}});
+      if(!r.ok||!p.ok)throw new Error(p.reason||"Unable to send reset link.");
+      if(window.notify)window.notify("Password reset link sent. Check your email.","success");else if(window.showToast)window.showToast("Password reset link sent. Check your email.");
+      if(typeof switchAuthTab==="function")switchAuthTab("login");
+    }catch(e){if(window.notify)window.notify(e.message||"Unable to send reset link.","error");else if(window.showToast)window.showToast(e.message||"Unable to send reset link.","error")}
+  };
+})();
+</script>
 </body>
 </html>
