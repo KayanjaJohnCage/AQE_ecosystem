@@ -188,7 +188,7 @@ export async function POST(request: Request) {
       mode: "supabase",
       user: data.user,
       profile: persisted.profile ?? profileRecord.profile,
-      session: signedIn.session,
+      session: signedIn.data.session,
       tier: "basic",
       requestedTier,
       upgradeRequired: requestedTier !== "basic",
@@ -196,13 +196,13 @@ export async function POST(request: Request) {
       emailVerificationSent: !signedIn.data.session,
     });
 
-    if (signedIn.session?.access_token) {
-      response.cookies.set("aqe-access-token", signedIn.session.access_token, {
+    if (signedIn.data.session?.access_token) {
+      response.cookies.set("aqe-access-token", signedIn.data.session.access_token, {
         httpOnly: true,
         sameSite: "lax",
         secure: process.env.NODE_ENV === "production",
         path: "/",
-        maxAge: signedIn.session.expires_in ?? 3600,
+        maxAge: signedIn.data.session.expires_in ?? 3600,
       });
     }
 
