@@ -3,6 +3,7 @@
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 
+// AQE Control login intentionally relies on the Vercel Preview/Production Supabase environment configuration.
 export default function AqeControlLogin() {
   const router = useRouter();
   const [identifier, setIdentifier] = useState("");
