@@ -13,6 +13,11 @@ export const metadata = {
     "Uganda escorts", "Kampala escorts", "LGBTQ+ community", "memberships",
     "rewards", "opportunities", "pleasure", "confidence",
   ],
+  icons: {
+    icon: "/aqe_logo.png",
+    shortcut: "/aqe_logo.png",
+    apple: "/aqe_logo.png",
+  },
   alternates: { canonical: "/" },
   openGraph: {
     title: "AfriQueer Escorts Ecosystem",
