@@ -26,12 +26,20 @@ export async function POST(request: Request) {
 
     const server = createServerSupabaseClient();
     if (!server) return NextResponse.json({ ok: false, reason: "Manager authentication is not configured." }, { status: 503 });
-    const { data: profile } = await server.from("profiles").select("role,email").eq("user_id", data.user.id).maybeSingle();
-    if (!["manager", "admin"].includes(String(profile?.role ?? "").toLowerCase())) {
+    const { data: roles } = await server
+      .from("user_roles")
+      .select("role_name")
+      .eq("user_id", data.user.id)
+      .in("role_name", ["admin", "manager"]);
+    const roleNames = (roles ?? [])
+      .map((item) => String(item.role_name ?? "").toLowerCase())
+      .filter((value) => value === "admin" || value === "manager");
+    if (!roleNames.length) {
       return NextResponse.json({ ok: false, reason: "The authorized Google account is not assigned a manager role." }, { status: 403 });
     }
+    const role = roleNames.includes("admin") ? "admin" : "manager";
 
-    const response = NextResponse.json({ ok: true, email: data.user.email ?? profile?.email ?? "", userId: data.user.id });
+    const response = NextResponse.json({ ok: true, role, email: data.user.email ?? "", userId: data.user.id });
     response.cookies.set("aqe-google-verified", accessToken, {
       httpOnly: true, sameSite: "lax", secure: process.env.NODE_ENV === "production", path: "/", maxAge: 600,
     });
