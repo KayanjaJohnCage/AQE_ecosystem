@@ -22,6 +22,7 @@ export type ProfileRecord = {
   languages?: string[];
   area?: string;
   availability?: string;
+  timezone?: string;
   visibility?: string;
   socialPlatforms?: Record<string, string>;
   contactMethods?: Record<string, string>;
@@ -57,6 +58,7 @@ export function createProfileRecord({
   languages,
   area,
   availability,
+  timezone,
   visibility,
   socialPlatforms,
   contactMethods,
@@ -80,6 +82,7 @@ export function createProfileRecord({
   languages?: string[];
   area?: string;
   availability?: string;
+  timezone?: string;
   visibility?: string;
   socialPlatforms?: Record<string, string>;
   contactMethods?: Record<string, string>;
@@ -111,6 +114,7 @@ export function createProfileRecord({
       languages,
       area,
       availability,
+      timezone,
       visibility,
       socialPlatforms,
       contactMethods,
@@ -148,6 +152,7 @@ export async function persistProfileRecord(profile: ProfileRecord) {
       languages: profile.languages ?? [],
       area: profile.area ?? null,
       availability: profile.availability ?? null,
+      timezone: profile.timezone ?? null,
       visibility: profile.visibility ?? "public",
       social_platforms: profile.socialPlatforms ?? {},
       contact_methods: profile.contactMethods ?? {},
@@ -246,6 +251,7 @@ export async function getProfileByUserId(userId: string) {
         languages: Array.isArray(data.languages) ? data.languages : undefined,
         area: data.area ?? undefined,
         availability: data.availability ?? undefined,
+        timezone: data.timezone ?? undefined,
         visibility: data.visibility ?? undefined,
         socialPlatforms: data.social_platforms ?? undefined,
         contactMethods: data.contact_methods ?? undefined,
@@ -301,6 +307,7 @@ export function sanitizeProfilePayload(input: Record<string, unknown>) {
       ? input.languages.filter((item) => typeof item === "string").slice(0, 20)
       : undefined,
     availability: typeof input.availability === "string" ? input.availability.trim().slice(0, 500) : undefined,
+    timezone: typeof input.timezone === "string" ? input.timezone.trim().slice(0, 80) : undefined,
     visibility: typeof input.visibility === "string" ? input.visibility.trim().toLowerCase() : undefined,
     socialPlatforms: input.socialPlatforms && typeof input.socialPlatforms === "object" && !Array.isArray(input.socialPlatforms)
       ? Object.fromEntries(Object.entries(input.socialPlatforms as Record<string, unknown>).filter(([, value]) => typeof value === "string").slice(0, 10))
