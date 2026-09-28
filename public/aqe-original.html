@@ -10513,11 +10513,13 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
       ['Membership tier',String(p.tier||s.membershipSelection||'basic').toUpperCase()],
       ['Headline',s.headline||p.headline||'—'],
       ['Gender',s.gender||p.gender||'—'],
-      ['Languages',Array.isArray(s.languages)?s.languages.join(', '):(s.languages||p.languages||'—')],
       ['Age',s.age||p.age||'—'],
-      ['Pronouns',s.pronouns||p.pronouns||'—'],
+      ['Nationality',s.nationality||p.nationality||'—'],
       ['Country',s.country||p.country||'—'],
-      ['City / region',s.city||p.city||p.location||'—'],
+      ['City / region',s.city||s.location||p.city||p.location||'—'],
+      ['Area',s.area||p.area||'—'],
+      ['Languages',Array.isArray(s.languages)?s.languages.join(', '):(s.languages||p.languages||'—')],
+      ['Pronouns',s.pronouns||p.pronouns||'—'],
       ['Availability',s.availability||p.availability||'—'],
       ['Phone number',s.phone||p.phone||'—'],
       ['Contact references',s.contactMethods?Object.values(s.contactMethods).join(', '):(p.contactMethods?Object.values(p.contactMethods).join(', '):'—')],
@@ -10537,7 +10539,26 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
   function refreshProfileExtra(p){
     if(!p)return;
     var s=getSnapshot(p.userId||p.id,p.email)||p.registrationSnapshot;
-    if(s){p.registrationSnapshot=s;p.headline=s.headline||p.headline;p.languages=s.languages||p.languages;p.gender=s.gender||p.gender;p.pronouns=s.pronouns||p.pronouns;p.area=s.area||p.area;p.availability=s.availability||p.availability;p.visibility=s.visibility||p.visibility;p.social=s.socialHandle||p.social;p.contactPreference=s.contactPreference||p.contactPreference;p.timezone=s.timezone||p.timezone;p.contentCategories=s.contentCategories||p.contentCategories;p.services=s.services||p.services;}
+    if(s){
+      p.registrationSnapshot=s;
+      p.displayName=s.displayName||p.displayName||p.name;
+      p.headline=s.headline||p.headline;
+      p.phone=s.phone||p.phone;
+      p.nationality=s.nationality||p.nationality;
+      p.country=s.country||p.country;
+      p.location=s.city||s.location||p.location;
+      p.area=s.area||p.area;
+      p.languages=s.languages||p.languages;
+      p.gender=s.gender||p.gender;
+      p.pronouns=s.pronouns||p.pronouns;
+      p.availability=s.availability||p.availability;
+      p.visibility=s.visibility||p.visibility;
+      p.socialPlatforms=s.socialPlatforms||p.socialPlatforms||{};
+      p.contactMethods=s.contactMethods||p.contactMethods||{};
+      p.timezone=s.timezone||p.timezone;
+      p.contentCategories=s.contentCategories||p.contentCategories;
+      p.services=s.services||p.services;
+    }
   }
   function vipContentAccess(profileId){
     var u=user();if(u&&String(u.tier||'').toLowerCase()==='vip')return true;
@@ -11410,6 +11431,104 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
       if(typeof switchAuthTab==="function")switchAuthTab("login");
     }catch(e){if(window.notify)window.notify(e.message||"Unable to send reset link.","error");else if(window.showToast)window.showToast(e.message||"Unable to send reset link.","error")}
   };
+})();
+</script>
+<script id="aqe-final-profile-payment-fix">
+(function(){
+  'use strict';
+  function E(id){return document.getElementById(id)}
+  function esc(v){return String(v==null?'':v).replace(/[&<>'"]/g,function(c){return({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'})[c]})}
+  function copyText(value,button){
+    var done=function(){if(button){button.textContent='Copied';setTimeout(function(){button.textContent='Copy'},1200)}};
+    try{
+      if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(String(value||'')).then(done).catch(function(){fallback()});return}
+    }catch(_){}
+    fallback();
+    function fallback(){
+      try{var ta=document.createElement('textarea');ta.value=String(value||'');ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();}catch(_){}
+      done();
+    }
+  }
+  function syncSenderLabel(){
+    var select=E('aqePaymentChannel'), network=(select&&select.value)||((window.pay&&window.pay.network)||'MTN');
+    var label=E('aqeExactSenderNumber')&&E('aqeExactSenderNumber').previousElementSibling;
+    if(!label)return;
+    if(network==='Airtel') label.textContent='Sender Airtel number';
+    else if(network==='Card') label.textContent='Sender phone / card number';
+    else label.textContent='Sender MTN number';
+    var input=E('aqeExactSenderNumber');
+    if(input){
+      input.placeholder=network==='Airtel'?'Enter the Airtel number you will send from':network==='Card'?'Enter your phone number or card reference':'Enter the MTN number you will send from';
+      input.setAttribute('aria-label',label.textContent);
+    }
+  }
+  var baseNetwork=window.aqeExactNetwork;
+  if(baseNetwork&&!baseNetwork.__aqeSenderNetworkFix){
+    window.aqeExactNetwork=function(network){
+      var result=baseNetwork.apply(this,arguments);
+      window.pay=window.pay||{};window.pay.network=network;
+      syncSenderLabel();
+      return result;
+    };
+    window.aqeExactNetwork.__aqeSenderNetworkFix=true;
+  }
+  document.addEventListener('change',function(event){
+    if(event.target&&event.target.id==='aqePaymentChannel')syncSenderLabel();
+    if(event.target&&event.target.id==='aqeMukuruRecipientField'){
+      var value=event.target.value, input=E('aqeMukuruRecipientValue'),copy=E('aqeMukuruRecipientCopy');
+      if(input)input.value=value;
+      if(copy)copy.setAttribute('data-copy',value);
+    }
+  });
+  function renderMukuruRecipient(network){
+    var step=E('aqePayStep2');if(!step)return;
+    var box=E('aqeServerReceiver');
+    if(!box){
+      box=document.createElement('div');box.id='aqeServerReceiver';box.className='aqe-server-receiver';
+      var anchor=E('aqeExactReference'),parent=anchor&&anchor.closest('.aqe-pay-card');
+      if(parent&&parent.parentNode)parent.parentNode.insertBefore(box,parent.nextSibling);
+      else step.insertBefore(box,step.firstChild);
+    }
+    box.innerHTML='<div class="aqe-pay-small" style="color:#D4AF37">Mukuru '+esc(network||'')+' recipient details</div><div class="aqe-pay-small" style="margin-top:6px">Choose which recipient detail to use. The selected value can be copied.</div><select id="aqeMukuruRecipientField" class="aqe-pay-input" style="margin-top:8px"><option value="">Loading…</option></select><div class="aqe-server-receiver-row" style="margin-top:8px"><div style="min-width:0;flex:1"><small id="aqeMukuruRecipientLabel">Recipient detail</small><input id="aqeMukuruRecipientValue" class="aqe-pay-input" readonly style="margin-top:4px"></div><button id="aqeMukuruRecipientCopy" class="aqe-copy-mini" type="button">Copy</button></div><div class="xs ca5" id="aqeMukuruRecipientInstructions" style="margin-top:8px"></div>';
+    fetch('/api/payments/receiver',{cache:'no-store'}).then(function(r){return r.json()}).then(function(x){
+      var recv=x&&x.receiver||{},phone=String(recv.receiverPhone||'').trim(),card=String(recv.receiverCard||'').trim();
+      var select=E('aqeMukuruRecipientField'),input=E('aqeMukuruRecipientValue'),label=E('aqeMukuruRecipientLabel'),copy=E('aqeMukuruRecipientCopy'),instructions=E('aqeMukuruRecipientInstructions');
+      if(!select)return;
+      var options=[];
+      if(phone&&phone!=='Configure receiver phone')options.push({key:'phone',label:'Phone number',value:phone});
+      if(card&&card!=='Configure receiver card')options.push({key:'card',label:'Card number',value:card});
+      if(!options.length){select.innerHTML='<option value="">Receiver details not configured</option>';return}
+      select.innerHTML=options.map(function(o){return '<option value="'+esc(o.value)+'" data-label="'+esc(o.label)+'">'+esc(o.label)+'</option>'}).join('');
+      function sync(){
+        var opt=select.options[select.selectedIndex],value=opt?opt.value:'',name=opt?opt.getAttribute('data-label')||'Recipient detail':'Recipient detail';
+        if(input)input.value=value;
+        if(label)label.textContent=name;
+        if(copy)copy.setAttribute('data-copy',value);
+      }
+      select.addEventListener('change',sync);sync();
+      if(copy)copy.onclick=function(){copyText(copy.getAttribute('data-copy')||'',copy)};
+      if(instructions)instructions.textContent=String(recv.instructions||'Include your AQE payment reference.');
+    }).catch(function(){var select=E('aqeMukuruRecipientField');if(select)select.innerHTML='<option value="">Receiver details unavailable</option>'});
+  }
+  var baseReceiver=window.__aqeRenderServerReceiver;
+  window.__aqeRenderServerReceiver=function(network){
+    renderMukuruRecipient(network||((window.pay&&window.pay.network)||'MTN'));
+    if(baseReceiver&&baseReceiver!==window.__aqeRenderServerReceiver){
+      try{baseReceiver.apply(this,arguments)}catch(_){}
+    }
+    setTimeout(function(){renderMukuruRecipient(network||((window.pay&&window.pay.network)||'MTN'))},40);
+  };
+  var baseOpen=window.aqeExactOpen;
+  if(baseOpen&&!baseOpen.__aqeFinalProfilePaymentFix){
+    window.aqeExactOpen=function(){
+      var result=baseOpen.apply(this,arguments);
+      setTimeout(syncSenderLabel,0);
+      setTimeout(function(){renderMukuruRecipient((window.pay&&window.pay.network)||'MTN')},120);
+      return result;
+    };
+    window.aqeExactOpen.__aqeFinalProfilePaymentFix=true;
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',syncSenderLabel);else setTimeout(syncSenderLabel,0);
 })();
 </script>
 </body>
