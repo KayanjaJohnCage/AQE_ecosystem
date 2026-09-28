@@ -10569,27 +10569,23 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
   function detailRows(p,s){
     p=p||{};s=s||p.registrationSnapshot||{};
     var rows=[
-      ['Profile category',s.profileCategory||p.category||p.profileType||'—'],
       ['Membership tier',String(p.tier||s.membershipSelection||'basic').toUpperCase()],
       ['Headline',s.headline||p.headline||'—'],
-      ['Languages',s.languages||p.languages||'—'],
       ['Gender',s.gender||p.gender||'—'],
+      ['Languages',Array.isArray(s.languages)?s.languages.join(', '):(s.languages||p.languages||'—')],
+      ['Age',s.age||p.age||'—'],
       ['Pronouns',s.pronouns||p.pronouns||'—'],
       ['Country',s.country||p.country||'—'],
       ['City / region',s.city||p.city||p.location||'—'],
-      ['Area',s.area||p.area||'—'],
-      ['Availability',s.availability||p.availability||p.avail||'—'],
-      ['Visibility',s.visibility||p.visibility||'—'],
-      ['Contact preference',s.contactPreference||p.contactPreference||'—'],
-      ['Timezone',s.timezone||p.timezone||'—'],
-      ['Social handle',s.socialHandle||p.social||'—'],
+      ['Availability',s.availability||p.availability||'—'],
+      ['Phone number',s.phone||p.phone||'—'],
+      ['Contact references',s.contactMethods?Object.values(s.contactMethods).join(', '):(p.contactMethods?Object.values(p.contactMethods).join(', '):'—')],
+      ['Social handles',s.socialPlatforms?Object.values(s.socialPlatforms).join(', '):(p.socialPlatforms?Object.values(p.socialPlatforms).join(', '):'—')],
       ['Content categories',(s.contentCategories||p.contentCategories||[]).join(', ')||'—'],
       ['Services',(s.services||p.services||[]).join(', ')||'—'],
-      ['Referral code used',s.referralCode||'—'],
-      ['Terms & privacy',s.termsAccepted?'Accepted':'—'],
-      ['Password','Hidden for security']
+      ['Timezone',s.timezone||p.timezone||'Africa/Kampala']
     ];
-    return rows.map(function(x,i){return '<div class="aqe-profile-extra-item '+(i>=15?'wide':'')+'"><small>'+esc(x[0])+'</small><span>'+esc(x[1])+'</span></div>'}).join('');
+    return rows.map(function(x,i){return '<div class="aqe-profile-extra-item '+(i>=13?'wide':'')+'"><small>'+esc(x[0])+'</small><span>'+esc(x[1])+'</span></div>'}).join('');
   }
 
   function aqeRenderAccountInfo(){
@@ -10645,7 +10641,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
         var detail=E('profileDetail');if(!detail)return;
         var old=E('aqeFullProfileInfo');if(old)old.remove();
         var card=document.createElement('section');card.id='aqeFullProfileInfo';card.className='aqe-profile-extra';
-        card.innerHTML='<div class="sm fw8 cg">PROFILE INFORMATION</div><div class="xs ca5" style="margin:4px 0 10px">Information supplied by this member in their AQE profile.</div><div class="aqe-profile-extra-grid"><div class="aqe-profile-extra-item"><small>Profile category</small><span>'+esc(p.category||p.profileType||'—')+'</span></div><div class="aqe-profile-extra-item"><small>Membership</small><span>'+esc(String(p.tier||'basic').toUpperCase())+'</span></div><div class="aqe-profile-extra-item wide"><small>All registration/profile information</small><div class="aqe-profile-extra-grid" style="margin-top:8px">'+detailRows(p,p.registrationSnapshot)+'</div></div></div>';
+        card.innerHTML='<div class="sm fw8 cg">PROFILE INFORMATION</div><div class="xs ca5" style="margin:4px 0 10px">Member profile details</div><div class="aqe-profile-extra-grid">'+detailRows(p,p.registrationSnapshot)+'</div>';
         var gallery=E('profileMediaGallery');
         if(gallery&&gallery.parentNode)gallery.parentNode.insertBefore(card,gallery);
         renderVipContentGate(p);
