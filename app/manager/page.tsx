@@ -642,6 +642,12 @@ export default function ManagerPage() {
     if (payload.ok) setTroubleshootRequests((items) => items.map((item) => item.id === requestId ? { ...item, status } : item));
   }
 
+  function updateManagerNumber(id: string, patch: Partial<ManagerPaymentNumber>) {
+    setManagerNumbers((items) =>
+      items.map((item) => (item.id === id ? { ...item, ...patch } : item)),
+    );
+  }
+
   async function saveManagerNumbers() {
     const response = await fetch("/api/payments/manager-numbers", {
       method: "PATCH",
