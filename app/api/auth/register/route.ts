@@ -101,19 +101,31 @@ export async function POST(request: Request) {
       referredBy = referrer.data.user_id;
     }
 
-    const { data, error } = await client.auth.admin.createUser({
+    const authClient = createAnonSupabaseClient();
+    if (!authClient) {
+      return NextResponse.json(
+        { ok: false, reason: "Authentication service is not configured." },
+        { status: 503 },
+      );
+    }
+
+    const siteUrl = String(process.env.NEXT_PUBLIC_SITE_URL ?? "").replace(/\/$/, "");
+    const emailRedirectTo = siteUrl ? `${siteUrl}/auth/confirmed` : undefined;
+    const { data, error } = await authClient.auth.signUp({
       email,
       password,
-      email_confirm: true,
-      user_metadata: {
-        display_name: displayName,
-        role: "customer",
+      options: {
+        data: {
+          display_name: displayName,
+          role: "customer",
+        },
+        ...(emailRedirectTo ? { emailRedirectTo } : {}),
       },
     });
 
-    if (error) {
+    if (error || !data.user) {
       return NextResponse.json(
-        { ok: false, reason: error.message },
+        { ok: false, reason: error?.message ?? "Unable to create the account." },
         { status: 400 },
       );
     }
@@ -169,10 +181,7 @@ export async function POST(request: Request) {
       }
     }
 
-    const authClient = createAnonSupabaseClient();
-    const { data: signedIn } = authClient
-      ? await authClient.auth.signInWithPassword({ email, password })
-      : { data: { session: null } };
+    const signedIn = { data: { session: data.session } };
 
     const response = NextResponse.json({
       ok: true,
@@ -183,6 +192,8 @@ export async function POST(request: Request) {
       tier: "basic",
       requestedTier,
       upgradeRequired: requestedTier !== "basic",
+      emailVerificationRequired: !signedIn.data.session,
+      emailVerificationSent: !signedIn.data.session,
     });
 
     if (signedIn.session?.access_token) {
