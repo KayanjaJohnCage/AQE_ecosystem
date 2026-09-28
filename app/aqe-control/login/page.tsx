@@ -1,56 +1,14 @@
 "use client";
 
-import { FormEvent, Suspense, useEffect, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import { getSupabaseClient } from "../../../lib/supabaseClient";
+import { FormEvent, useState } from "react";
+import { useRouter } from "next/navigation";
 
-function AqeControlLoginContent() {
+export default function AqeControlLogin() {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const [googleEmail, setGoogleEmail] = useState("");
+  const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
-  const [googleBusy, setGoogleBusy] = useState(false);
   const [error, setError] = useState("");
-  const [googleVerified, setGoogleVerified] = useState(false);
-
-  useEffect(() => {
-    const verified = searchParams.get("google") === "verified";
-    setGoogleVerified(verified);
-    if (searchParams.get("error")) setError(searchParams.get("error") || "Google verification failed.");
-
-    fetch("/api/auth/manager-google/status", { cache: "no-store" })
-      .then(async (response) => {
-        const payload = await response.json().catch(() => ({}));
-        if (response.ok && payload.verified) {
-          setGoogleVerified(true);
-          setGoogleEmail(String(payload.email || ""));
-        }
-      })
-      .catch(() => undefined);
-  }, [searchParams]);
-
-  async function continueWithGoogle() {
-    setGoogleBusy(true);
-    setError("");
-    const supabase = getSupabaseClient();
-    if (!supabase) {
-      setError("Google manager authentication is not configured.");
-      setGoogleBusy(false);
-      return;
-    }
-    const redirectTo = `${window.location.origin}/aqe-control/login/google-callback`;
-    const { data, error: oauthError } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: { redirectTo, queryParams: { prompt: "select_account" } },
-    });
-    if (oauthError || !data.url) {
-      setError(oauthError?.message || "Unable to start Google verification.");
-      setGoogleBusy(false);
-      return;
-    }
-    window.location.assign(data.url);
-  }
 
   async function submit(event: FormEvent) {
     event.preventDefault();
@@ -60,7 +18,7 @@ function AqeControlLoginContent() {
       const response = await fetch("/api/auth/manager-login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ password }),
+        body: JSON.stringify({ identifier, password }),
       });
       const payload = await response.json().catch(() => ({}));
       if (!response.ok || !payload.ok) {
@@ -81,34 +39,21 @@ function AqeControlLoginContent() {
       <section className="aqe-control-login-card">
         <span className="eyebrow">AQE CONTROL</span>
         <h1>Manager sign in</h1>
-        <p>Manager Control requires both the authorized AQE Google account and the private manager password.</p>
-        <button type="button" onClick={continueWithGoogle} disabled={googleBusy} className="aqe-google-login-button">
-          <i className="fab fa-google" />
-          {googleBusy ? "Verifying Google account..." : googleVerified ? "Google account verified" : "Continue with Google"}
-        </button>
-        <div className="aqe-auth-divider"><span>THEN ENTER MANAGER PASSWORD</span></div>
+        <p>Sign in with the manager account email or phone number and password.</p>
         <form onSubmit={submit}>
           <label>
-            Authorized Google account
-            <input type="email" value={googleEmail} placeholder="Verify with Google first" readOnly autoComplete="username" />
+            Email or phone number
+            <input type="text" value={identifier} onChange={(event) => setIdentifier(event.target.value)} placeholder="manager@example.com or 07xx xxx xxx" autoComplete="username" required />
           </label>
           <label>
             Manager password
-            <input type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+            <input type="password" autoComplete="current-password" value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Enter manager password" required />
           </label>
           {error ? <div className="aqe-control-error">{error}</div> : null}
-          <button type="submit" disabled={busy || !googleVerified}>{busy ? "Signing in..." : "Enter manager console"}</button>
+          <button type="submit" disabled={busy}>{busy ? "Signing in..." : "Enter manager console"}</button>
         </form>
-        <small>Being signed in to the authorized Google account on this device does not bypass the manager password.</small>
+        <small>Only Supabase accounts assigned the <strong>manager</strong> or <strong>admin</strong> role can enter AQE Control.</small>
       </section>
     </main>
-  );
-}
-
-export default function AqeControlLogin() {
-  return (
-    <Suspense fallback={<main className="aqe-control-login"><section className="aqe-control-login-card"><h1>Loading manager sign in…</h1></section></main>}>
-      <AqeControlLoginContent />
-    </Suspense>
   );
 }
