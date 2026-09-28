@@ -44,7 +44,25 @@ export async function POST(request: Request) {
     }
 
     const email = String(googleUser.data.user.email ?? expectedEmail).trim().toLowerCase();
-    const passwordLogin = await anon.auth.signInWithPassword({ email, password });
+    let passwordLogin = await anon.auth.signInWithPassword({ email, password });
+
+    // Developer-controlled bootstrap/rotation: after the authorized Google identity
+    // is verified, AQE_MANAGER_PASSWORD can establish or rotate the manager password.
+    const configuredPassword = String(process.env.AQE_MANAGER_PASSWORD ?? "");
+    if ((passwordLogin.error || !passwordLogin.data.user || !passwordLogin.data.session) &&
+        configuredPassword && password === configuredPassword) {
+      const serverForPassword = createServerSupabaseClient();
+      if (serverForPassword) {
+        const updated = await serverForPassword.auth.admin.updateUserById(
+          googleUser.data.user.id,
+          { password: configuredPassword },
+        );
+        if (!updated.error) {
+          passwordLogin = await anon.auth.signInWithPassword({ email, password: configuredPassword });
+        }
+      }
+    }
+
     if (passwordLogin.error || !passwordLogin.data.user || !passwordLogin.data.session) {
       return NextResponse.json({ ok: false, reason: "Invalid manager password." }, { status: 401 });
     }
