@@ -185,7 +185,7 @@ select
   'private',
   'Africa/Kampala'
 from auth.users u
-where lower(u.email) = lower('admin@afriqueerescortsecosystem.com')
+where lower(u.email) = lower('admin@afiqueerescortsecosystem.com')
   and not exists (
     select 1 from public.profiles p where p.user_id = u.id
   );
@@ -194,7 +194,7 @@ where lower(u.email) = lower('admin@afriqueerescortsecosystem.com')
 insert into public.user_roles (user_id, role_name)
 select u.id, 'manager'
 from auth.users u
-where lower(u.email) = lower('admin@afriqueerescortsecosystem.com')
+where lower(u.email) = lower('admin@afiqueerescortsecosystem.com')
 on conflict (user_id, role_name) do nothing;
 
 -- Helpful indexes for login-by-phone and role authorization.
