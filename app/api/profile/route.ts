@@ -196,6 +196,7 @@ export async function PATCH(request: Request) {
       headline: sanitized.headline ?? null,
       languages: sanitized.languages ?? [],
       availability: sanitized.availability ?? null,
+      timezone: sanitized.timezone ?? "Africa/Kampala",
       visibility: sanitized.visibility ?? "public",
       social_platforms: sanitized.socialPlatforms ?? {},
       contact_methods: sanitized.contactMethods ?? {},
