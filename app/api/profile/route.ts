@@ -24,7 +24,7 @@ export async function GET(request: Request) {
     const { data, error } = await client
       .from("profiles")
       .select(
-        "id, user_id, display_name, bio, phone, country, nationality, location, area, category, services, content_categories, age, gender, pronouns, headline, languages, availability, visibility, social_platforms, contact_methods, tier, verification_status, avatar_url, created_at, updated_at",
+        "id, user_id, display_name, bio, phone, country, nationality, location, area, category, services, content_categories, age, gender, pronouns, headline, languages, availability, timezone, visibility, social_platforms, contact_methods, tier, verification_status, avatar_url, created_at, updated_at",
       )
       .eq("user_id", identity.userId)
       .maybeSingle();
@@ -62,6 +62,7 @@ export async function GET(request: Request) {
         languages: Array.isArray(data.languages) ? data.languages : [],
         area: data.area,
         availability: data.availability,
+        timezone: data.timezone,
         visibility: data.visibility,
         socialPlatforms: data.social_platforms ?? {},
         contactMethods: data.contact_methods ?? {},
@@ -129,6 +130,7 @@ export async function POST(request: Request) {
       languages: sanitized.languages,
       area: sanitized.area,
       availability: sanitized.availability,
+      timezone: sanitized.timezone,
       visibility: sanitized.visibility,
       socialPlatforms: sanitized.socialPlatforms,
       contactMethods: sanitized.contactMethods,
@@ -204,7 +206,7 @@ export async function PATCH(request: Request) {
       .from("profiles")
       .update(update)
       .eq("user_id", identity.userId)
-      .select("id,user_id,display_name,bio,phone,country,nationality,location,area,category,services,content_categories,age,gender,pronouns,headline,languages,availability,visibility,social_platforms,contact_methods,tier,verification_status,avatar_url,created_at,updated_at")
+      .select("id,user_id,display_name,bio,phone,country,nationality,location,area,category,services,content_categories,age,gender,pronouns,headline,languages,availability,timezone,visibility,social_platforms,contact_methods,tier,verification_status,avatar_url,created_at,updated_at")
       .maybeSingle();
 
     if (error) return NextResponse.json({ ok: false, reason: error.message }, { status: 500 });
