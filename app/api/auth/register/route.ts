@@ -148,6 +148,7 @@ export async function POST(request: Request) {
       languages: Array.isArray(body.languages) ? body.languages.filter((item: unknown) => typeof item === "string") : String(body.languages ?? "").split(",").map((item: string) => item.trim()).filter(Boolean),
       area: String(body.area ?? "").trim(),
       availability: String(body.availability ?? "").trim(),
+      timezone: String(body.timezone ?? "Africa/Kampala").trim(),
       visibility: String(body.visibility ?? "public").trim(),
       socialPlatforms,
       contactMethods,
