@@ -9195,6 +9195,22 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 
   /* Correct profile overlay: remove hidden and force a visible, scrollable layer. */
 
+  function installProfileInfoToggle(card){
+    if(!card)return;
+    var grid=card.querySelector('#aqeProfileInfoGrid'),toggle=card.querySelector('#aqeProfileInfoToggle');
+    if(!grid||!toggle)return;
+    var items=Array.prototype.slice.call(grid.querySelectorAll('.aqe-profile-extra-item'));
+    var visibleCount=8;
+    function sync(expanded){
+      items.forEach(function(item,index){item.style.display=expanded||index<visibleCount?'':'none'});
+      toggle.textContent=expanded?'View Less':'View All';
+      toggle.setAttribute('aria-expanded',expanded?'true':'false');
+      toggle.setAttribute('aria-label',expanded?'View less profile information':'View all profile information');
+    }
+    toggle.onclick=function(){sync(toggle.getAttribute('aria-expanded')!=='true')};
+    sync(false);
+  }
+
   var baseOpenProfile=window.openProfile;
 
   window.openProfile=function(id){
@@ -10507,6 +10523,13 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
     window.handleRegister.__aqeRegistrationSnapshot=true;
   }
 
+  /* Restored escort profile information expand/collapse control. */
+  if(!document.getElementById('aqe-profile-info-toggle-style')){
+    var style=document.createElement('style');style.id='aqe-profile-info-toggle-style';
+    style.textContent='.aqe-profile-view-toggle{border:1px solid var(--a6);background:var(--a7);color:var(--a1);border-radius:999px;padding:7px 12px;font-size:12px;font-weight:800;cursor:pointer;white-space:nowrap}.aqe-profile-view-toggle:hover{background:var(--a6)}.aqe-profile-view-toggle:focus-visible{outline:2px solid var(--r);outline-offset:2px}';
+    document.head.appendChild(style);
+  }
+
   function detailRows(p,s){
     p=p||{};s=s||p.registrationSnapshot||{};
     var rows=[
@@ -10596,7 +10619,8 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
         removeDuplicateProfileInfo();
         var old=E('aqeFullProfileInfo');if(old)old.remove();
         var card=document.createElement('section');card.id='aqeFullProfileInfo';card.className='aqe-profile-extra';
-        card.innerHTML='<div class="sm fw8 cg">PROFILE INFORMATION</div><div class="xs ca5" style="margin:4px 0 10px">Member profile details</div><div class="aqe-profile-extra-grid">'+detailRows(p,p.registrationSnapshot)+'</div>';
+        card.innerHTML='<div class="flex aic jb g2"><div><div class="sm fw8 cg">PROFILE INFORMATION</div><div class="xs ca5" style="margin:4px 0 10px">Member profile details</div></div><button type="button" id="aqeProfileInfoToggle" class="aqe-profile-view-toggle" aria-expanded="false">View All</button></div><div id="aqeProfileInfoGrid" class="aqe-profile-extra-grid">'+detailRows(p,p.registrationSnapshot)+'</div>';
+        installProfileInfoToggle(card);
         var gallery=E('profileMediaGallery');
         if(gallery&&gallery.parentNode)gallery.parentNode.insertBefore(card,gallery);
         renderVipContentGate(p);
