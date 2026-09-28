@@ -1382,6 +1382,7 @@ export default function ManagerPage() {
                   ))}
                 </div>
               </section>
+            </>
           ) : active === "Tasks & Rewards" ? (
             <PrizeManager />
           ) : (
