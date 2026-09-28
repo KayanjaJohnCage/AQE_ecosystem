@@ -23,6 +23,8 @@
 <meta name="robots" content="index, follow">
 
 <link rel="canonical" href="https://afiqueerescortsecosystem.com/">
+<link rel="icon" type="image/jpeg" href="/aqe_logo.jpg" data-aqe-static-favicon>
+<link rel="apple-touch-icon" href="/aqe_logo.jpg">
 
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
@@ -52,7 +54,7 @@ body::before {
 
   z-index: 0;
 
-  background-image: var(--aqe-payment-logo, url(aqe_logo.png));
+  background-image: var(--aqe-payment-logo, url(aqe_logo.jpg));
 
   background-position: center;
 
@@ -7593,7 +7595,7 @@ window.addEventListener('DOMContentLoaded', init);
 
   #aqePaymentExact .aqe-pay-shell{position:relative;max-width:420px;margin:0 auto;min-height:100dvh;display:flex;flex-direction:column;background:#000007;overflow:hidden}
 
-  #aqePaymentExact .aqe-pay-shell:before{content:"";position:absolute;inset:0;z-index:0;background-image:var(--aqe-payment-logo,url(aqe_logo.png));background-position:center;background-size:cover;background-repeat:no-repeat;opacity:.20;pointer-events:none}
+  #aqePaymentExact .aqe-pay-shell:before{content:"";position:absolute;inset:0;z-index:0;background-image:var(--aqe-payment-logo,url(aqe_logo.jpg));background-position:center;background-size:cover;background-repeat:no-repeat;opacity:.20;pointer-events:none}
 
   #aqePaymentExact .aqe-pay-shell>*{position:relative;z-index:1}
 
@@ -10570,6 +10572,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
         p=findProfile(id);if(!p)return;
         refreshProfileExtra(p);
         var detail=E('profileDetail');if(!detail)return;
+        removeDuplicateProfileInfo();
         var old=E('aqeFullProfileInfo');if(old)old.remove();
         var card=document.createElement('section');card.id='aqeFullProfileInfo';card.className='aqe-profile-extra';
         card.innerHTML='<div class="sm fw8 cg">PROFILE INFORMATION</div><div class="xs ca5" style="margin:4px 0 10px">Member profile details</div><div class="aqe-profile-extra-grid">'+detailRows(p,p.registrationSnapshot)+'</div>';
@@ -11132,7 +11135,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
       Array.prototype.forEach.call(header.querySelectorAll("*"),function(node){
         if(node.children.length===0 && String(node.textContent||"").trim()==="AQE" && !node.dataset.aqeWordmark){
           node.dataset.aqeWordmark="1";
-          node.innerHTML='<span class="aqe-wordmark"><img src="/aqe_logo.png" alt="AfriQueer Escorts Ecosystem logo"><span class="aqe-wordmark-copy"><span class="aqe-wordmark-acronym">AQE</span><span class="aqe-wordmark-full">AfriQueer Escorts Ecosystem</span></span></span>';
+          node.innerHTML='<span class="aqe-wordmark"><img src="/aqe_logo.jpg" alt="AfriQueer Escorts Ecosystem logo"><span class="aqe-wordmark-copy"><span class="aqe-wordmark-acronym">AQE</span><span class="aqe-wordmark-full">AfriQueer Escorts Ecosystem</span></span></span>';
         }
       });
     }
@@ -11140,13 +11143,48 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
       if(node.dataset.aqeWordmark) return;
       if(String(node.textContent||"").trim().replace(/\s+/g," ")==="AQE"){
         node.dataset.aqeWordmark="1";
-        node.innerHTML='<span class="aqe-wordmark"><img src="/aqe_logo.png" alt="AfriQueer Escorts Ecosystem logo"><span class="aqe-wordmark-copy"><span class="aqe-wordmark-acronym">AQE</span><span class="aqe-wordmark-full">AfriQueer Escorts Ecosystem</span></span></span>';
+        node.innerHTML='<span class="aqe-wordmark"><img src="/aqe_logo.jpg" alt="AfriQueer Escorts Ecosystem logo"><span class="aqe-wordmark-copy"><span class="aqe-wordmark-acronym">AQE</span><span class="aqe-wordmark-full">AfriQueer Escorts Ecosystem</span></span></span>';
       }
     });
   }
 
   /* Remove the older all-registration dump so Settings has one authoritative profile editor. */
-  function removeOldAccountDump(){var x=E("aqeRegistrationInfo");if(x)x.remove()}
+  function removeOldAccountDump(){
+    var selectors=[
+      "#aqeRegistrationInfo",
+      "#aqeLegacyAccountInfo",
+      "#legacyAccountInfo",
+      "[data-aqe-legacy-account-info]",
+      "#screen-settings .aqe-registration-info-grid",
+      "#screen-settings .aqe-registration-info-item"
+    ];
+    selectors.forEach(function(sel){
+      try{document.querySelectorAll(sel).forEach(function(x){x.remove()})}catch(_){}
+    });
+  }
+  function removeDuplicateProfileInfo(){
+    var detail=E("profileDetail");if(!detail)return;
+    removeOldAccountDump();
+    var cards=detail.querySelectorAll("#aqeFullProfileInfo");
+    for(var i=1;i<cards.length;i++)cards[i].remove();
+    detail.querySelectorAll("[data-aqe-legacy-profile-info],.aqe-legacy-profile-info,.aqe-registration-info-grid").forEach(function(x){x.remove()});
+  }
+  function installLegacyUiCleanup(){
+    removeOldAccountDump();
+    removeDuplicateProfileInfo();
+    var settings=E("screen-settings");
+    if(settings&&!settings.__aqeLegacyUiObserver){
+      var observer=new MutationObserver(function(){removeOldAccountDump()});
+      observer.observe(settings,{childList:true,subtree:true});
+      settings.__aqeLegacyUiObserver=observer;
+    }
+    var detail=E("profileDetail");
+    if(detail&&!detail.__aqeLegacyProfileObserver){
+      var observer2=new MutationObserver(function(){removeDuplicateProfileInfo()});
+      observer2.observe(detail,{childList:true,subtree:true});
+      detail.__aqeLegacyProfileObserver=observer2;
+    }
+  }
 
   window.aqeInstallAccountEditor=function(){
     var screen=E("screen-settings"); if(!screen || E("aqeCleanAccountEditor")) return;
@@ -11339,13 +11377,14 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 
   function addLogoFaviconFallback(){
     if(!document.querySelector('link[data-aqe-favicon]')){
-      var l=document.createElement("link");l.rel="icon";l.href="/aqe_logo.png";l.dataset.aqeFavicon="1";document.head.appendChild(l);
+      var l=document.createElement("link");l.rel="icon";l.href="/aqe_logo.jpg";l.dataset.aqeFavicon="1";document.head.appendChild(l);
     }
   }
 
   function boot(){
     installWordmarks();
     removeOldAccountDump();
+    installLegacyUiCleanup();
     installAccountEditor();
     installPaymentChannel();
     installMukuruNumberPicker();
@@ -11354,7 +11393,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
     addLogoFaviconFallback();
   }
   if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",boot);else setTimeout(boot,50);
-  window.addEventListener("aqe-screen-change",function(){installWordmarks();installAccountEditor();installPaymentChannel();installMukuruNumberPicker()});
+  window.addEventListener("aqe-screen-change",function(){installWordmarks();installLegacyUiCleanup();installAccountEditor();installPaymentChannel();installMukuruNumberPicker()});
 })();
 </script>
 
