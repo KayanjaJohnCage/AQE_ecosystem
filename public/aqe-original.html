@@ -1549,96 +1549,35 @@ body{
 
 
 <div id="screen-settings" class="screen hidden">
-
   <div class="px4 py4">
-
     <div class="flex aic g3 mb4">
-
       <button onclick="showScreen('screen-me')" style="background:none;border:none;color:var(--a1);font-size:18px;cursor:pointer;"><i class="fas fa-arrow-left"></i></button>
-
       <h3 class="xl fw8">Settings</h3>
-
     </div>
 
-    <div class="bga8 rxl b1 ba7 oh mb4">
-
-      <div class="p4 bb ba7 flex aic jb">
-
-        <div><div class="fw5">Name</div><div id="setName" class="xs ca5">Guest</div></div>
-
-        <i class="fas fa-chevron-right ca5" style="font-size:12px;"></i>
-
-      </div>
-
-      <div class="p4 bb ba7 flex aic jb">
-
-        <div><div class="fw5">Email</div><div id="setEmail" class="xs ca5">—</div></div>
-
-        <i class="fas fa-chevron-right ca5" style="font-size:12px;"></i>
-
-      </div>
-
-      <div class="p4 bb ba7 flex aic jb">
-
-        <div><div class="fw5">Phone</div><div id="setPhone" class="xs ca5">—</div></div>
-
-        <i class="fas fa-chevron-right ca5" style="font-size:12px;"></i>
-
-      </div>
-
-      <div class="p4 flex aic jb">
-
-        <div><div class="fw5">Tier</div><div id="setTier" class="xs ca5">—</div></div>
-
-        <span id="setTierBadge" class="px2 py1 xs fw7 rf bga7 ca3">MEMBER</span>
-
-      </div>
-
-    </div>
+    <!-- Single authoritative account/profile editor. The legacy Name/Email/Phone/Tier list is intentionally removed. -->
+    <div id="aqeAccountControls"></div>
 
     <div class="bga8 rxl b1 ba7 oh mb4">
-
       <div class="p4 bb ba7 flex aic jb cp" onclick="toggleSwitch(this.querySelector('.sw'))">
-
         <div class="fw5">Push Notifications</div>
-
         <div class="sw" style="width:36px;height:20px;background:var(--gr);border-radius:999px;position:relative;cursor:pointer;transition:all 0.2s;"><div style="width:16px;height:16px;background:white;border-radius:50%;position:absolute;top:2px;right:2px;transition:transform 0.2s;"></div></div>
-
       </div>
-
       <div class="p4 bb ba7 flex aic jb cp" onclick="toggleSwitch(this.querySelector('.sw'))">
-
         <div class="fw5">Dark Mode</div>
-
-        <div class="sw" style="width:36px;height:20px;background:var(--gr);border-radius:999px;position:relative;cursor:pointer;transition:all 0.2s;"><div style="width:16px;height:16px;background:white;border-radius:50%;position:absolute;top:2px;right:2px;transition:transform 0.2s;"></div></div>
-
+        <div class="sw" style="width:36px;height:20px;background:var(--gr);border-radius:999px;position:relative;cursor:pointer;transition:all 0.2s;"><div style="width:16px;height:16px;background:white;border-radius:50%;position:absolute;top:2px;left:2px;transition:transform 0.2s;"></div></div>
       </div>
-
       <div class="p4 flex aic jb cp" onclick="toggleSwitch(this.querySelector('.sw'))">
-
         <div class="fw5">Biometric Lock</div>
-
         <div class="sw" style="width:36px;height:20px;background:var(--a7);border-radius:999px;position:relative;cursor:pointer;transition:all 0.2s;"><div style="width:16px;height:16px;background:white;border-radius:50%;position:absolute;top:2px;left:2px;transition:transform 0.2s;"></div></div>
-
       </div>
-
     </div>
 
     <button class="btn bs2 mb2"><i class="fas fa-shield-alt"></i> Privacy Policy</button>
-
     <button class="btn bs2 mb2"><i class="fas fa-file-alt"></i> Terms of Service</button>
-
     <button class="btn bs2" onclick="handleLogout()"><i class="fas fa-sign-out-alt"></i> Sign Out</button>
-
   </div>
-
 </div>
-
-
-
-</main>
-
-
 
 <!-- Bottom Nav -->
 
@@ -11021,73 +10960,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
   }
 
   /* Customer profile: expose only the requested escort profile fields. */
-  function profileInfo(p){
-    var s=p&&p.registrationSnapshot||{};
-    var profile=p&&p.profile||{};
-    function val(a,b,c){return (p&&p[a])||(profile&&profile[b])||(s&&s[c])||""}
-    var data=[
-      ["Membership tier", String(p&&p.tier||p&&p.profileTier||"basic").toUpperCase()],
-      ["Headline", val("headline","headline","headline")],
-      ["Gender", val("gender","gender","gender")],
-      ["Language", val("languages","languages","languages")],
-      ["Age", val("age","age","age")],
-      ["Pronouns", val("pronouns","pronouns","pronouns")],
-      ["Country", val("country","country","country")],
-      ["City / region", val("city","city","city")||val("location","location","city")],
-      ["Availability", val("availability","availability","availability")||val("avail","availability","availability")],
-      ["Phone number", val("phone","phone","phone")],
-      ["Contact references", val("contactMethods","contactMethods","contactMethods")],
-      ["Social handles", val("socialPlatforms","social","socialHandle")],
-      ["Content categories", val("contentCategories","contentCategories","contentCategories")],
-      ["Services", val("services","services","services")],
-      ["Timezone", val("timezone","timezone","timezone")]
-    ];
-    return data.map(function(row){
-      var v=row[1];
-      if(Array.isArray(v))v=v.join(", ");
-      else if(v&&typeof v==="object")v=Object.entries(v).map(function(e){return e[0]+": "+e[1]}).join(" · ");
-      return {label:row[0],value:String(v||"—")};
-    });
-  }
-
-  function renderProfileInfo(p){
-    var media=E("profileMediaGallery"),store=E("profileStore"),detail=E("profileDetail");
-    if(!detail)return;
-    var old=E("aqeProfileInfo");
-    if(old)old.remove();
-    var bio=E("profileBio");
-    if(bio&&bio.closest(".bga8"))bio.closest(".bga8").style.display="none";
-    if(!store)return;
-    var heading=store.previousElementSibling;
-    var wrap=document.createElement("div");
-    wrap.id="aqeProfileInfo";
-    wrap.className="bga8 b1 ba7 r2xl p4 mb4";
-    var rows=profileInfo(p);
-    var short=rows.slice(0,4);
-    function rowsHtml(items){return items.map(function(x){return '<div style="display:flex;justify-content:space-between;gap:14px;padding:9px 0;border-bottom:1px solid var(--a7)"><span class="xs ca5">'+esc(x.label)+'</span><span class="xs ca1" style="text-align:right;max-width:62%">'+esc(x.value)+'</span></div>'}).join("")}
-    wrap.innerHTML='<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px"><h4 style="font-size:12px;font-weight:700;color:var(--a5);text-transform:uppercase;letter-spacing:1px;margin:0">Profile information</h4><span class="xs ca5">Verified profile details</span></div><div id="aqeProfileInfoRows">'+rowsHtml(short)+'</div><div id="aqeProfileInfoMore" class="hidden" style="margin-top:0">'+rowsHtml(rows.slice(4))+'</div><button id="aqeProfileInfoToggle" type="button" class="btn bs2" style="margin-top:12px;padding:10px" onclick="window.aqeToggleProfileInfo()">View all information</button>';
-    if(heading)heading.parentNode.insertBefore(wrap,heading);else store.parentNode.insertBefore(wrap,store);
-  }
-  window.aqeToggleProfileInfo=function(){
-    var more=E("aqeProfileInfoMore"),btn=E("aqeProfileInfoToggle");
-    if(!more||!btn)return;
-    var open=!more.classList.contains("hidden");
-    more.classList.toggle("hidden",open);
-    btn.textContent=open?"View all information":"View less information";
-  };
-  var baseOpen=window.openProfile;
-  if(baseOpen&&!baseOpen.__afriqueerProfileInfo){
-    window.openProfile=function(id){
-      var result=baseOpen.apply(this,arguments);
-      try{
-        var p=window.state&&state.profiles&&state.profiles.find(function(x){return String(x.id)===String(id)});
-        if(p)renderProfileInfo(p);
-      }catch(_){}
-      return result;
-    };
-    window.openProfile.__afriqueerProfileInfo=true;
-  }
-
+  /* Legacy duplicate public-profile renderer removed. The authoritative renderer is aqeFullProfileInfo/detailRows. */
   /* Manager payment numbers: only Available numbers are offered to customers. */
   var managerNumbers=[];
   async function loadManagerNumbers(){
