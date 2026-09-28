@@ -10589,16 +10589,8 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
   }
 
   function aqeRenderAccountInfo(){
-    var screen=E('screen-settings');if(!screen)return;
-    var u=user();
-    if(!u){return}
-    var snap=getSnapshot(u.id,u.email)||u.registrationSnapshot||{};
     var old=E('aqeRegistrationInfo');if(old)old.remove();
-    var anchor=screen.querySelector('.bga8.rxl.b1.ba7');
-    if(!anchor)return;
-    var card=document.createElement('section');card.id='aqeRegistrationInfo';card.className='aqe-registration-info';
-    card.innerHTML='<div class="sm fw8 cg">ACCOUNT & PROFILE INFORMATION</div><div class="xs ca4" style="margin:4px 0 12px">All information supplied during registration is shown here. Your password is never displayed.</div><div class="aqe-registration-info-grid"><div class="aqe-registration-info-item"><small>Name</small><span>'+esc(snap.displayName||u.name||'—')+'</span></div><div class="aqe-registration-info-item"><small>Email</small><span>'+esc(snap.email||u.email||'—')+'</span></div><div class="aqe-registration-info-item"><small>Phone</small><span>'+esc(snap.phone||u.phone||'—')+'</span></div><div class="aqe-registration-info-item"><small>Profile category</small><span>'+esc(snap.profileCategory||u.profileType||u.type||'—')+'</span></div><div class="aqe-registration-info-item"><small>Membership</small><span>'+esc(String(u.tier||snap.membershipSelection||'basic').toUpperCase())+'</span></div><div class="aqe-registration-info-item"><small>Referral code</small><span>'+esc(snap.referralCode||u.referralCode||'—')+'</span></div><div class="aqe-registration-info-item wide"><small>Full registration details</small><div class="aqe-profile-extra-grid" style="margin-top:8px">'+detailRows(u.profile||u,snap)+'</div></div></div>';
-    anchor.parentNode.insertBefore(card,anchor.nextSibling);
+    try{if(window.aqeInstallAccountEditor)window.aqeInstallAccountEditor();}catch(_){}
   }
 
   function refreshProfileExtra(p){
@@ -11283,7 +11275,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
   /* Remove the older all-registration dump so Settings has one authoritative profile editor. */
   function removeOldAccountDump(){var x=E("aqeRegistrationInfo");if(x)x.remove()}
 
-  function installAccountEditor(){
+  window.aqeInstallAccountEditor=function(){
     var screen=E("screen-settings"); if(!screen || E("aqeCleanAccountEditor")) return;
     removeOldAccountDump();
     var anchor=E("aqeAccountControls") || screen.firstElementChild;
@@ -11321,7 +11313,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
     anchor.parentNode.insertBefore(box,anchor);
     window.aqeLoadProfileSettings();
     window.aqeLoadIdentityStatus();
-  }
+  };
 
   window.aqeLoadProfileSettings=async function(){
     var u=current(); if(!u)return;
