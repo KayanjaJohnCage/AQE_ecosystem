@@ -4924,7 +4924,7 @@ window.addEventListener('DOMContentLoaded', init);
 
     mxFilter = f;
 
-    Array.production.forEach.call(document.querySelectorAll("#mxTabs button"), function (b) { b.classList.remove("on"); });
+    Array.prototype.forEach.call(document.querySelectorAll("#mxTabs button"), function (b) { b.classList.remove("on"); });
 
     if (btn) btn.classList.add("on");
 
@@ -10496,7 +10496,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 
   function snapshotFromForm(){
     function v(id){var x=E(id);return x?String(x.value||'').trim():''}
-    function checks(name){return Array.production.slice.call(document.querySelectorAll('input[name="'+name+'"]:checked')).map(function(x){return x.value})}
+    function checks(name){return Array.prototype.slice.call(document.querySelectorAll('input[name="'+name+'"]:checked')).map(function(x){return x.value})}
     return {
       displayName:v('regName'),email:v('regEmail').toLowerCase(),phone:v('regPhone'),profileCategory:v('regProfileCategory')||'client',membershipSelection:v('regCategory')||'',country:v('regCountry')||'Uganda',city:v('regCity'),area:v('regArea'),headline:v('regHeadline'),languages:v('regLanguages'),gender:v('regGender'),pronouns:v('regPronouns'),availability:v('regAvailability')||'available',visibility:v('regVisibility')||'public',socialHandle:v('regSocial'),contactPreference:v('regContactPreference')||'in_app',timezone:v('regTimezone')||'Africa/Kampala',contentCategories:checks('regContent'),services:checks('regServices'),bio:v('regBio'),referralCode:v('regRef').toUpperCase(),requestedTier:v('regCategory')||'Basic',termsAccepted:!!(E('regTos')&&E('regTos').checked)
     };
@@ -11256,14 +11256,14 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
   function installWordmarks(){
     var header=document.querySelector("header.th");
     if(header){
-      Array.production.forEach.call(header.querySelectorAll("*"),function(node){
+      Array.prototype.forEach.call(header.querySelectorAll("*"),function(node){
         if(node.children.length===0 && String(node.textContent||"").trim()==="AQE" && !node.dataset.aqeWordmark){
           node.dataset.aqeWordmark="1";
           node.innerHTML='<span class="aqe-wordmark"><img src="/aqe_logo.png" alt="AfriQueer Escorts Ecosystem logo"><span class="aqe-wordmark-copy"><span class="aqe-wordmark-acronym">AQE</span><span class="aqe-wordmark-full">AfriQueer Escorts Ecosystem</span></span></span>';
         }
       });
     }
-    Array.production.forEach.call(document.querySelectorAll(".px-logo,.logo,.aqe-logo"),function(node){
+    Array.prototype.forEach.call(document.querySelectorAll(".px-logo,.logo,.aqe-logo"),function(node){
       if(node.dataset.aqeWordmark) return;
       if(String(node.textContent||"").trim().replace(/\s+/g," ")==="AQE"){
         node.dataset.aqeWordmark="1";
