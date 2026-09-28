@@ -76,16 +76,19 @@ export async function POST(request: Request) {
       return NextResponse.json({ ok: false, reason: "Manager authentication is not configured." }, { status: 503 });
     }
 
-    const { data: profile } = await server
-      .from("profiles")
-      .select("role,email")
+    const { data: roles } = await server
+      .from("user_roles")
+      .select("role_name")
       .eq("user_id", passwordLogin.data.user.id)
-      .maybeSingle();
+      .in("role_name", ["admin", "manager"]);
 
-    const role = String(profile?.role ?? "").toLowerCase();
-    if (!["manager", "admin"].includes(role)) {
+    const roleNames = (roles ?? [])
+      .map((item) => String(item.role_name ?? "").toLowerCase())
+      .filter((value) => value === "admin" || value === "manager");
+    if (!roleNames.length) {
       return NextResponse.json({ ok: false, reason: "This account is not authorized for the AQE management console." }, { status: 403 });
     }
+    const role = roleNames.includes("admin") ? "admin" : "manager";
 
     const response = NextResponse.json({
       ok: true,
