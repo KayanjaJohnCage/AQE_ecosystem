@@ -11450,7 +11450,16 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
         window.open("https://www.mukuru.com/send-money/","_blank","noopener,noreferrer");
         return;
       }
-      return base.apply(this,arguments);
+      var result=base.apply(this,arguments);
+      if(window.pay&&window.pay.method==="MukuruPay"){
+        var selected=E("aqeMukuruNumber"),number=selected&&selected.value;
+        if(number){
+          if(E("aqeExactRecipient"))E("aqeExactRecipient").textContent=number;
+          if(E("aqeExactNumberLabel"))E("aqeExactNumberLabel").textContent=(channel&&channel.value==="Airtel"?"Airtel":channel&&channel.value==="MTN"?"MTN":"AQE")+" payment number";
+          try{if(navigator.clipboard)navigator.clipboard.writeText(number)}catch(_){}
+        }
+      }
+      return result;
     };
     window.aqeExactSaveAndContinue.__aqeFinalPaymentSavePatch=true;
   }
