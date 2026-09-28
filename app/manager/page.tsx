@@ -1518,6 +1518,7 @@ export default function ManagerPage() {
             </section>
           )}
         </div>
+        </div>
       </main>
     </div>
   );
