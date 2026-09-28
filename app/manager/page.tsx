@@ -696,8 +696,8 @@ export default function ManagerPage() {
   }
 
   return (
-    <div className="manager-prototype">
-      <aside className="manager-prototype-sidebar">
+    <div className="manager-shell">
+      <aside className="manager-shell-sidebar">
         <div className="manager-brand">AQE ADMIN</div>
         {navGroups.map((group) => (
           <div key={group.title}>
@@ -723,8 +723,8 @@ export default function ManagerPage() {
         ))}
       </aside>
 
-      <main className="manager-prototype-main">
-        <header className="manager-prototype-top">
+      <main className="manager-shell-main">
+        <header className="manager-shell-top">
           <div>
             <strong>AQE Ecosystem Manager</strong>
             <span>Live ecosystem oversight & operational control</span>
@@ -738,7 +738,7 @@ export default function ManagerPage() {
           </div>
         </header>
 
-        <div className="manager-prototype-content">
+        <div className="manager-shell-content">
           <div className="manager-title">
             {active === "Dashboard" ? "Command Center" : active}
           </div>
@@ -1518,7 +1518,6 @@ export default function ManagerPage() {
               </div>
             </section>
           )}
-        </div>
         </div>
       </main>
     </div>
