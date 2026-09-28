@@ -1235,6 +1235,8 @@ body{
       <div class="di" onclick="showScreen('screen-rewards')"><i class="fas fa-gift cr"></i><span>Rewards</span></div>
 
       <div class="di" onclick="showScreen('screen-raffle')"><i class="fas fa-ticket-alt cpu"></i><span>Raffle</span></div>
+      <div class="di" onclick="showScreen('screen-aqe-campaigns')"><i class="fas fa-bullhorn cgr"></i><span>Campaigns</span></div>
+      <div class="di" onclick="showScreen('screen-aqe-prizes')"><i class="fas fa-trophy cg"></i><span>Prizes</span></div>
 
       <div class="di" onclick="showScreen('screen-download')"><i class="fas fa-download cb"></i><span>Download</span></div>
 
@@ -2112,7 +2114,7 @@ body{
 
           <label class="aqe-consent"><input type="checkbox" id="regTos"><span>I confirm that the information I submit is accurate and I agree to AQE's Terms, Privacy Policy, community rules and verification requirements.</span></label>
 
-          <div class="aqe-auth-note"><i class="fas fa-flask"></i><div><b>Prototype mode</b><br><span>Email verification is simulated in this prototype, so newly created accounts can continue immediately.</span></div></div>
+          <div class="aqe-auth-note"><i class="fas fa-flask"></i><div><b>production mode</b><br><span>Email verification is simulated in this production, so newly created accounts can continue immediately.</span></div></div>
 
         </div>
 
@@ -2706,7 +2708,7 @@ function handleRegister(){
 
   if(ref){const r=state.users.find(u=>u.referralCode===ref);if(r&&state.referrals[r.id])state.referrals[r.id].children.push(user.id);}
 
-  saveState();setSession(user);closeAuth();showToast('Account created. Prototype access is enabled immediately.');updateUIForUser();
+  saveState();setSession(user);closeAuth();showToast('Account created. production access is enabled immediately.');updateUIForUser();
 
 }
 
@@ -4922,7 +4924,7 @@ window.addEventListener('DOMContentLoaded', init);
 
     mxFilter = f;
 
-    Array.prototype.forEach.call(document.querySelectorAll("#mxTabs button"), function (b) { b.classList.remove("on"); });
+    Array.production.forEach.call(document.querySelectorAll("#mxTabs button"), function (b) { b.classList.remove("on"); });
 
     if (btn) btn.classList.add("on");
 
@@ -5598,7 +5600,7 @@ window.addEventListener('DOMContentLoaded', init);
 
      AQE ECOSYSTEM UPGRADE — Phase 2 (additive, namespaced "px-")
 
-     Merges the desktop AQE Ecosystem prototype features into the
+     Merges the desktop AQE Ecosystem production features into the
 
      mobile app: Book Now, Comments, Wallet, Premium Hub, VIP Hub,
 
@@ -7046,7 +7048,7 @@ window.addEventListener('DOMContentLoaded', init);
 
     }
 
-    // VIP-only route protection for the existing prototype screens.
+    // VIP-only route protection for the existing production screens.
 
     const original=window.showScreen;
 
@@ -7598,7 +7600,7 @@ window.addEventListener('DOMContentLoaded', init);
 
 
 
-  // Keep the customer prototype synchronized with manager actions in another tab.
+  // Keep the customer production synchronized with manager actions in another tab.
 
   window.addEventListener('storage',function(e){
 
@@ -7618,7 +7620,7 @@ window.addEventListener('DOMContentLoaded', init);
 
 
 
-  // Render after the existing prototype has initialized.
+  // Render after the existing production has initialized.
 
   function boot(){
 
@@ -8264,7 +8266,7 @@ window.addEventListener('DOMContentLoaded', init);
 
 <style id="aqe-phase12-preview-fix">
 
-/* Preview mode: auth must be closable even when other prototype styles use !important. */
+/* Preview mode: auth must be closable even when other production styles use !important. */
 
 #authModal.hidden{display:none!important;visibility:hidden!important;pointer-events:none!important}
 
@@ -8284,7 +8286,7 @@ window.addEventListener('DOMContentLoaded', init);
 
 
 
-  // Prototype preview: wallet deposit can be opened while signed out so the payment UI can be inspected.
+  // production preview: wallet deposit can be opened while signed out so the payment UI can be inspected.
 
   // No wallet/payment order is persisted unless a real signed-in user exists.
 
@@ -8320,9 +8322,9 @@ window.addEventListener('DOMContentLoaded', init);
 
       u=hasUser()?state.currentUser:null;
 
-      const demo={id:null,name:'Preview User',phone:'',email:'',tier:'member'};
+      const preview={id:null,name:'Preview User',phone:'',email:'',tier:'member'};
 
-      const use=u||demo;
+      const use=u||preview;
 
       if(typeof pay!=='undefined'){
 
@@ -8930,7 +8932,7 @@ function current(){return (typeof state!=='undefined'&&state&&state.currentUser)
 
 function toast(m){if(typeof showToast==='function')showToast(m);else alert(m);}
 
-/* Registration: age + profile photo + separate profile category, with immediate prototype login. */
+/* Registration: age + profile photo + separate profile category, with immediate production login. */
 
 function installRegistrationFields(){
 
@@ -8974,7 +8976,7 @@ window.openBookingRequest=function(id){createBooking(id);};
 
 var oldOpen=window.openProfile;if(oldOpen&&!oldOpen.__p13){window.openProfile=function(id){var r=oldOpen.apply(this,arguments);setTimeout(function(){var p=(state.profiles||[]).find(function(x){return String(x.id)===String(id);});var o=document.getElementById('profileDetail');if(!o||!p)return;var hero=o.querySelector('.profile-hero')||o.firstElementChild;var old=document.getElementById('aqeP13ProfileCTA');if(old)old.remove();var card=document.createElement('div');card.id='aqeP13ProfileCTA';card.className='aqe-upgrade-card';card.style.margin='12px 16px';card.innerHTML='<div style="display:flex;align-items:center;gap:12px"><img class="aqe-mini-photo" src="'+profileImg(p)+'" alt=""><div><b>'+esc(p.name)+'</b><div class="xs ca5">Age '+esc(p.age||'18+')+' · '+esc(p.location||'Uganda')+' · '+esc(String(p.tier||'basic').toUpperCase())+'</div></div></div><div class="xs ca4" style="margin-top:10px">Verified profile · Digital content and creator session access</div><div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap"><button class="px-btn primary" onclick="openBookingRequest('+JSON.stringify(p.id)+')">Request Session</button>'+(String(p.tier).toLowerCase()==='vip'?'<button class="px-btn" onclick="aqeSubscribeProfile('+JSON.stringify(p.id)+')">Subscribe to VIP content</button>':'')+'</div>';o.appendChild(card);},20);return r;};window.openProfile.__p13=true;}
 
-window.aqeSubscribeProfile=function(profileId){var u=current();if(!u){openAuth();return;}ensureArrays();if(state.profileSubscriptions.some(function(s){return s.subscriberId===u.id&&String(s.profileId)===String(profileId)&&s.status==='active';})){toast('You already subscribe to this profile.');return;}var p=(state.profiles||[]).find(function(x){return String(x.id)===String(profileId);});if(!p)return;state.profileSubscriptions.unshift({id:'ps_'+Date.now(),subscriberId:u.id,profileId:p.id,status:'active',price:0,currency:'UGX',startedAt:new Date().toISOString(),expiresAt:null});saveState();toast('VIP content subscription activated for this prototype demo.');}
+window.aqeSubscribeProfile=function(profileId){var u=current();if(!u){openAuth();return;}ensureArrays();if(state.profileSubscriptions.some(function(s){return s.subscriberId===u.id&&String(s.profileId)===String(profileId)&&s.status==='active';})){toast('You already subscribe to this profile.');return;}var p=(state.profiles||[]).find(function(x){return String(x.id)===String(profileId);});if(!p)return;state.profileSubscriptions.unshift({id:'ps_'+Date.now(),subscriberId:u.id,profileId:p.id,status:'active',price:0,currency:'UGX',startedAt:new Date().toISOString(),expiresAt:null});saveState();toast('VIP content subscription activated for this production preview.');}
 
 /* Replace old Book Now content with the updated all-tier lawful appointment UI. */
 
@@ -9368,7 +9370,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 
       '<div class="aqe-plan-card" style="margin-top:14px"><div class="sm fw8 cg mb2">Access feature matrix</div>'+feature('Free DM access & chat','All tiers','all')+feature('Media upload limit','Basic 10 · Premium 20 · VIP Unlimited','all')+feature('Wallet, deposit & withdraw','All tiers','all')+feature('Earnings & recent activity','All tiers','all')+feature('Profile photos & media','All tiers · capacity differs by level','all')+feature('Bill, invite & manager support','All tiers','all')+feature('My Team & referral tools','VIP only','viponly')+feature('VIP Tasks','VIP only','viponly')+feature('Rewards','All tiers','all')+feature('Raffle + campaign + prizes','VIP only','viponly')+feature('Gifts','VIP only','viponly')+feature('Multiple withdrawals','VIP only','viponly')+feature('Groups + voice','VIP only','viponly')+feature('Media Vault','VIP only','viponly')+feature('Store','VIP only','viponly')+feature('Asset Room','VIP only','viponly')+feature('Monthly VIP content unlock subscription','VIP only','viponly')+'</div>'+
 
-      '<div class="xs ca5 mt3">Membership pricing and account entitlements shown here are prototype configuration values. Final production billing rules should be enforced server-side.</div>';
+      '<div class="xs ca5 mt3">Membership pricing and account entitlements shown here are production configuration values. Final production billing rules should be enforced server-side.</div>';
 
   };
 
@@ -9384,7 +9386,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 
 
 
-  /* Seed more demo profiles if a stored state has too few. */
+  /* Seed more preview profiles if a stored state has too few. */
 
   function ensureDummies(){
 
@@ -10044,7 +10046,12 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
     if(!(document.getElementById('regTos')||{}).checked){notify('Please accept the Terms and Privacy Policy','error');return;}
     try{
       var payload=await api('/api/auth/register',{method:'POST',body:JSON.stringify(body)});
-      /* Registration creates the account; sign in immediately so the original session flow remains intact. */
+      if(payload.emailVerificationRequired){
+        if(typeof closeAuth==='function')closeAuth();
+        notify('Account created. Check your email and click the verification link to activate your account.');
+        try{localStorage.setItem('aqe_pending_verification_email',body.email)}catch(_){}
+        return;
+      }
       var login=await api('/api/auth/login',{method:'POST',body:JSON.stringify({email:body.email,password:body.password})});
       if(login.session)jsave(NEXT_SESSION_KEY,login.session);
       var user=await hydrateUser();
@@ -10489,7 +10496,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 
   function snapshotFromForm(){
     function v(id){var x=E(id);return x?String(x.value||'').trim():''}
-    function checks(name){return Array.prototype.slice.call(document.querySelectorAll('input[name="'+name+'"]:checked')).map(function(x){return x.value})}
+    function checks(name){return Array.production.slice.call(document.querySelectorAll('input[name="'+name+'"]:checked')).map(function(x){return x.value})}
     return {
       displayName:v('regName'),email:v('regEmail').toLowerCase(),phone:v('regPhone'),profileCategory:v('regProfileCategory')||'client',membershipSelection:v('regCategory')||'',country:v('regCountry')||'Uganda',city:v('regCity'),area:v('regArea'),headline:v('regHeadline'),languages:v('regLanguages'),gender:v('regGender'),pronouns:v('regPronouns'),availability:v('regAvailability')||'available',visibility:v('regVisibility')||'public',socialHandle:v('regSocial'),contactPreference:v('regContactPreference')||'in_app',timezone:v('regTimezone')||'Africa/Kampala',contentCategories:checks('regContent'),services:checks('regServices'),bio:v('regBio'),referralCode:v('regRef').toUpperCase(),requestedTier:v('regCategory')||'Basic',termsAccepted:!!(E('regTos')&&E('regTos').checked)
     };
@@ -11223,6 +11230,259 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
   }
   window.aqeSubmitTroubleshoot=submitTroubleshoot;
   if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",install);else setTimeout(install,300);
+})();
+</script>
+
+
+<style id="afriqueer-final-customer-polish">
+  :root { color-scheme: dark; }
+  select, select.as, select.inp, .as, option, optgroup {
+    background:#11131a !important;
+    color:#f4f4f7 !important;
+    border-color:rgba(255,255,255,.14) !important;
+    color-scheme:dark;
+  }
+  select option, select optgroup { background:#11131a !important; color:#f4f4f7 !important; }
+  .aqe-wordmark{display:flex;align-items:center;gap:8px;min-width:0}
+  .aqe-wordmark img{width:34px;height:34px;border-radius:9px;object-fit:contain;flex:0 0 auto}
+  .aqe-wordmark-copy{display:flex;flex-direction:column;line-height:1}
+  .aqe-wordmark-acronym{font-size:14px;font-weight:950;letter-spacing:2px;color:#f4d77b}
+  .aqe-wordmark-full{font-size:9px;font-weight:800;letter-spacing:.25px;color:#f4f4f7;white-space:nowrap}
+  .aqe-account-edit-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+  .aqe-account-edit-grid .wide{grid-column:1/-1}
+  .aqe-account-edit-grid label{display:block;font-size:10px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;color:var(--a5)}
+  .aqe-account-edit-grid input,.aqe-account-edit-grid textarea,.aqe-account-edit-grid select{width:100%;margin-top:5px;box-sizing:border-box}
+  .aqe-payment-channel{margin:8px 0 12px}
+  @media(max-width:640px){.aqe-account-edit-grid{grid-template-columns:1fr}.aqe-account-edit-grid .wide{grid-column:auto}.aqe-wordmark-full{font-size:8px}}
+</style>
+<script id="afriqueer-final-customer-polish-js">
+(function(){
+  "use strict";
+  function E(id){return document.getElementById(id)}
+  function esc(v){return String(v==null?"":v).replace(/[&<>'"]/g,function(c){return({"&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;",'"':"&quot;"})[c]})}
+  function session(){try{return JSON.parse(localStorage.getItem("aqe_next_session")||"null")||null}catch(_){return null}}
+  function headers(){var s=session(),h={"Content-Type":"application/json"};if(s&&s.access_token)h.Authorization="Bearer "+s.access_token;return h}
+  function current(){return window.state&&state.currentUser?state.currentUser:null}
+
+  /* Brand the original shell without replacing its layout. */
+  function installWordmarks(){
+    var header=document.querySelector("header.th");
+    if(header){
+      Array.prototype.forEach.call(header.querySelectorAll("*"),function(node){
+        if(node.children.length===0 && String(node.textContent||"").trim()==="AQE" && !node.dataset.aqeWordmark){
+          node.dataset.aqeWordmark="1";
+          node.innerHTML='<span class="aqe-wordmark"><img src="/aqe_logo.png" alt="AfriQueer Escorts Ecosystem logo"><span class="aqe-wordmark-copy"><span class="aqe-wordmark-acronym">AQE</span><span class="aqe-wordmark-full">AfriQueer Escorts Ecosystem</span></span></span>';
+        }
+      });
+    }
+    Array.prototype.forEach.call(document.querySelectorAll(".px-logo,.logo,.aqe-logo"),function(node){
+      if(node.dataset.aqeWordmark) return;
+      if(String(node.textContent||"").trim().replace(/\s+/g," ")==="AQE"){
+        node.dataset.aqeWordmark="1";
+        node.innerHTML='<span class="aqe-wordmark"><img src="/aqe_logo.png" alt="AfriQueer Escorts Ecosystem logo"><span class="aqe-wordmark-copy"><span class="aqe-wordmark-acronym">AQE</span><span class="aqe-wordmark-full">AfriQueer Escorts Ecosystem</span></span></span>';
+      }
+    });
+  }
+
+  /* Remove the older all-registration dump so Settings has one authoritative profile editor. */
+  function removeOldAccountDump(){var x=E("aqeRegistrationInfo");if(x)x.remove()}
+
+  function installAccountEditor(){
+    var screen=E("screen-settings"); if(!screen || E("aqeCleanAccountEditor")) return;
+    removeOldAccountDump();
+    var anchor=E("aqeAccountControls") || screen.firstElementChild;
+    if(!anchor) return;
+    var box=document.createElement("section");
+    box.id="aqeCleanAccountEditor";
+    box.className="bga8 rxl b1 ba7 p4 mb4";
+    box.innerHTML='<div class="fw7">Account & profile settings</div>'+
+      '<div class="xs ca5 mt1 mb3">Your profile information can be updated anytime. Account name, email and password are limited to one change every 7 days.</div>'+
+      '<div class="aqe-account-edit-grid">'+
+      '<label class="wide">Headline<input id="aqeEditHeadline" class="inp"></label>'+
+      '<label>Phone number<input id="aqeEditPhone" class="inp" type="tel"></label>'+
+      '<label>Nationality<input id="aqeEditNationality" class="inp"></label>'+
+      '<label>Country<input id="aqeEditCountry" class="inp"></label>'+
+      '<label>City / region<input id="aqeEditCity" class="inp"></label>'+
+      '<label>Availability<select id="aqeEditAvailability" class="inp"><option value="available">Available</option><option value="busy">Busy</option><option value="offline">Offline</option><option value="hidden">Hidden</option></select></label>'+
+      '<label>Gender<input id="aqeEditGender" class="inp"></label>'+
+      '<label>Pronouns<input id="aqeEditPronouns" class="inp"></label>'+
+      '<label>Languages<input id="aqeEditLanguages" class="inp" placeholder="English, Luganda"></label>'+
+      '<label>Timezone<select id="aqeEditTimezone" class="inp"><option value="Africa/Kampala">East Africa Time (EAT)</option><option value="Africa/Nairobi">East Africa Time (Nairobi)</option><option value="Africa/Dar_es_Salaam">East Africa Time (Dar es Salaam)</option></select></label>'+
+      '<label class="wide">Social handles<input id="aqeEditSocial" class="inp" placeholder="@handle, Instagram, TikTok, X, etc."></label>'+
+      '<label class="wide">Contact references<input id="aqeEditContacts" class="inp" placeholder="Phone, WhatsApp, email or other contact references"></label>'+
+      '<label class="wide">Content categories<input id="aqeEditContent" class="inp" placeholder="Photography, video, creator chat"></label>'+
+      '<label class="wide">Services<input id="aqeEditServices" class="inp" placeholder="List services separated by commas"></label>'+
+      '</div>'+
+      '<div class="flex g2 mt3" style="flex-wrap:wrap"><button type="button" class="btn bp" onclick="window.aqeSaveProfileSettings()">Save profile information</button><span id="aqeEditMessage" class="xs ca5" style="align-self:center"></span></div>'+
+      '<div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--a7)">'+
+      '<div class="fw7">Account identity</div><div id="aqeIdentityStatus" class="xs ca5 mt1"></div>'+
+      '<div class="aqe-account-edit-grid" style="margin-top:10px">'+
+      '<label>Account name<input id="aqeIdentityName" class="inp"></label>'+
+      '<label>Email<input id="aqeIdentityEmail" class="inp" type="email"></label>'+
+      '<label>Password<input id="aqeIdentityPassword" class="inp" type="password" placeholder="Leave blank to keep current password"></label>'+
+      '</div><button type="button" class="btn bs2 mt3" onclick="window.aqeSaveIdentity()">Save account identity</button>'+
+      '</div>';
+    anchor.parentNode.insertBefore(box,anchor);
+    window.aqeLoadProfileSettings();
+    window.aqeLoadIdentityStatus();
+  }
+
+  window.aqeLoadProfileSettings=async function(){
+    var u=current(); if(!u)return;
+    var p=u.profile||{};
+    ["Headline","Phone","Nationality","Country","City","Gender","Pronouns","Social","Contacts","Content","Services"].forEach(function(k){
+      var map={Headline:"headline",Phone:"phone",Nationality:"nationality",Country:"country",City:"city",Gender:"gender",Pronouns:"pronouns",Social:"socialPlatforms",Contacts:"contactMethods",Content:"contentCategories",Services:"services"};
+      var id="aqeEdit"+k, el=E(id), v=p[map[k]];
+      if(!el)return;
+      if(Array.isArray(v))el.value=v.join(", ");
+      else if(v&&typeof v==="object")el.value=Object.values(v).join(", ");
+      else el.value=v||"";
+    });
+    var av=E("aqeEditAvailability");if(av)av.value=p.availability||"available";
+    var tz=E("aqeEditTimezone");if(tz)tz.value=p.timezone||"Africa/Kampala";
+    var n=E("aqeIdentityName");if(n)n.value=u.name||u.displayName||"";
+    var em=E("aqeIdentityEmail");if(em)em.value=u.email||"";
+  };
+
+  window.aqeSaveProfileSettings=async function(){
+    var u=current();if(!u){if(window.notify)window.notify("Sign in to edit your profile.","error");return}
+    var csv=function(id){return String((E(id)||{}).value||"").split(",").map(function(x){return x.trim()}).filter(Boolean)};
+    var body={
+      displayName:u.name||u.displayName||"Account",
+      headline:String((E("aqeEditHeadline")||{}).value||"").trim(),
+      phone:String((E("aqeEditPhone")||{}).value||"").trim(),
+      nationality:String((E("aqeEditNationality")||{}).value||"").trim(),
+      country:String((E("aqeEditCountry")||{}).value||"").trim(),
+      location:String((E("aqeEditCity")||{}).value||"").trim(),
+      availability:String((E("aqeEditAvailability")||{}).value||"available"),
+      gender:String((E("aqeEditGender")||{}).value||"").trim(),
+      pronouns:String((E("aqeEditPronouns")||{}).value||"").trim(),
+      languages:csv("aqeEditLanguages"),
+      timezone:String((E("aqeEditTimezone")||{}).value||"Africa/Kampala"),
+      socialPlatforms:{primary:String((E("aqeEditSocial")||{}).value||"").trim()},
+      contactMethods:{primary:String((E("aqeEditContacts")||{}).value||"").trim()},
+      contentCategories:csv("aqeEditContent"),
+      services:csv("aqeEditServices")
+    };
+    var msg=E("aqeEditMessage");if(msg)msg.textContent="Saving…";
+    try{
+      var r=await fetch("/api/profile",{method:"PATCH",headers:headers(),body:JSON.stringify(body)});
+      var p=await r.json().catch(function(){return {}});
+      if(!r.ok||!p.ok)throw new Error(p.reason||"Profile update failed.");
+      if(current())current().profile=Object.assign(current().profile||{},p.profile||{});
+      if(msg)msg.textContent="Profile information updated.";
+      if(window.updateUIForUser)window.updateUIForUser();
+    }catch(e){if(msg)msg.textContent=e.message||"Profile update failed."}
+  };
+
+  window.aqeLoadIdentityStatus=async function(){
+    var box=E("aqeIdentityStatus");if(!box)return;
+    try{
+      var r=await fetch("/api/account/identity",{headers:headers(),cache:"no-store"}),p=await r.json();
+      if(!p.ok){box.textContent=p.reason||"Identity status unavailable.";return}
+      box.textContent=p.canChangeIdentity?"Name, email and password can be changed now.":"Next identity change: "+new Date(p.nextChangeAt).toLocaleString();
+    }catch(_){box.textContent="Identity status unavailable."}
+  };
+
+  window.aqeSaveIdentity=async function(){
+    var name=String((E("aqeIdentityName")||{}).value||"").trim();
+    var email=String((E("aqeIdentityEmail")||{}).value||"").trim().toLowerCase();
+    var password=String((E("aqeIdentityPassword")||{}).value||"");
+    var box=E("aqeIdentityStatus");if(!name){if(box)box.textContent="Account name is required.";return}
+    try{
+      var r=await fetch("/api/account/identity",{method:"PATCH",headers:headers(),body:JSON.stringify({displayName:name,email:email,password:password})});
+      var p=await r.json().catch(function(){return {}});
+      if(!r.ok||!p.ok)throw new Error(p.reason||"Account identity update failed.");
+      if(current()){current().name=name;current().email=email;}
+      if(box)box.textContent="Account identity updated. If email verification is required by the configured Auth policy, check the relevant email inbox.";
+      if(E("aqeIdentityPassword"))E("aqeIdentityPassword").value="";
+    }catch(e){if(box)box.textContent=e.message||"Account identity update failed."}
+  };
+
+  /* Payment destination selector: Airtel, MTN or Card. Card details stay with the payment provider. */
+  function installPaymentChannel(){
+    var amount=E("aqeExactAmount");if(!amount||E("aqePaymentChannel"))return;
+    var label=document.createElement("label");label.id="aqePaymentChannelLabel";label.className="aqe-pay-label";label.textContent="Payment destination";
+    var select=document.createElement("select");select.id="aqePaymentChannel";select.className="aqe-pay-input";select.style.marginTop="4px";
+    select.innerHTML='<option value="MTN">MTN Mobile Money</option><option value="Airtel">Airtel Mobile Money</option><option value="Card">Card</option>';
+    amount.parentNode.parentNode.parentNode.insertBefore(label,amount.parentNode.parentNode);
+    label.parentNode.insertBefore(select,label.nextSibling);
+    var senderLabel=E("aqeExactSenderNumber")&&E("aqeExactSenderNumber").previousElementSibling;
+    function sync(){
+      var v=select.value;
+      if(senderLabel)senderLabel.textContent=v==="Airtel"?"Airtel number":v==="Card"?"Phone and card number":"MTN number";
+      var input=E("aqeExactSenderNumber");
+      if(input){
+        input.placeholder=v==="Card"?"Enter your phone number; enter card details only in the secure payment provider":"Enter the number you will send from";
+        input.type="tel";
+      }
+      window.aqeExactNetwork(v==="Airtel"?"Airtel":"MTN");
+    }
+    select.addEventListener("change",sync);sync();
+  }
+
+  async function refreshAvailableNumbers(){
+    try{
+      var r=await fetch("/api/payments/manager-numbers",{cache:"no-store"}),p=await r.json();
+      var nums=Array.isArray(p.numbers)?p.numbers.filter(function(x){return String(x.status).toLowerCase()==="available"}):[];
+      var host=E("aqeMukuruNumberPicker");
+      if(!host||!nums.length)return;
+      host.innerHTML='<div class="aqe-pay-small" style="margin-bottom:6px">Available AQE recipient number</div><select id="aqeMukuruNumber" class="aqe-pay-input">'+nums.map(function(x){return '<option value="'+esc(x.number)+'">'+esc(x.number)+' · '+esc(x.name)+' · '+esc(x.network)+'</option>'}).join("")+'</select><div class="aqe-pay-small" style="margin-top:6px">The selected number is copied before Mukuru opens.</div>';
+    }catch(_){}
+  }
+
+  function installMukuruNumberPicker(){
+    var note=E("aqeExactMethodNote");if(!note||E("aqeMukuruNumberPicker"))return;
+    var host=document.createElement("div");host.id="aqeMukuruNumberPicker";host.className="aqe-pay-card";host.style.marginTop="10px";
+    note.parentNode.insertBefore(host,note.nextSibling);
+    refreshAvailableNumbers();
+  }
+
+  function patchPaymentMethod(){
+    var base=window.aqeExactMethod;if(!base||base.__aqeFinalPaymentPatch)return;
+    window.aqeExactMethod=function(method){
+      base.apply(this,arguments);
+      installPaymentChannel();
+      installMukuruNumberPicker();
+      refreshAvailableNumbers();
+      var pick=E("aqeMukuruNumberPicker");
+      if(pick)pick.style.display=method==="AQE_MANAGER"||method==="MukuruPay"?"block":"none";
+    };
+    window.aqeExactMethod.__aqeFinalPaymentPatch=true;
+  }
+
+  function patchManagerMukuruContinue(){
+    var base=window.aqeExactSaveAndContinue;if(!base||base.__aqeFinalPaymentSavePatch)return;
+    window.aqeExactSaveAndContinue=function(){
+      var channel=E("aqePaymentChannel");
+      if(channel&&channel.value==="Card"){
+        if(window.notify)window.notify("For card payments, enter the card details only in the secure Mukuru/payment-provider page. AQE does not store card numbers or CVV.","error");
+        window.open("https://www.mukuru.com/send-money/","_blank","noopener,noreferrer");
+        return;
+      }
+      return base.apply(this,arguments);
+    };
+    window.aqeExactSaveAndContinue.__aqeFinalPaymentSavePatch=true;
+  }
+
+  function addLogoFaviconFallback(){
+    if(!document.querySelector('link[data-aqe-favicon]')){
+      var l=document.createElement("link");l.rel="icon";l.href="/aqe_logo.png";l.dataset.aqeFavicon="1";document.head.appendChild(l);
+    }
+  }
+
+  function boot(){
+    installWordmarks();
+    removeOldAccountDump();
+    installAccountEditor();
+    installPaymentChannel();
+    installMukuruNumberPicker();
+    patchPaymentMethod();
+    patchManagerMukuruContinue();
+    addLogoFaviconFallback();
+  }
+  if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",boot);else setTimeout(boot,50);
+  window.addEventListener("aqe-screen-change",function(){installWordmarks();installAccountEditor();installPaymentChannel();installMukuruNumberPicker()});
 })();
 </script>
 
