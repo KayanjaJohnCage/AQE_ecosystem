@@ -14,9 +14,9 @@ export const metadata = {
     "rewards", "opportunities", "pleasure", "confidence",
   ],
   icons: {
-    icon: "/aqe_logo.png",
-    shortcut: "/aqe_logo.png",
-    apple: "/aqe_logo.png",
+    icon: "/aqe_logo.jpg",
+    shortcut: "/aqe_logo.jpg",
+    apple: "/aqe_logo.jpg",
   },
   alternates: { canonical: "/" },
   openGraph: {
