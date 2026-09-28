@@ -8570,9 +8570,9 @@ window.addEventListener('DOMContentLoaded', init);
 
       state.bookings=[
 
-        {id:uid('bk'),clientId:'u_demo1',clientAlias:'Client #A4F2',escortId:1,escortName:'Sarah K.',date:d1.toISOString().slice(0,10),time:'19:00',duration:'2 hours',location:'Kololo, Kampala',contact:'AQE Messages (recommended)',notes:'Dinner event, smart casual.',status:'PENDING',createdAt:now.toISOString(),history:['REQUESTED → PENDING: availability check passed']},
+        {id:uid('bk'),clientId:'u_sample1',clientAlias:'Client #A4F2',escortId:1,escortName:'Sarah K.',date:d1.toISOString().slice(0,10),time:'19:00',duration:'2 hours',location:'Kololo, Kampala',contact:'AQE Messages (recommended)',notes:'Dinner event, smart casual.',status:'PENDING',createdAt:now.toISOString(),history:['REQUESTED → PENDING: availability check passed']},
 
-        {id:uid('bk'),clientId:'u_demo2',clientAlias:'Client #B7C1',escortId:1,escortName:'Sarah K.',date:d2.toISOString().slice(0,10),time:'21:00',duration:'Overnight',location:'Ntinda, Kampala',contact:'AQE Messages (recommended)',notes:'',status:'REQUESTED',createdAt:now.toISOString(),history:['REQUESTED: awaiting availability check']}
+        {id:uid('bk'),clientId:'u_sample2',clientAlias:'Client #B7C1',escortId:1,escortName:'Sarah K.',date:d2.toISOString().slice(0,10),time:'21:00',duration:'Overnight',location:'Ntinda, Kampala',contact:'AQE Messages (recommended)',notes:'',status:'REQUESTED',createdAt:now.toISOString(),history:['REQUESTED: awaiting availability check']}
 
       ];
 
@@ -11268,14 +11268,14 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
   function installWordmarks(){
     var header=document.querySelector("header.th");
     if(header){
-      Array.prototype.forEach.call(header.querySelectorAll("*"),function(node){
+      Array.production.forEach.call(header.querySelectorAll("*"),function(node){
         if(node.children.length===0 && String(node.textContent||"").trim()==="AQE" && !node.dataset.aqeWordmark){
           node.dataset.aqeWordmark="1";
           node.innerHTML='<span class="aqe-wordmark"><img src="/aqe_logo.png" alt="AfriQueer Escorts Ecosystem logo"><span class="aqe-wordmark-copy"><span class="aqe-wordmark-acronym">AQE</span><span class="aqe-wordmark-full">AfriQueer Escorts Ecosystem</span></span></span>';
         }
       });
     }
-    Array.prototype.forEach.call(document.querySelectorAll(".px-logo,.logo,.aqe-logo"),function(node){
+    Array.production.forEach.call(document.querySelectorAll(".px-logo,.logo,.aqe-logo"),function(node){
       if(node.dataset.aqeWordmark) return;
       if(String(node.textContent||"").trim().replace(/\s+/g," ")==="AQE"){
         node.dataset.aqeWordmark="1";
@@ -11405,7 +11405,9 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
     var label=document.createElement("label");label.id="aqePaymentChannelLabel";label.className="aqe-pay-label";label.textContent="Payment destination";
     var select=document.createElement("select");select.id="aqePaymentChannel";select.className="aqe-pay-input";select.style.marginTop="4px";
     select.innerHTML='<option value="MTN">MTN Mobile Money</option><option value="Airtel">Airtel Mobile Money</option><option value="Card">Card</option>';
-    amount.parentNode.parentNode.parentNode.insertBefore(label,amount.parentNode.parentNode);
+    var amountCard=amount.closest(".aqe-pay-card");
+    if(!amountCard)return;
+    amountCard.parentNode.insertBefore(label,amountCard);
     label.parentNode.insertBefore(select,label.nextSibling);
     var senderLabel=E("aqeExactSenderNumber")&&E("aqeExactSenderNumber").previousElementSibling;
     function sync(){
