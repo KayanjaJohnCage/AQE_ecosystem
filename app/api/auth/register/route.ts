@@ -109,11 +109,11 @@ export async function POST(request: Request) {
       );
     }
 
+    // Use the configured application URL for Supabase email confirmation.
+    // Do not dynamically pass an arbitrary Vercel preview URL: Supabase Auth rejects
+    // redirect destinations that are not present in its Redirect URL allow-list.
     const siteUrl = String(process.env.NEXT_PUBLIC_SITE_URL ?? "").replace(/\/$/, "");
-    const requestOrigin = new URL(request.url).origin.replace(/\/$/, "");
-    const requestHost = new URL(request.url).hostname;
-    const redirectOrigin = requestHost.endsWith(".vercel.app") ? requestOrigin : siteUrl || requestOrigin;
-    const emailRedirectTo = redirectOrigin ? redirectOrigin + "/auth/confirmed" : undefined;
+    const emailRedirectTo = siteUrl ? siteUrl + "/auth/confirmed" : undefined;
     const { data, error } = await authClient.auth.signUp({
       email,
       password,
@@ -127,8 +127,19 @@ export async function POST(request: Request) {
     });
 
     if (error || !data.user) {
+      console.error("[AQE registration] Supabase signUp failed", {
+        email,
+        error: error?.message ?? "No user returned",
+        status: error?.status ?? null,
+        code: error?.code ?? null,
+      });
       return NextResponse.json(
-        { ok: false, reason: error?.message ?? "Unable to create the account." },
+        {
+          ok: false,
+          reason:
+            error?.message ??
+            "Unable to create the account. Check the Supabase Auth configuration and try again.",
+        },
         { status: 400 },
       );
     }
