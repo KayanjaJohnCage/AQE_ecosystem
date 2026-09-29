@@ -109,10 +109,17 @@ export async function POST(request: Request) {
       );
     }
 
-    // Use the configured application URL for Supabase email confirmation.
-    // Do not dynamically pass an arbitrary Vercel preview URL: Supabase Auth rejects
-    // redirect destinations that are not present in its Redirect URL allow-list.
-    const siteUrl = String(process.env.NEXT_PUBLIC_SITE_URL ?? "").replace(/\/$/, "");
+    // Production confirmations use the official site. Preview deployments use
+    // Vercel's deployment URL so preview tests do not redirect into production.
+    // Supabase must allow the production URL and a Vercel preview wildcard.
+    const configuredSiteUrl = String(process.env.NEXT_PUBLIC_SITE_URL ?? "").replace(/\/$/, "");
+    const previewHost =
+      process.env.VERCEL_ENV === "preview"
+        ? String(process.env.VERCEL_URL || process.env.NEXT_PUBLIC_VERCEL_URL || "").trim()
+        : "";
+    const siteUrl = previewHost
+      ? `https://${previewHost.replace(/^https?:\/\//, "").replace(/\/$/, "")}`
+      : configuredSiteUrl;
     const emailRedirectTo = siteUrl ? siteUrl + "/auth/confirmed" : undefined;
     const { data, error } = await authClient.auth.signUp({
       email,
