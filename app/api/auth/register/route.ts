@@ -110,7 +110,10 @@ export async function POST(request: Request) {
     }
 
     const siteUrl = String(process.env.NEXT_PUBLIC_SITE_URL ?? "").replace(/\/$/, "");
-    const emailRedirectTo = siteUrl ? `${siteUrl}/auth/confirmed` : undefined;
+    const requestOrigin = new URL(request.url).origin.replace(/\/$/, "");
+    const requestHost = new URL(request.url).hostname;
+    const redirectOrigin = requestHost.endsWith(".vercel.app") ? requestOrigin : siteUrl || requestOrigin;
+    const emailRedirectTo = redirectOrigin ? redirectOrigin + "/auth/confirmed" : undefined;
     const { data, error } = await authClient.auth.signUp({
       email,
       password,
