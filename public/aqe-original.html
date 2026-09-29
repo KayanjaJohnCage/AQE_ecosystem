@@ -2055,7 +2055,7 @@ body{
 
           <label class="aqe-consent"><input type="checkbox" id="regTos"><span>I confirm that the information I submit is accurate and I agree to AQE's Terms, Privacy Policy, community rules and verification requirements.</span></label>
 
-          <div class="aqe-auth-note"><i class="fas fa-flask"></i><div><b>production mode</b><br><span>Email verification is simulated in this production, so newly created accounts can continue immediately.</span></div></div>
+          <div class="aqe-auth-note"><i class="fas fa-envelope-circle-check"></i><div><b>Email verification required</b><br><span>After account creation, AQE sends a verification email. You must verify the email before signing in.</span></div></div>
 
         </div>
 
@@ -10004,20 +10004,30 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
     try{
       var payload=await api('/api/auth/register',{method:'POST',body:JSON.stringify(body)});
       if(payload.emailVerificationRequired){
-        if(typeof closeAuth==='function')closeAuth();
-        notify('Account created. Check your email and click the verification link to activate your account.');
         try{localStorage.setItem('aqe_pending_verification_email',body.email)}catch(_){}
+        if(typeof window.aqeShowVerificationState==='function'){
+          window.aqeShowVerificationState(body.email);
+        }else{
+          notify('Account created. Check your email and click the verification link to activate your account.');
+        }
         return;
       }
       var login=await api('/api/auth/login',{method:'POST',body:JSON.stringify({email:body.email,password:body.password})});
       if(login.session)jsave(NEXT_SESSION_KEY,login.session);
       var user=await hydrateUser();
-      if(typeof closeAuth==='function')closeAuth();
       if(payload.upgradeRequired){
+        if(typeof closeAuth==='function')closeAuth();
         notify((payload.requestedTier||tier).toUpperCase()+' selected. Complete payment to activate the membership.');
         serverPaymentContext={kind:'membership_upgrade',tier:(payload.requestedTier||tier)};
         if(typeof window.aqeExactOpen==='function')window.aqeExactOpen();
-      }else notify('Account created successfully.');
+      }else{
+        if(typeof window.aqeShowRegistrationSuccess==='function'){
+          window.aqeShowRegistrationSuccess(body.email);
+        }else{
+          if(typeof closeAuth==='function')closeAuth();
+          notify('Account created successfully.');
+        }
+      }
       await syncCollections();
     }catch(e){notify(e.message,'error');}
   };
@@ -11555,5 +11565,162 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',syncSenderLabel);else setTimeout(syncSenderLabel,0);
 })();
 </script>
-</body>
+
+<script id="aqe-final-registration-profile-qa">
+(function(){
+  'use strict';
+  function E(id){return document.getElementById(id)}
+  function esc(v){return String(v==null?'':v).replace(/[&<>'"]/g,function(c){return({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'})[c]})}
+
+  function registrationPanel(title,email,body,kind){
+    var form=E('formRegister');if(!form)return;
+    var old=E('aqeRegistrationOutcome');if(old)old.remove();
+    var box=document.createElement('section');
+    box.id='aqeRegistrationOutcome';
+    box.setAttribute('role','status');
+    box.setAttribute('aria-live','polite');
+    box.style.cssText='margin:12px 0;padding:16px;border-radius:16px;border:1px solid '+(kind==='verify'?'rgba(251,191,36,.45)':'rgba(34,197,94,.45)')+';background:'+(kind==='verify'?'rgba(251,191,36,.10)':'rgba(34,197,94,.10)')+';';
+    box.innerHTML='<div style="display:flex;align-items:flex-start;gap:12px"><div style="width:40px;height:40px;min-width:40px;border-radius:50%;display:grid;place-items:center;background:'+(kind==='verify'?'rgba(251,191,36,.18)':'rgba(34,197,94,.18)')+';color:'+(kind==='verify'?'#fbbf24':'#22c55e')+'"><i class="fas '+(kind==='verify'?'fa-envelope-circle-check':'fa-check')+'"></i></div><div><div style="font-weight:800;font-size:15px">'+esc(title)+'</div><div style="font-size:12px;line-height:1.6;color:var(--a3);margin-top:5px">'+esc(body)+'</div><div style="font-size:12px;font-weight:800;color:var(--a1);margin-top:8px;word-break:break-word">'+esc(email)+'</div></div></div>';
+    var actions=form.querySelector('#aqeRegNext')&&form.querySelector('#aqeRegNext').parentNode;
+    if(actions)actions.parentNode.insertBefore(box,actions);
+    else form.prepend(box);
+    var next=E('aqeRegNext'),back=E('aqeRegBack');
+    if(next){
+      next.disabled=true;
+      next.setAttribute('aria-disabled','true');
+      next.style.opacity='.58';
+      next.style.cursor='not-allowed';
+      next.innerHTML=kind==='verify'?'Verification required':'Account created <i class="fas fa-check"></i>';
+    }
+    if(back)back.classList.add('hidden');
+    var links=form.querySelectorAll('.aqe-back-login');
+    links.forEach(function(link){link.style.pointerEvents=kind==='verify'?'none':'';link.style.opacity=kind==='verify'?'.45':''});
+    return box;
+  }
+
+  window.aqeShowVerificationState=function(email){
+    var clean=String(email||'').trim().toLowerCase();
+    registrationPanel(
+      'Account created — verify your email',
+      clean,
+      'A verification email has been sent to this address. Open your inbox, including Spam/Junk, and click the AQE verification link. This Create Account button is now locked until verification.',
+      'verify'
+    );
+    var modal=E('authModal');
+    if(modal){
+      modal.classList.remove('hidden');
+      modal.style.display='';
+      modal.style.visibility='visible';
+      modal.style.pointerEvents='auto';
+    }
+    var step=E('aqeRegStep5');if(step)step.classList.remove('hidden');
+    for(var i=1;i<=5;i++){var s=E('aqeRegStep'+i);if(s)s.classList.toggle('hidden',i!==5)}
+    var count=E('aqeRegStepCount');if(count)count.textContent='5 / 5';
+    var title=E('aqeRegStepTitle');if(title)title.textContent='Email verification';
+    var pending=E('regReviewEmail');if(pending)pending.textContent=clean;
+    try{localStorage.setItem('aqe_pending_verification_email',clean)}catch(_){}
+    if(typeof showToast==='function')showToast('Verification email sent to '+clean+'. Please verify before signing in.','success');
+  };
+
+  window.aqeShowRegistrationSuccess=function(email){
+    registrationPanel(
+      'Account created successfully',
+      String(email||'').trim().toLowerCase(),
+      'Your AQE account has been created and is ready to use. You can close this message when you are ready to continue.',
+      'success'
+    );
+    var next=E('aqeRegNext');
+    if(next){
+      next.disabled=false;
+      next.style.opacity='';
+      next.style.cursor='pointer';
+      next.innerHTML='Continue to AQE <i class="fas fa-arrow-right"></i>';
+      next.onclick=function(){
+        if(typeof closeAuth==='function')closeAuth();
+      };
+    }
+    if(typeof showToast==='function')showToast('Account created successfully.','success');
+  };
+
+  function ensureProfileInfo(){
+    var detail=E('profileDetail');if(!detail||detail.classList.contains('hidden'))return;
+    var profiles=(window.state&&Array.isArray(state.profiles))?state.profiles:[];
+    var id=window.activeProfileId;
+    var p=profiles.find(function(x){return String(x.id)===String(id)});
+    if(!p)return;
+    var existing=E('aqeFullProfileInfo');
+    if(existing){
+      var grid=existing.querySelector('#aqeProfileInfoGrid');
+      if(grid){
+        var expanded=existing.querySelector('#aqeProfileInfoToggle')?.getAttribute('aria-expanded')==='true';
+        grid.innerHTML=rows(p);
+        bindToggle(existing,expanded);
+      }
+      return;
+    }
+    var card=document.createElement('section');
+    card.id='aqeFullProfileInfo';
+    card.className='aqe-profile-extra';
+    card.style.cssText='background:var(--a8);border:1px solid var(--a7);border-radius:16px;padding:16px;margin:0 0 16px;';
+    card.innerHTML='<div class="flex aic jb g2"><div><div class="sm fw8 cg">PROFILE INFORMATION</div><div class="xs ca5" style="margin:4px 0 10px">Member profile details</div></div><button type="button" id="aqeProfileInfoToggle" class="aqe-profile-view-toggle" aria-expanded="false">View All</button></div><div id="aqeProfileInfoGrid" class="aqe-profile-extra-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:8px">'+rows(p)+'</div>';
+    var gallery=E('profileMediaGallery'),store=E('profileStore'),reviews=E('profileReviews');
+    var anchor=gallery||store||reviews;
+    if(anchor&&anchor.parentNode)anchor.parentNode.insertBefore(card,anchor);
+    else detail.appendChild(card);
+    bindToggle(card,false);
+  }
+
+  function value(v){if(Array.isArray(v))return v.join(', ')||'—';if(v&&typeof v==='object')return Object.values(v).join(', ')||'—';return String(v==null||v===''?'—':v)}
+  function rows(p){
+    var s=p.registrationSnapshot||{};
+    var data=[
+      ['Membership tier',value(p.tier||s.membershipSelection||'basic').toUpperCase()],
+      ['Headline',value(p.headline||s.headline)],
+      ['Gender',value(p.gender||s.gender)],
+      ['Age',value(p.age||s.age)],
+      ['Nationality',value(p.nationality||s.nationality)],
+      ['Country',value(p.country||s.country)],
+      ['City / region',value(p.city||p.location||s.city||s.location)],
+      ['Area',value(p.area||s.area)],
+      ['Languages',value(p.languages||s.languages)],
+      ['Pronouns',value(p.pronouns||s.pronouns)],
+      ['Availability',value(p.availability||s.availability)],
+      ['Visibility',value(p.visibility||s.visibility)],
+      ['Phone number',value(p.phone||s.phone)],
+      ['Contact references',value(p.contactMethods||s.contactMethods)],
+      ['Social handles',value(p.socialPlatforms||s.socialPlatforms)],
+      ['Content categories',value(p.contentCategories||s.contentCategories)],
+      ['Services',value(p.services||s.services)],
+      ['Timezone',value(p.timezone||s.timezone||'Africa/Kampala')]
+    ];
+    return data.map(function(item,index){return '<div class="aqe-profile-extra-item" style="border:1px solid var(--a7);background:rgba(255,255,255,.025);border-radius:12px;padding:10px;display:block"><small style="display:block;font-size:10px;color:var(--a5);font-weight:800;text-transform:uppercase;letter-spacing:.06em">'+esc(item[0])+'</small><span style="display:block;margin-top:3px;font-size:12px;color:var(--a1);line-height:1.45;word-break:break-word">'+esc(item[1])+'</span></div>'}).join('');
+  }
+  function bindToggle(card,expanded){
+    var grid=card.querySelector('#aqeProfileInfoGrid'),btn=card.querySelector('#aqeProfileInfoToggle');if(!grid||!btn)return;
+    var items=[].slice.call(grid.querySelectorAll('.aqe-profile-extra-item'));
+    function sync(open){
+      items.forEach(function(item,index){item.style.display=open||index<8?'block':'none'});
+      btn.textContent=open?'View Less':'View All';
+      btn.setAttribute('aria-expanded',open?'true':'false');
+      btn.setAttribute('aria-label',open?'View less profile information':'View all profile information');
+    }
+    btn.onclick=function(e){e.preventDefault();e.stopPropagation();sync(btn.getAttribute('aria-expanded')!=='true')};
+    sync(Boolean(expanded));
+  }
+
+  var css=document.createElement('style');
+  css.textContent='.aqe-profile-view-toggle{border:1px solid var(--a6);background:var(--a7);color:var(--a1);border-radius:999px;padding:7px 12px;font-size:12px;font-weight:800;cursor:pointer;white-space:nowrap}.aqe-profile-view-toggle:hover{background:var(--a6)}.aqe-profile-view-toggle:focus-visible{outline:2px solid var(--r);outline-offset:2px}';
+  document.head.appendChild(css);
+
+  var profileObserver=new MutationObserver(function(){setTimeout(ensureProfileInfo,20)});
+  function boot(){
+    var detail=E('profileDetail');
+    if(detail)profileObserver.observe(detail,{childList:true,subtree:true});
+    ensureProfileInfo();
+    setInterval(ensureProfileInfo,700);
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);else boot();
+})();
+</script>
+\n</body>
 </html>
