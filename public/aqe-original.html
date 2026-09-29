@@ -10029,7 +10029,14 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
         }
       }
       await syncCollections();
-    }catch(e){notify(e.message,'error');}
+    }catch(e){
+      var message=e&&e.message?e.message:'Registration failed. Please try again.';
+      if(typeof window.aqeShowRegistrationError==='function'){
+        window.aqeShowRegistrationError(message,body.email);
+      }else{
+        notify(message,'error');
+      }
+    }
   };
   window.handleLogout=async function(){
     try{await api('/api/auth/logout',{method:'POST'})}catch(_){}
@@ -11620,6 +11627,32 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
     var pending=E('regReviewEmail');if(pending)pending.textContent=clean;
     try{localStorage.setItem('aqe_pending_verification_email',clean)}catch(_){}
     if(typeof showToast==='function')showToast('Verification email sent to '+clean+'. Please verify before signing in.','success');
+  };
+
+  window.aqeShowRegistrationError=function(message,email){
+    var clean=String(email||'').trim().toLowerCase();
+    var form=E('formRegister');if(!form)return;
+    var old=E('aqeRegistrationOutcome');if(old)old.remove();
+    var box=document.createElement('section');
+    box.id='aqeRegistrationOutcome';
+    box.setAttribute('role','alert');
+    box.setAttribute('aria-live','assertive');
+    box.style.cssText='margin:12px 0;padding:16px;border-radius:16px;border:1px solid rgba(239,68,68,.55);background:rgba(239,68,68,.10);';
+    box.innerHTML='<div style="display:flex;align-items:flex-start;gap:12px"><div style="width:40px;height:40px;min-width:40px;border-radius:50%;display:grid;place-items:center;background:rgba(239,68,68,.18);color:#f87171"><i class="fas fa-circle-exclamation"></i></div><div><div style="font-weight:800;font-size:15px">Account could not be created</div><div style="font-size:12px;line-height:1.6;color:var(--a3);margin-top:5px">'+esc(message)+'</div>'+ (clean?'<div style="font-size:12px;font-weight:800;color:var(--a1);margin-top:8px;word-break:break-word">'+esc(clean)+'</div>':'') +'</div></div>';
+    var actions=form.querySelector('#aqeRegNext')&&form.querySelector('#aqeRegNext').parentNode;
+    if(actions)actions.parentNode.insertBefore(box,actions);
+    else form.prepend(box);
+    var next=E('aqeRegNext');
+    if(next){
+      next.disabled=false;
+      next.removeAttribute('aria-disabled');
+      next.style.opacity='';
+      next.style.cursor='pointer';
+      next.innerHTML='Create Account <i class="fas fa-check"></i>';
+    }
+    var back=E('aqeRegBack');if(back)back.classList.remove('hidden');
+    if(typeof showToast==='function')showToast(message,'error');
+    return box;
   };
 
   window.aqeShowRegistrationSuccess=function(email){
