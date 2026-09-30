@@ -134,50 +134,7 @@ const navGroups = [
   },
 ];
 
-const tableSeeds: Record<string, ManagerRow[]> = {
-  "Users & Profiles": [
-    { title: "Nia A.", meta: "Verified", value: "Tier: VIP" },
-    { title: "Ayo D.", meta: "Active", value: "Tier: Premium" },
-    { title: "Tariq M.", meta: "Pending review", value: "Tier: Basic" },
-  ],
-  "Bookings & Requests": [
-    { title: "Brand discovery session", meta: "Kampala", value: "Confirmed" },
-    { title: "Media kit planning", meta: "Nairobi", value: "Pending" },
-    {
-      title: "Community room access",
-      meta: "Kigali",
-      value: "Awaiting approval",
-    },
-  ],
-  "Messages & DM": [
-    { title: "Support check-in", meta: "2 new replies", value: "Unresolved" },
-    { title: "Collab thread", meta: "Moderator reviewed", value: "Active" },
-    { title: "VIP concierge", meta: "Priority queue", value: "Responding" },
-  ],
-  "Marketplace & Stores": [
-    {
-      title: "Premium spotlight bundle",
-      meta: "Vendor: Atelier",
-      value: "Live",
-    },
-    { title: "Travel pass", meta: "Vendor: NEO", value: "50 sold" },
-    {
-      title: "Community event ticket",
-      meta: "Vendor: AQE",
-      value: "Needs restock",
-    },
-  ],
-  "Customer Support": [
-    { title: "Payment dispute", meta: "High priority", value: "Open" },
-    { title: "Verification appeal", meta: "Escalated", value: "In review" },
-    { title: "Account issue", meta: "Low priority", value: "Resolved" },
-  ],
-  "Audit Logs": [
-    { title: "Tier rule update", meta: "Owner action", value: "Approved" },
-    { title: "QC ledger sync", meta: "System", value: "Success" },
-    { title: "Risk review", meta: "Analyst", value: "No issues" },
-  ],
-};
+const tableSeeds: Record<string, ManagerRow[]> = {};
 
 export default function ManagerPage() {
   const [data, setData] = useState<ManagerData>({
@@ -266,7 +223,7 @@ export default function ManagerPage() {
       })
       .catch(() => undefined);
 
-    fetch("/api/profiles")
+    fetch("/api/profiles", { headers })
       .then(async (response) => {
         if (!response.ok) return;
         const payload = await response.json();
@@ -512,13 +469,7 @@ export default function ManagerPage() {
       ? profileRows
       : liveRows[active]?.length
         ? liveRows[active]
-        : (tableSeeds[active] ?? [
-            {
-              title: "Operational queue",
-              meta: "Awaiting sync",
-              value: "Ready",
-            },
-          ]);
+        : (tableSeeds[active] ?? []);
   const paymentRows: ManagerRow[] = liveRows["Payments & Approvals"] ?? [];
 
   async function reviewBooking(
