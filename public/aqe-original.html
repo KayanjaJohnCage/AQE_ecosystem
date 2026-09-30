@@ -9930,8 +9930,14 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
       var s=session();
       var sessionInfo=await api('/api/auth/session');
       if(!sessionInfo.authenticated)return null;
-      var dash=await api('/api/dashboard');
       var prof=await api('/api/profile');
+      var dash=null;
+      try{
+        dash=await api('/api/dashboard');
+      }catch(dashboardError){
+        console.error('[AQE] dashboard hydration failed',dashboardError);
+        dash={ok:false,source:'unavailable',customer:{}};
+      }
       var user=normalizeUser({id:sessionInfo.session&&sessionInfo.session.userId,email:sessionInfo.session&&sessionInfo.session.email,role:sessionInfo.session&&sessionInfo.session.role},prof.profile,dash);
       ensureArrays();
       state.currentUser=user;
@@ -9978,17 +9984,29 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
   window.handleLogin=async function(){
     var email=(document.getElementById('loginEmail')||{}).value||'';
     var password=(document.getElementById('loginPassword')||{}).value||'';
-    if(!email||!password){notify('Enter your email/phone and password','error');return;}
+    var loginError=document.getElementById('loginError');
+    var showLoginError=function(message){
+      if(loginError){
+        loginError.textContent=message||'Unable to sign in.';
+        loginError.classList.remove('hidden');
+      }
+      notify(message||'Unable to sign in.','error');
+    };
+    var clearLoginError=function(){
+      if(loginError){loginError.textContent='';loginError.classList.add('hidden');}
+    };
+    clearLoginError();
+    if(!email||!password){showLoginError('Enter your email/phone and password.');return;}
     try{
       var payload=await api('/api/auth/login',{method:'POST',body:JSON.stringify({email:email.trim(),password:password})});
       if(payload.session)jsave(NEXT_SESSION_KEY,payload.session);
       var user=await hydrateUser();
       ensureArrays();
-      if(!user){notify('Signed in, but account details could not be loaded.','error');return;}
+      if(!user){showLoginError('Signed in, but your account profile could not be loaded. Please try again.');return;}
       if(typeof closeAuth==='function')closeAuth();
       notify('Welcome back, '+user.name+'!');
       await syncCollections();
-    }catch(e){notify(e.message,'error');}
+    }catch(e){showLoginError(e&&e.message?e.message:'Unable to sign in. Please check your details and try again.');}
   };
   window.handleRegister=async function(){
     var val=function(id){return ((document.getElementById(id)||{}).value||'').trim()};
