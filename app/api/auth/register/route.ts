@@ -38,6 +38,13 @@ export async function POST(request: Request) {
     );
     const profilePhotoDataUrl = String(body.profilePhotoDataUrl ?? "").trim();
 
+    if (!Number.isInteger(ageValue) || ageValue < 18 || ageValue > 100) {
+      return NextResponse.json(
+        { ok: false, reason: "A valid age of 18 to 100 is required." },
+        { status: 400 },
+      );
+    }
+
     if (!email || !password) {
       return NextResponse.json(
         { ok: false, reason: "Email and password are required." },
