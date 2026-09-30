@@ -19,9 +19,13 @@ export async function GET(request: Request) {
     const ageMin = Number(url.searchParams.get("ageMin") || 0);
     const ageMax = Number(url.searchParams.get("ageMax") || 0);
 
+    const isManager = session.authenticated && (session.role === "manager" || session.role === "admin");
+
     let profileQuery = client.from("profiles").select(
-      "id,user_id,display_name,bio,phone,country,nationality,location,area,category,content_categories,services,age,gender,headline,languages,pronouns,availability,timezone,visibility,social_platforms,contact_methods,tier,verification_status,avatar_url,updated_at"
-    ).eq("visibility", "public").order("updated_at", { ascending: false }).limit(100);
+      "id,user_id,display_name,bio,phone,country,nationality,location,area,category,content_categories,services,age,gender,headline,languages,pronouns,availability,timezone,visibility,social_platforms,contact_methods,tier,verification_status,profile_photo_id,updated_at"
+    ).order("updated_at", { ascending: false }).limit(100);
+
+    if (!isManager) profileQuery = profileQuery.eq("visibility", "public");
 
     if (query) profileQuery = profileQuery.or(
       "display_name.ilike.%" + query + "%,category.ilike.%" + query + "%,headline.ilike.%" + query + "%,bio.ilike.%" + query + "%,location.ilike.%" + query + "%"
@@ -175,10 +179,11 @@ export async function GET(request: Request) {
         boostExpiresAt: boostByOwner.get(profile.user_id)?.expiresAt || null,
         boostLabel: boostByOwner.get(profile.user_id)?.label || "",
         bio: profile.bio || "",
+        profilePhotoId: profile.profile_photo_id || null,
         avatarUrl:
           (mediaByOwner.get(profile.user_id) ?? []).find(
             (media) => media.isProfilePhoto,
-          )?.url || profile.avatar_url || "",
+          )?.url || "",
         media: mediaByOwner.get(profile.user_id) ?? [],
         vipContent: profile.tier === "vip"
           ? {
