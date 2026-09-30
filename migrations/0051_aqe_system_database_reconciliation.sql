@@ -40,6 +40,133 @@ CREATE INDEX IF NOT EXISTS profiles_referred_by_idx
   ON public.profiles(referred_by);
 
 -- ------------------------------------------------------------------
+-- Core roles / legacy-compatible support foundation
+-- ------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS public.roles (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  name text NOT NULL UNIQUE,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+
+INSERT INTO public.roles(name) VALUES ('customer'),('manager'),('admin')
+ON CONFLICT(name) DO NOTHING;
+
+CREATE TABLE IF NOT EXISTS public.user_roles (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL,
+  role_name text NOT NULL REFERENCES public.roles(name) ON DELETE CASCADE,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  UNIQUE(user_id,role_name)
+);
+
+CREATE TABLE IF NOT EXISTS public.feature_definitions (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  key text NOT NULL UNIQUE,
+  label text NOT NULL,
+  description text,
+  is_vip_only boolean NOT NULL DEFAULT false,
+  is_active boolean NOT NULL DEFAULT true,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS public.feature_entitlements (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  profile_id uuid NOT NULL,
+  feature_key text NOT NULL,
+  is_enabled boolean NOT NULL DEFAULT false,
+  granted_by uuid,
+  granted_at timestamptz NOT NULL DEFAULT now(),
+  UNIQUE(profile_id,feature_key)
+);
+
+CREATE TABLE IF NOT EXISTS public.feature_flags (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  key text NOT NULL UNIQUE,
+  enabled boolean NOT NULL DEFAULT false,
+  description text,
+  updated_by uuid,
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS public.transactions (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid,
+  amount numeric,
+  currency text,
+  kind text,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS public.daily_checkin (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL,
+  date date NOT NULL,
+  claimed boolean NOT NULL DEFAULT false,
+  qc_reward numeric(12,2) NOT NULL DEFAULT 0,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  UNIQUE(user_id,date)
+);
+
+CREATE TABLE IF NOT EXISTS public.daily_checkin_rewards (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  day_of_week integer NOT NULL CHECK(day_of_week BETWEEN 0 AND 6),
+  qc_amount numeric(12,2) NOT NULL,
+  is_active boolean NOT NULL DEFAULT true,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  UNIQUE(day_of_week)
+);
+
+CREATE TABLE IF NOT EXISTS public.creator_earnings (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  creator_id uuid NOT NULL,
+  source_transaction_id text,
+  gross_amount numeric(12,2) NOT NULL DEFAULT 0,
+  platform_fee numeric(12,2) NOT NULL DEFAULT 0,
+  net_amount numeric(12,2) NOT NULL DEFAULT 0,
+  currency text NOT NULL DEFAULT 'UGX',
+  status text NOT NULL DEFAULT 'ELIGIBLE',
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS public.support_ticket (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL,
+  category text NOT NULL,
+  subject text NOT NULL,
+  status text NOT NULL DEFAULT 'OPEN',
+  priority text NOT NULL DEFAULT 'MEDIUM',
+  assigned_manager_id uuid,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  closed_at timestamptz
+);
+
+CREATE TABLE IF NOT EXISTS public.support_message (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  ticket_id uuid NOT NULL,
+  sender_id uuid NOT NULL,
+  sender_role text NOT NULL,
+  message text NOT NULL,
+  attachments jsonb DEFAULT '[]'::jsonb,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  read_at timestamptz
+);
+
+CREATE TABLE IF NOT EXISTS public.audit_log (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  actor_id uuid,
+  actor_role text,
+  action text NOT NULL,
+  entity_type text,
+  entity_id text,
+  before_state jsonb,
+  after_state jsonb,
+  reason text,
+  metadata jsonb DEFAULT '{}'::jsonb,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+
+-- ------------------------------------------------------------------
 -- Payment orders
 -- ------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS public.payment_orders (
