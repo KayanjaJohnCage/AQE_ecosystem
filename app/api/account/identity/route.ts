@@ -47,6 +47,7 @@ export async function PATCH(request: Request) {
     }
 
     const displayName = typeof body.displayName === "string" ? body.displayName.trim() : "";
+    const phone = typeof body.phone === "string" ? body.phone.trim() : "";
     const email = typeof body.email === "string" ? body.email.trim().toLowerCase() : "";
     const password = typeof body.password === "string" ? body.password : "";
     const authUpdates: { email?: string; password?: string } = {};
@@ -60,9 +61,10 @@ export async function PATCH(request: Request) {
       if (error) return NextResponse.json({ ok:false, reason:error.message }, { status:400 });
     }
 
-    if (displayName || Object.keys(authUpdates).length) {
+    if (displayName || phone || Object.keys(authUpdates).length) {
       const { error } = await client.from("profiles").update({
         ...(displayName ? { display_name:displayName } : {}),
+        ...(phone ? { phone } : {}),
         ...(managerOverride || !next || Date.now() >= next ? { identity_last_changed_at:new Date().toISOString() } : {}),
         updated_at:new Date().toISOString(),
       }).eq("user_id",userId);
