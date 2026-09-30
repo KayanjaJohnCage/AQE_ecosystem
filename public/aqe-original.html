@@ -11717,7 +11717,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
       }
     });
     document.querySelectorAll("#drawer nav button").forEach(function(b){
-      var m=(b.getAttribute("onclick")||"").match(/showScreen\\(['\"]([^'\"]+)/);
+      var m=(b.getAttribute("onclick")||"").match(/showScreen\(['\"]([^'\"]+)/);
       if(m)b.onclick=function(ev){if(ev){ev.preventDefault();ev.stopPropagation()}liveShow(m[1]);if(typeof window.toggleDrawer==="function")window.toggleDrawer();return false};
     });
   };
