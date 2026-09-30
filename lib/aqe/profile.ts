@@ -158,7 +158,7 @@ export async function persistProfileRecord(profile: ProfileRecord) {
       contact_methods: profile.contactMethods ?? {},
       tier: profile.tier,
       verification_status: profile.verificationStatus,
-      avatar_url: profile.profilePhotoId ?? null,
+      profile_photo_id: profile.profilePhotoId ?? null,
       created_at: profile.createdAt,
       updated_at: profile.updatedAt,
     };
@@ -170,10 +170,18 @@ export async function persistProfileRecord(profile: ProfileRecord) {
       .maybeSingle();
 
     if (error) {
+      console.error("[AQE profile] Supabase persistence failed", {
+        userId: profile.userId,
+        error: error.message,
+        code: error.code ?? null,
+        details: error.details ?? null,
+        hint: error.hint ?? null,
+      });
+
       return {
-        ok: true,
+        ok: false,
         saved: false,
-        source: "memory",
+        source: "supabase",
         profile,
         reason: error.message,
       };
@@ -190,9 +198,9 @@ export async function persistProfileRecord(profile: ProfileRecord) {
     };
   } catch (error) {
     return {
-      ok: true,
+      ok: false,
       saved: false,
-      source: "memory",
+      source: "supabase",
       profile,
       reason:
         error instanceof Error ? error.message : "Profile persistence failed",
@@ -259,7 +267,7 @@ export async function getProfileByUserId(userId: string) {
         verificationStatus:
           (data.verification_status as ProfileRecord["verificationStatus"]) ??
           "pending",
-        profilePhotoId: data.avatar_url ?? undefined,
+        profilePhotoId: data.profile_photo_id ?? undefined,
         createdAt: data.created_at ?? new Date().toISOString(),
         updatedAt: data.updated_at ?? new Date().toISOString(),
       },
