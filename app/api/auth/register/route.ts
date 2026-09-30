@@ -179,7 +179,32 @@ export async function POST(request: Request) {
 
     const persisted = await persistProfileRecord(profileRecord.profile!);
 
-    if (persisted.ok && data.user?.id) {
+    if (!persisted.ok || !persisted.saved) {
+      // Do not leave an Auth account behind when its application profile
+      // could not be persisted. This keeps Auth and public.profiles in sync.
+      if (data.user?.id) {
+        const cleanup = await client.auth.admin.deleteUser(data.user.id);
+        if (cleanup.error) {
+          console.error("[AQE registration] profile persistence failed and Auth cleanup failed", {
+            userId: data.user.id,
+            error: cleanup.error.message,
+            profileReason: persisted.reason ?? null,
+          });
+        }
+      }
+
+      return NextResponse.json(
+        {
+          ok: false,
+          reason:
+            persisted.reason ??
+            "Account could not be completed because the customer profile was not saved.",
+        },
+        { status: 500 },
+      );
+    }
+
+    if (data.user?.id) {
       const generatedReferralCode = `AQE-${randomUUID().replace(/-/g, "").slice(0, 12).toUpperCase()}`;
       if (referredBy === data.user.id) {
         return NextResponse.json(
