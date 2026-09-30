@@ -8964,7 +8964,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 
   function patchUpgrade(){
 
-    var old=window.pxSetTier;if(old&&!old.__p14){window.pxSetTier=function(t){old.apply(this,arguments);var u=currentUser();if(u){u.type='independent';u.profileType='Independent Profile';u.profile=u.profile||{};u.profile.category='Independent Profile';u.profileTier=t==='vip'?'VIP':t==='premium'?'Premium':'Basic';u.tier=t;u.subscriptionStatus='active';if(typeof saveState==='function')saveState();if(typeof updateUIForUser==='function')updateUIForUser();clientAccountUI();}};window.pxSetTier.__p14=true;}
+    var old=window.pxSetTier;if(old&&!old.__p14){window.pxSetTier=function(t){old.apply(this,arguments);var u=currentUser();if(u){u.type='independent';u.profileType='Independent Profile';u.profile=u.profile||{};u.profile.category='Independent Profile';u.profileTier=t==='vip'?'VIP':t==='premium'?'Premium':'Basic';u.tier=t;u.subscriptionStatus='pending_payment';u.tierVerified=false;u.verified=false;if(typeof saveState==='function'saveState();if(typeof updateUIForUser==='function')updateUIForUser();clientAccountUI();}};window.pxSetTier.__p14=true;}
 
   }
 
