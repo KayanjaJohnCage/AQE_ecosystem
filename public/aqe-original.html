@@ -9828,7 +9828,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
       earnings:Number((dash&&dash.customer&&dash.customer.earnings)||0),
       referralCode:'',
       referredBy:null,
-      subscriptionStatus:'active',
+      subscriptionStatus:(profile&&profile.verificationStatus==='approved')?'active':'pending_payment',
       profile:{
         bio:(profile&&profile.bio)||'',
         category:String(category),
