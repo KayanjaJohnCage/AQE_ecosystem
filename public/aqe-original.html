@@ -9078,6 +9078,43 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 
     if(drawer){drawer.querySelectorAll('button').forEach(function(b){var m=b.getAttribute('onclick')||'';var match=m.match(/showScreen\(['\"]([^'\"]+)/);var id=match?match[1]:'';b.style.display=((isClient()||isRestrictedMember())&&['screen-home','screen-explore','screen-shop','screen-me','screen-wallet','screen-settings'].indexOf(id)===-1)?'none':'';});}
 
+    /* Restricted members must still have a fully usable public/account shell.
+       Only membership-dependent destinations are gated. Keep the core bottom
+       navigation clickable and replace Chat (a member feature) with Wallet. */
+    var bottom=document.querySelector('.bn');
+    if(bottom){
+      bottom.querySelectorAll('.nb').forEach(function(b){
+        var id=b.getAttribute('data-screen')||'';
+        var allowed=['screen-home','screen-explore','screen-shop','screen-me'];
+        if(isClient()||isRestrictedMember()){
+          if(id==='screen-messages'){
+            b.setAttribute('data-screen','screen-wallet');
+            b.innerHTML='<i class="fas fa-wallet"></i><span>Wallet</span>';
+            b.onclick=function(){showScreen('screen-wallet');};
+            b.style.display='';
+          }else{
+            b.style.display=allowed.indexOf(id)>-1?'':'none';
+            b.onclick=function(){
+              var target=b.getAttribute('data-screen');
+              if(target) showScreen(target);
+            };
+          }
+          b.style.pointerEvents='auto';
+          b.style.cursor='pointer';
+        }else{
+          b.style.display='';
+          b.style.pointerEvents='auto';
+          b.style.cursor='pointer';
+        }
+      });
+    }
+
+    /* Do not let the membership restriction become a dead-end UI. */
+    if(isRestrictedMember()){
+      var me=document.getElementById('screen-me');
+      if(me) me.style.pointerEvents='auto';
+    }
+
   }
 
   function applyClientScreens(){
