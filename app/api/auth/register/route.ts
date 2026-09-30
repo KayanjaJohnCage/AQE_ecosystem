@@ -128,6 +128,7 @@ export async function POST(request: Request) {
       options: {
         data: {
           display_name: displayName,
+          phone,
           role: "customer",
         },
         ...(emailRedirectTo ? { emailRedirectTo } : {}),
