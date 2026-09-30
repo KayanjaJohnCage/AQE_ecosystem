@@ -24,7 +24,7 @@ export async function GET(request: Request) {
     const { data, error } = await client
       .from("profiles")
       .select(
-        "id, user_id, display_name, bio, phone, country, nationality, location, area, category, services, content_categories, age, gender, pronouns, headline, languages, availability, timezone, visibility, social_platforms, contact_methods, tier, verification_status, avatar_url, created_at, updated_at",
+        "id, user_id, display_name, bio, phone, country, nationality, location, area, category, services, content_categories, age, gender, pronouns, headline, languages, availability, timezone, visibility, social_platforms, contact_methods, tier, verification_status, profile_photo_id, created_at, updated_at",
       )
       .eq("user_id", identity.userId)
       .maybeSingle();
@@ -68,7 +68,7 @@ export async function GET(request: Request) {
         contactMethods: data.contact_methods ?? {},
         tier: data.tier,
         verificationStatus: data.verification_status,
-        profilePhotoId: data.avatar_url,
+        profilePhotoId: data.profile_photo_id,
         createdAt: data.created_at,
         updatedAt: data.updated_at,
       },
@@ -207,7 +207,7 @@ export async function PATCH(request: Request) {
       .from("profiles")
       .update(update)
       .eq("user_id", identity.userId)
-      .select("id,user_id,display_name,bio,phone,country,nationality,location,area,category,services,content_categories,age,gender,pronouns,headline,languages,availability,timezone,visibility,social_platforms,contact_methods,tier,verification_status,avatar_url,created_at,updated_at")
+      .select("id,user_id,display_name,bio,phone,country,nationality,location,area,category,services,content_categories,age,gender,pronouns,headline,languages,availability,timezone,visibility,social_platforms,contact_methods,tier,verification_status,profile_photo_id,created_at,updated_at")
       .maybeSingle();
 
     if (error) return NextResponse.json({ ok: false, reason: error.message }, { status: 500 });
