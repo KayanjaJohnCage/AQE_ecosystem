@@ -569,6 +569,7 @@ export default function ManagerPage() {
     const value = String(form.get("value") || "");
     const body: Record<string, string> = { userId };
     if (field === "displayName") body.displayName = value;
+    if (field === "phone") body.phone = value;
     if (field === "email") body.email = value;
     if (field === "password") body.password = value;
     if (!userId || !value) { setReviewMessage("User ID and new value are required."); return; }
@@ -1324,7 +1325,7 @@ export default function ManagerPage() {
                 <p className="manager-subtitle">Use the request's user ID to update the customer's account name, email or password on their behalf.</p>
                 <form className="manager-settings-form" onSubmit={managerIdentityUpdate}>
                   <label>User ID<input name="userId" placeholder="Customer user ID" required /></label>
-                  <label>Field<select name="field" defaultValue="displayName"><option value="displayName">Account name</option><option value="email">Email</option><option value="password">Password</option></select></label>
+                  <label>Field<select name="field" defaultValue="displayName"><option value="displayName">Account name</option><option value="phone">Phone number</option><option value="email">Email</option><option value="password">Password</option></select></label>
                   <label>New value<input name="value" type="text" placeholder="New value" required /></label>
                   <button type="submit" className="manager-action-button">Update account</button>
                 </form>
