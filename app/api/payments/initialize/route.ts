@@ -123,6 +123,10 @@ export async function POST(request: Request) {
         paymentKind,
         qcAmount: paymentKind === "qc_recharge" ? Number(body.qcAmount ?? 0) : null,
         vipUserId: paymentKind === "vip_content_subscription" ? String(body.vipUserId ?? "").trim() : null,
+        senderDetails:
+          body.senderDetails && typeof body.senderDetails === "object"
+            ? body.senderDetails
+            : null,
       },
     });
 
