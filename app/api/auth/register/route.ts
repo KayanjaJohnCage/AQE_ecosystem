@@ -206,7 +206,7 @@ export async function POST(request: Request) {
     }
 
     if (data.user?.id && profilePhotoDataUrl) {
-      const match = profilePhotoDataUrl.match(/^data:(image\\/(?:jpeg|png|webp));base64,(.+)$/i);
+      const match = profilePhotoDataUrl.match(/^data:(image\/(?:jpeg|png|webp));base64,(.+)$/i);
       if (!match) {
         await client.auth.admin.deleteUser(data.user.id);
         return NextResponse.json(
