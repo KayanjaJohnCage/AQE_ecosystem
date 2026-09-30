@@ -551,7 +551,7 @@ BEGIN
   IF p_currency<>'UGX' THEN RAISE EXCEPTION 'Withdrawals are processed in UGX'; END IF;
   IF p_amount<30000 THEN RAISE EXCEPTION 'Minimum withdrawal amount is UGX 30,000'; END IF;
   IF p_amount>5000000 THEN RAISE EXCEPTION 'Maximum withdrawal amount is UGX 5,000,000'; END IF;
-  IF p_service_charge_rate<>0.10 THEN RAISE EXCEPTION 'Withdrawal service charge must be 10%'; END IF;
+  IF p_service_charge_rate<>0.10 THEN RAISE EXCEPTION 'Withdrawal service charge must be 10%%'; END IF;
 
   IF v_profile_tier IN('basic','premium') THEN
     SELECT count(*) INTO v_invites FROM public.profiles WHERE referred_by=p_user_id;
