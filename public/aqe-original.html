@@ -6536,6 +6536,16 @@ window.addEventListener('DOMContentLoaded', init);
 
       window.showScreen=function(id){
 
+        if((isClient()||isRestrictedMember()) && CLIENT_SCREENS.indexOf(id)>-1){
+
+          pxOpenUpgrade();
+
+          toast(isRestrictedMember()?'Complete your membership payment to unlock Basic-tier features':'Upgrade to unlock membership features');
+
+          return;
+
+        }
+
         if(isVipOnly(id) && tier()!=='vip'){
 
           pxOpenUpgrade();
