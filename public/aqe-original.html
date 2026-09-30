@@ -11674,5 +11674,59 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);else boot();
 })();
 </script>
-\n</body>
+\n
+
+<script id="aqe-final-navigation-live-fix">
+(function(){
+  "use strict";
+  var PUBLIC_SCREENS=[
+    "screen-home","screen-explore","screen-shop","screen-me","screen-wallet",
+    "screen-settings","screen-download","screen-manager","screen-bill",
+    "screen-aqe-plans"
+  ];
+  var MEMBER_SCREENS=[
+    "screen-book","screen-messages","screen-comments","screen-team","screen-tasks",
+    "screen-rewards","screen-raffle","screen-premium","screen-vip","screen-queue",
+    "screen-vault","screen-store","screen-groups"
+  ];
+  function user(){return window.state&&state.currentUser?state.currentUser:null}
+  function restricted(){var u=user();return !!u&&!((u.profileType||u.profile&&u.profile.category||"").toLowerCase()==="client"||u.type==="client"||u.tier==="guest")&&(u.type==="independent"||u.profileType==="Independent Profile")&&!u.tierVerified}
+  function upgrade(){
+    try{if(typeof window.pxOpenUpgrade==="function")window.pxOpenUpgrade();}catch(_){ }
+    try{if(typeof window.showToast==="function")window.showToast("Complete your membership payment to unlock this feature.","info");}catch(_){ }
+  }
+  function liveShow(id){
+    if(!id)return;
+    if(restricted()&&MEMBER_SCREENS.indexOf(id)>-1){upgrade();return;}
+    document.querySelectorAll(".screen").forEach(function(x){x.classList.add("hidden");x.classList.remove("fi")});
+    var el=document.getElementById(id);
+    if(!el)return;
+    el.classList.remove("hidden");el.classList.add("fi");
+    document.querySelectorAll(".nb").forEach(function(b){b.classList.toggle("on",b.getAttribute("data-screen")===id);b.classList.toggle("active",b.getAttribute("data-screen")===id)});
+    document.querySelectorAll(".px-nav").forEach(function(b){b.classList.toggle("on",b.getAttribute("data-screen")===id)});
+    window.scrollTo(0,0);
+  }
+  window.aqeLiveShowScreen=liveShow;
+  window.aqeRepairNavigation=function(){
+    document.querySelectorAll("[data-screen]").forEach(function(b){
+      var id=b.getAttribute("data-screen");
+      if(!id)return;
+      b.style.pointerEvents="auto";b.style.cursor="pointer";
+      if(PUBLIC_SCREENS.indexOf(id)>-1 || MEMBER_SCREENS.indexOf(id)>-1){
+        b.onclick=function(ev){if(ev){ev.preventDefault();ev.stopPropagation()}liveShow(id);return false};
+      }
+    });
+    document.querySelectorAll("#drawer nav button").forEach(function(b){
+      var m=(b.getAttribute("onclick")||"").match(/showScreen\\(['\"]([^'\"]+)/);
+      if(m)b.onclick=function(ev){if(ev){ev.preventDefault();ev.stopPropagation()}liveShow(m[1]);if(typeof window.toggleDrawer==="function")window.toggleDrawer();return false};
+    });
+  };
+  function install(){
+    try{window.aqeRepairNavigation()}catch(e){console.warn("[AQE navigation]",e)}
+  }
+  if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",function(){setTimeout(install,150)});else setTimeout(install,150);
+  window.addEventListener("load",function(){setTimeout(install,250)});
+})();
+</script>
+</body>
 </html>
