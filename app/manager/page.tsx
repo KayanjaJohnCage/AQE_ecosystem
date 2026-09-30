@@ -1333,7 +1333,7 @@ export default function ManagerPage() {
               <section className="manager-card manager-detail">
                 <div className="manager-table-header"><h3>Customer Support</h3></div>
                 <div className="manager-list-table">
-                  {(liveRows["Customer Support"] || tableSeeds["Customer Support"]).map((row: ManagerRow) => (
+                  {(liveRows["Customer Support"] || tableSeeds["Customer Support"] || []).map((row: ManagerRow) => (
                     <div key={"support-" + (row.id || row.title)} className="manager-row">
                       <div><strong>{row.title}</strong><span>{row.meta}</span></div><div className="manager-row-actions"><em>{row.value}</em></div>
                     </div>
