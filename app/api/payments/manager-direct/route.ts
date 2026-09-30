@@ -259,9 +259,17 @@ export async function PATCH(request: Request) {
         p_actor_id: access.session.userId,
       });
       if (atomic.error) {
+        const missingConfirmationRpc =
+          atomic.error.code === "PGRST202" ||
+          /confirm_payment_order_atomic/i.test(atomic.error.message || "");
         return NextResponse.json(
-          { ok: false, reason: atomic.error.message },
-          { status: 500 },
+          {
+            ok: false,
+            reason: missingConfirmationRpc
+              ? "Payment confirmation is not enabled in the live Supabase database. Apply migrations/0050_repair_payment_confirmation_rpc.sql in Supabase SQL Editor, then retry Confirm & upgrade."
+              : atomic.error.message,
+          },
+          { status: missingConfirmationRpc ? 503 : 500 },
         );
       }
       return NextResponse.json({
