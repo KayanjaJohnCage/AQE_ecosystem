@@ -2415,104 +2415,13 @@ function seedData() {
 
 
 
-  state.profiles = [
-
-    { id:1, name:'Sarah K.', category:'VIP', age:26, location:'Kampala', rating:4.8, reviews:24, avail:'Available', lang:'English, Swahili', bio:'Professional photographer and digital content creator. Specializing in portrait and lifestyle shoots.', color:'from-pink-500 to-rose-500', tier:'vip', products:[
-
-      {id:'p1', name:'Photo Pack #1', price:15000, type:'digital'},
-
-      {id:'p2', name:'Custom Shoot', price:45000, type:'service'}
-
-    ], verified:true},
-
-    { id:2, name:'Amara J.', category:'VIP', age:24, location:'Entebbe', rating:4.9, reviews:18, avail:'Available', lang:'English', bio:'Videographer and editor. Creating high-quality digital content for brands and individuals.', color:'from-violet-500 to-purple-500', tier:'vip', products:[
-
-      {id:'p3', name:'Video Edit', price:30000, type:'service'},
-
-      {id:'p4', name:'Preset Pack', price:10000, type:'digital'}
-
-    ], verified:true},
-
-    { id:3, name:'Nia M.', category:'Premium', age:28, location:'Jinja', rating:4.7, reviews:31, avail:'Busy', lang:'English, Luganda', bio:'Digital artist and illustrator. Commission-based artwork with modern African aesthetics.', color:'from-amber-500 to-orange-500', tier:'premium', products:[
-
-      {id:'p5', name:'Digital Portrait', price:25000, type:'service'}
-
-    ], verified:true},
-
-    { id:4, name:'Zara L.', category:'VIP', age:25, location:'Kampala', rating:5.0, reviews:12, avail:'Available', lang:'English', bio:'Content strategist and social media manager. Helping creators grow their brand.', color:'from-emerald-500 to-teal-500', tier:'vip', products:[
-
-      {id:'p6', name:'Strategy Call', price:35000, type:'service'},
-
-      {id:'p7', name:'Content Calendar', price:15000, type:'digital'}
-
-    ], verified:true},
-
-    { id:5, name:'Tina O.', category:'Premium', age:27, location:'Mbarara', rating:4.6, reviews:9, avail:'Available', lang:'English, Runyankole', bio:'Voiceover artist and audio producer. Professional recordings for ads and podcasts.', color:'from-cyan-500 to-blue-500', tier:'premium', products:[
-
-      {id:'p8', name:'Voiceover (1min)', price:20000, type:'service'}
-
-    ], verified:true},
-
-    { id:6, name:'Leah W.', category:'VIP', age:23, location:'Kampala', rating:4.8, reviews:42, avail:'Available', lang:'English, Swahili', bio:'Fashion consultant and stylist. Virtual styling sessions and shopping guides.', color:'from-fuchsia-500 to-pink-500', tier:'vip', products:[
-
-      {id:'p9', name:'Style Guide', price:18000, type:'digital'},
-
-      {id:'p10', name:'Virtual Session', price:40000, type:'service'}
-
-    ], verified:true},
-
-  ];
+  state.profiles = [];
 
 
-
-  state.profiles.forEach((p,i)=>{
-
-    p.media=[{id:'seed_'+p.id+'_1',type:'image',url:'',name:p.name+' profile photo',profilePhoto:true}];
-
-    p.profilePhotoId=p.media[0].id;
-
-    if(p.tier==='vip') p.media.push({id:'seed_'+p.id+'_2',type:'image',url:'',name:p.name+' gallery photo'});
-
-  });
+  state.products = [];
 
 
-
-  state.products = [
-
-    {id:'p1', name:'Premium Photo Pack', sellerId:1, sellerName:'Sarah K.', price:15000, rating:4.8, image:'from-pink-500/20 to-rose-500/20'},
-
-    {id:'p3', name:'Video Editing Pro', sellerId:2, sellerName:'Amara J.', price:30000, rating:4.9, image:'from-violet-500/20 to-purple-500/20'},
-
-    {id:'p5', name:'Digital Portrait', sellerId:3, sellerName:'Nia M.', price:25000, rating:4.7, image:'from-amber-500/20 to-orange-500/20'},
-
-    {id:'p6', name:'Strategy Call', sellerId:4, sellerName:'Zara L.', price:35000, rating:5.0, image:'from-emerald-500/20 to-teal-500/20'},
-
-    {id:'p8', name:'Voiceover Pack', sellerId:5, sellerName:'Tina O.', price:12000, rating:4.6, image:'from-cyan-500/20 to-blue-500/20'},
-
-    {id:'p9', name:'Style Guide 2024', sellerId:6, sellerName:'Leah W.', price:18000, rating:4.8, image:'from-fuchsia-500/20 to-pink-500/20'},
-
-  ];
-
-
-
-  state.conversations = [
-
-    {id:'c1', withId:1, withName:'Sarah K.', withAvatar:'SK', lastMsg:'Hey, are you available tomorrow?', time:'2m ago', unread:1, messages:[
-
-      {from:'them', text:'Hi there! Thanks for reaching out.', time:'10:00 AM'},
-
-      {from:'me', text:'Hey, are you available tomorrow?', time:'10:05 AM'}
-
-    ]},
-
-    {id:'c2', withId:2, withName:'Amara J.', withAvatar:'AJ', lastMsg:'The video is ready for download.', time:'1h ago', unread:0, messages:[
-
-      {from:'them', text:'The video is ready for download.', time:'9:00 AM'}
-
-    ]},
-
-  ];
-
+  state.conversations = [];
 
 
   state.notifications = [
@@ -7883,7 +7792,7 @@ window.addEventListener('DOMContentLoaded', init);
 
     var u=current();
 
-    pay={step:1,amount:'',network:'MTN',senderName:u?(u.name||''):'',senderNumber:u?(u.phone||''):'',txnId:null,method:'MukuruPay',reference:null};window.pay=pay;
+    pay={step:1,amount:'',network:'MTN',senderName:u?(u.name||''):'',senderNumber:u?(u.phone||u.profile&&u.profile.phone||''):'',txnId:null,method:'MukuruPay',reference:null};window.pay=pay;
 
     if(el('aqeExactAmount'))el('aqeExactAmount').value='';
 
@@ -8269,7 +8178,7 @@ window.addEventListener('DOMContentLoaded', init);
 
       if(typeof pay!=='undefined'){
 
-        pay={step:1,amount:'',network:'MTN',senderName:use.name||'',senderNumber:use.phone||'',txnId:null,method:'MukuruPay',reference:null};
+        pay={step:1,amount:'',network:'MTN',senderName:use.name||'',senderNumber:use.phone||use.profile&&use.profile.phone||'',txnId:null,method:'MukuruPay',reference:null};
 
       }
 
@@ -9346,18 +9255,9 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
   /* Seed more preview profiles if a stored state has too few. */
 
   function ensureDummies(){
-
-    if(!window.state)return;state.profiles=state.profiles||[];var need=8-state.profiles.length;if(need<=0)return;
-
-    var defs=[['Lina M.','Kampala','Independent','basic','Portrait photographer and lifestyle creator.'],['Asha R.','Entebbe','Premium','premium','Visual storyteller and creative professional.'],['Maya T.','Jinja','VIP','vip','Digital creator with premium media collections.'],['Nadia K.','Kampala','Premium','premium','Creative stylist and media producer.'],['Imani S.','Mbarara','VIP','vip','Independent creator focused on polished digital projects.'],['Zuri A.','Kampala','Basic','basic','Professional profile with a growing media portfolio.']];
-
-    defs.slice(0,need).forEach(function(d,i){var id=900+i;state.profiles.push({id:id,name:d[0],category:d[2],age:22+i,location:d[1],rating:(4.6+i*.06).toFixed(1),reviews:8+i*3,avail:i%3===1?'Busy':'Available',lang:'English, Luganda',bio:d[4],color:['from-fuchsia-500 to-pink-500','from-cyan-500 to-blue-500','from-amber-500 to-red-500','from-violet-500 to-indigo-500'][i%4],tier:d[3],verified:true,products:[]});});
-
-    saveState();
-
+    if(!window.state)return;
+    state.profiles=Array.isArray(state.profiles)?state.profiles:[];
   }
-
-
 
   /* Restyle registration photo picker into a proper upload card. */
 
@@ -9920,7 +9820,18 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
         category:String(category),
         country:(profile&&profile.country)||'Uganda',
         city:(profile&&profile.location)||'East Africa',
+        area:(profile&&profile.area)||'',
         phone:(profile&&profile.phone)||'',
+        headline:(profile&&profile.headline)||'',
+        age:profile&&profile.age||null,
+        gender:(profile&&profile.gender)||'',
+        pronouns:(profile&&profile.pronouns)||'',
+        languages:Array.isArray(profile&&profile.languages)?profile.languages:[],
+        availability:(profile&&profile.availability)||'',
+        timezone:(profile&&profile.timezone)||'',
+        visibility:(profile&&profile.visibility)||'public',
+        profilePhotoId:(profile&&profile.profilePhotoId)||null,
+        image:(profile&&profile.avatarUrl)||''
       },
       createdAt:new Date().toISOString()
     };
@@ -9952,8 +9863,8 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
     ensureArrays();
     try{
       var p=await api('/api/profiles');
-      if(Array.isArray(p.profiles)&&p.profiles.length){
-        state.profiles=p.profiles.map(function(x){return Object.assign({},x,{id:x.id,userId:x.userId,name:x.name||'AQE Member',location:x.city||'East Africa',city:x.city||'East Africa',category:x.tag||x.category||'Community member',tag:x.tag||x.category||'Community member',status:x.status||'Profile pending',tier:x.tier||'basic',bio:x.bio||'',avail:'Available',verified:String(x.status||'').toLowerCase().indexOf('verified')>=0,rating:'New'});});
+      if(Array.isArray(p.profiles)){
+        state.profiles=p.profiles.map(function(x){return Object.assign({},x,{id:x.id,userId:x.userId,name:x.name||'AQE Member',location:x.city||'East Africa',city:x.city||'East Africa',category:x.tag||x.category||'Community member',tag:x.tag||x.category||'Community member',status:x.status||'Profile pending',tier:x.tier||'basic',bio:x.bio||'',avail:x.availability||'Available',verified:String(x.status||'').toLowerCase().indexOf('verified')>=0,rating:'New',image:x.avatarUrl||''});});
       }
     }catch(_){}
     try{
@@ -10015,7 +9926,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
     var content=[].slice.call(document.querySelectorAll('input[name="regContent"]:checked')).map(function(x){return x.value});
     var services=[].slice.call(document.querySelectorAll('input[name="regServices"]:checked')).map(function(x){return x.value});
     var body={
-      email:val('regEmail').toLowerCase(),password:(document.getElementById('regPassword')||{}).value||'',displayName:val('regName'),phone:val('regPhone'),country:val('regCountry')||'Uganda',nationality:val('regNationality'),city:val('regCity'),category:category,bio:val('regBio'),headline:val('regHeadline'),languages:val('regLanguages'),gender:val('regGender'),pronouns:val('regPronouns'),area:val('regArea'),availability:val('regAvailability')||'available',visibility:val('regVisibility')||'public',socialHandle:val('regSocial'),contactPreference:val('regContactPreference')||'in_app',timezone:val('regTimezone')||'Africa/Kampala',contentCategories:content,services:services,referralCode:val('regRef').toUpperCase(),requestedTier:tier
+      email:val('regEmail').toLowerCase(),password:(document.getElementById('regPassword')||{}).value||'',displayName:val('regName'),phone:val('regPhone'),country:val('regCountry')||'Uganda',nationality:val('regNationality'),city:val('regCity'),category:category,bio:val('regBio'),headline:val('regHeadline'),languages:val('regLanguages'),gender:val('regGender'),pronouns:val('regPronouns'),area:val('regArea'),availability:val('regAvailability')||'available',visibility:val('regVisibility')||'public',socialHandle:val('regSocial'),contactPreference:val('regContactPreference')||'in_app',timezone:val('regTimezone')||'Africa/Kampala',contentCategories:content,services:services,referralCode:val('regRef').toUpperCase(),requestedTier:tier,profilePhotoDataUrl:window.aqePendingPhoto||''
     };
     if(!body.email||!body.password||!body.displayName||!body.phone){notify('Complete the required account fields','error');return;}
     if(!(document.getElementById('regTos')||{}).checked){notify('Please accept the Terms and Privacy Policy','error');return;}
