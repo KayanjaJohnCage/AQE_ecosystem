@@ -40,6 +40,20 @@ export async function GET(request: Request) {
       return NextResponse.json({ ok: true, source: "supabase", profile: null });
     }
 
+    let avatarUrl = "";
+    if (data.profile_photo_id) {
+      const media = await client
+        .from("profile_media")
+        .select("storage_path,is_profile_photo,moderation_status")
+        .eq("id", data.profile_photo_id)
+        .maybeSingle();
+      if (!media.error && media.data?.storage_path && media.data.is_profile_photo && media.data.moderation_status === "approved") {
+        const signed = await client.storage
+          .from("profile-media")
+          .createSignedUrl(media.data.storage_path, 3600);
+        avatarUrl = signed.data?.signedUrl || "";
+      }
+    }
     return NextResponse.json({
       ok: true,
       source: "supabase",
@@ -69,6 +83,9 @@ export async function GET(request: Request) {
         tier: data.tier,
         verificationStatus: data.verification_status,
         profilePhotoId: data.profile_photo_id,
+        avatarUrl,
+        tierVerified: data.verification_status === "approved",
+        membershipStatus: data.verification_status === "approved" ? "active" : "pending_payment",
         createdAt: data.created_at,
         updatedAt: data.updated_at,
       },
