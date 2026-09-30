@@ -36,6 +36,7 @@ export async function POST(request: Request) {
     const requestedTier = normalizeTier(
       typeof body.requestedTier === "string" ? body.requestedTier : "basic",
     );
+    const profilePhotoDataUrl = String(body.profilePhotoDataUrl ?? "").trim();
 
     if (!email || !password) {
       return NextResponse.json(
@@ -202,6 +203,84 @@ export async function POST(request: Request) {
         },
         { status: 500 },
       );
+    }
+
+    if (data.user?.id && profilePhotoDataUrl) {
+      const match = profilePhotoDataUrl.match(/^data:(image\\/(?:jpeg|png|webp));base64,(.+)$/i);
+      if (!match) {
+        await client.auth.admin.deleteUser(data.user.id);
+        return NextResponse.json(
+          { ok: false, reason: "The profile photo format is invalid. Use JPG, PNG, or WEBP." },
+          { status: 400 },
+        );
+      }
+
+      const contentType = match[1].toLowerCase();
+      const buffer = Buffer.from(match[2], "base64");
+      if (!buffer.length || buffer.length > 2.5 * 1024 * 1024) {
+        await client.auth.admin.deleteUser(data.user.id);
+        return NextResponse.json(
+          { ok: false, reason: "The profile photo must be 2.5 MB or smaller." },
+          { status: 400 },
+        );
+      }
+
+      const extension = contentType === "image/jpeg" ? "jpg" : contentType.split("/")[1];
+      const objectPath = `${data.user.id}/image/${Date.now()}-profile.${extension}`;
+      const uploaded = await client.storage
+        .from("profile-media")
+        .upload(objectPath, buffer, { contentType, upsert: false });
+
+      if (uploaded.error) {
+        await client.auth.admin.deleteUser(data.user.id);
+        return NextResponse.json(
+          { ok: false, reason: uploaded.error.message },
+          { status: 500 },
+        );
+      }
+
+      const media = await client
+        .from("profile_media")
+        .insert({
+          owner_user_id: data.user.id,
+          storage_path: objectPath,
+          media_type: "image",
+          mime_type: contentType,
+          file_size: buffer.length,
+          visibility: "public",
+          moderation_status: "approved",
+          is_profile_photo: true,
+          content_access: "public",
+        })
+        .select("id")
+        .single();
+
+      if (media.error || !media.data) {
+        await client.storage.from("profile-media").remove([objectPath]);
+        await client.auth.admin.deleteUser(data.user.id);
+        return NextResponse.json(
+          { ok: false, reason: media.error?.message ?? "Profile photo could not be registered." },
+          { status: 500 },
+        );
+      }
+
+      const photoUpdate = await client
+        .from("profiles")
+        .update({
+          profile_photo_id: media.data.id,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("user_id", data.user.id);
+
+      if (photoUpdate.error) {
+        await client.storage.from("profile-media").remove([objectPath]);
+        await client.from("profile_media").delete().eq("id", media.data.id);
+        await client.auth.admin.deleteUser(data.user.id);
+        return NextResponse.json(
+          { ok: false, reason: photoUpdate.error.message },
+          { status: 500 },
+        );
+      }
     }
 
     if (data.user?.id) {
