@@ -162,7 +162,10 @@ export default function ManagerPage() {
   const [recentActivity, setRecentActivity] = useState<ManagerRow[]>([]);
   const [browserAlertsEnabled, setBrowserAlertsEnabled] = useState(() => {
     try {
-      return typeof Notification !== "undefined" && Notification.permission === "granted";
+      if (typeof window === "undefined") return false;
+      return window.localStorage.getItem("aqe-manager-browser-alerts") === "1" &&
+        typeof Notification !== "undefined" &&
+        Notification.permission === "granted";
     } catch {
       return false;
     }
