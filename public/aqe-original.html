@@ -12297,5 +12297,292 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
   setInterval(function(){window.aqeRefreshAuthoritativeProfile();pollCustomerAlerts();},15000);
 })();
 </script>
+<script id="aqe-live-financial-isolation-and-vip-fix">
+(function(){
+  'use strict';
+
+  function esc(v){return String(v==null?'':v).replace(/[&<>'"]/g,function(c){return({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'})[c]});}
+  function session(){
+    try{return JSON.parse(localStorage.getItem('aqe_next_session')||'null')}catch(_){return null}
+  }
+  function authHeaders(){
+    var s=session(), h={'Cache-Control':'no-store'};
+    if(s&&s.access_token)h.Authorization='Bearer '+s.access_token;
+    return h;
+  }
+  async function api(path,options){
+    var o=options||{};
+    o.headers=Object.assign({},authHeaders(),o.headers||{});
+    var r=await fetch(path,o);
+    var p=await r.json().catch(function(){return {}});
+    if(!r.ok||p.ok===false)throw new Error(p.reason||p.message||('Request failed ('+r.status+')'));
+    return p;
+  }
+  function notify(msg,type){if(typeof showToast==='function')showToast(msg,type||'success');else if(typeof toast==='function')toast(msg);}
+  function current(){return typeof state!=='undefined'&&state.currentUser?state.currentUser:null;}
+
+  async function refreshFinancialState(){
+    var u=current(); if(!u)return;
+    try{
+      var results=await Promise.all([
+        api('/api/wallet'),
+        api('/api/qc/recharge'),
+        api('/api/dashboard'),
+        api('/api/receipts?limit=100'),
+        api('/api/notifications?limit=100')
+      ]);
+      var wallet=results[0].wallet||{};
+      var qc=results[1];
+      var dash=results[2].customer||{};
+      u.wallet=u.wallet||{};
+      u.wallet.UGX=Number(wallet.available_balance||0);
+      u.walletPending=Number(wallet.pending_balance||0);
+      u.qc=Number(qc.balance||dash.qcBalance||0);
+      u.earnings=Number(dash.earnings||u.earnings||0);
+      u.tier=String(dash.tier||u.tier||'basic').toLowerCase();
+      u.tierVerified=Boolean(u.tierVerified||dash.tierVerified||['basic','premium','vip'].indexOf(u.tier)>-1&&u.verified);
+      state.currentUser=u;
+      state.px=state.px||{qc:0,wallet:0,bookings:[],comments:[],ledger:[],dmQueue:[],contentQueue:[],completed:0,vault:[],store:[],groups:[]};
+      state.px.wallet=u.wallet.UGX;
+      state.px.qc=u.qc;
+      state.px.ledger=(qc.ledger||[]).map(function(x){return {
+        id:x.id,title:x.description||x.transaction_type||'QC transaction',when:x.created_at?new Date(x.created_at).toLocaleString():'',
+        amount:x.direction==='OUT'?-Number(x.amount||0):Number(x.amount||0),balanceAfter:Number(x.balance_after||0)
+      };});
+      state.transactions=(results[3].receipts||[]).map(function(x){return {
+        id:x.id||x.receipt_number,type:String(x.transaction_type||'transaction').toLowerCase(),amount:Number(x.amount||x.cash_amount||0),
+        status:String(x.status||'COMPLETED').toLowerCase(),date:x.created_at?new Date(x.created_at).toLocaleString():'',
+        reference:x.receipt_number,receiptNumber:x.receipt_number,currency:x.currency||'UGX',description:x.description||''
+      };});
+      state.notifications=(results[4].notifications||[]).map(function(n){return {
+        id:n.id,text:(n.title?n.title+': ':'')+n.body,time:n.created_at?new Date(n.created_at).toLocaleString():'',read:!!n.read_at
+      };});
+      if(typeof saveState==='function')saveState();
+      if(typeof renderBill==='function')renderBill();
+      if(typeof renderDashActivity==='function')renderDashActivity();
+      if(typeof renderNotifications==='function')renderNotifications();
+      if(typeof pxRenderAll==='function')pxRenderAll();
+      if(typeof updateUIForUser==='function')updateUIForUser();
+      return {wallet:wallet,qc:qc,dash:dash};
+    }catch(e){
+      notify(e.message||'Could not refresh your account balances.','error');
+      return null;
+    }
+  }
+  window.aqeRefreshFinancialState=refreshFinancialState;
+
+  /* Never let old local demo transactions/notifications survive a real login. */
+  var oldHydrate=window.hydrateUser;
+  if(oldHydrate&&!oldHydrate.__aqeIsolation){
+    window.hydrateUser=async function(){
+      var u=await oldHydrate.apply(this,arguments);
+      if(u&&typeof state!=='undefined'){
+        state.transactions=[];
+        state.notifications=[];
+        state.conversations=[];
+        state.paymentOrders=[];
+        state.currentUser=u;
+        try{await refreshFinancialState();}catch(_){}
+      }
+      return u;
+    };
+    window.hydrateUser.__aqeIsolation=true;
+  }
+
+  var oldSync=window.syncCollections;
+  if(oldSync&&!oldSync.__aqeIsolation){
+    window.syncCollections=async function(){
+      var result=await oldSync.apply(this,arguments);
+      try{await refreshFinancialState();}catch(_){}
+      return result;
+    };
+    window.syncCollections.__aqeIsolation=true;
+  }
+
+  /* Wallet page and dashboard always read the authenticated server wallet. */
+  var oldShow=window.showScreen;
+  if(oldShow&&!oldShow.__aqeFinancialRefresh){
+    window.showScreen=function(id){
+      var result=oldShow.apply(this,arguments);
+      if(id==='screen-wallet'||id==='screen-bill'||id==='screen-me'||id==='screen-vip'||id==='screen-queue'){
+        refreshFinancialState().catch(function(){});
+      }
+      return result;
+    };
+    window.showScreen.__aqeFinancialRefresh=true;
+  }
+
+  /* Server-side QC recharge. The old local-only implementation is disabled. */
+  window.pxRecharge=function(){
+    var d=state.px||{wallet:0,qc:0};
+    var modal=document.getElementById('pxRechargeModal');
+    if(!modal)return;
+    var w=document.getElementById('pxRechargeWallet'),q=document.getElementById('pxRechargeQC'),opts=document.getElementById('pxRechargeOptions');
+    if(w)w.textContent='UGX '+Number(d.wallet||0).toLocaleString();
+    if(q)q.textContent=Number(d.qc||0)+' QC';
+    var packages=[{qc:5,ugx:5000},{qc:10,ugx:10000},{qc:25,ugx:25000},{qc:50,ugx:50000},{qc:100,ugx:100000},{qc:250,ugx:250000}];
+    if(opts)opts.innerHTML=packages.map(function(x){
+      var can=Number(d.wallet||0)>=x.ugx;
+      return '<button class="px-card" '+(can?'':'disabled')+' onclick="pxPurchaseQC('+x.qc+','+x.ugx+')" style="text-align:left;border:1px solid var(--a7);cursor:'+(can?'pointer':'not-allowed')+';opacity:'+(can?'1':'.5')+'"><div class="fw7 ca1">'+x.qc+' QC</div><div class="px-sub">UGX '+x.ugx.toLocaleString()+'</div>'+(can?'':'<div class="xs cr mt1">Insufficient wallet cash</div>')+'</button>';
+    }).join('');
+    modal.classList.remove('hidden');
+  };
+
+  window.pxPurchaseQC=async function(qc,ugx){
+    try{
+      var r=await api('/api/qc/recharge',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({qcAmount:Number(qc)})});
+      notify('QC recharge completed: '+Number(r.qcAmount||qc).toLocaleString()+' QC added.','success');
+      var modal=document.getElementById('pxRechargeModal');if(modal)modal.classList.add('hidden');
+      await refreshFinancialState();
+    }catch(e){notify(e.message||'QC recharge failed.','error');}
+  };
+
+  /* Membership selection: use wallet cash when sufficient, but always wait for Manager approval. */
+  window.pxSetTier=async function(t){
+    var tier=String(t||'').toLowerCase();
+    if(['basic','premium','vip'].indexOf(tier)<0)return;
+    var u=current();if(!u){if(typeof openAuth==='function')openAuth();return;}
+    try{
+      var settings=await api('/api/settings');
+      var prices=settings.settings&&((settings.settings.pricing&&settings.settings.pricing.currentTierPrices)||settings.settings.tierPrices)||{basic:65000,premium:150000,vip:250000};
+      var price=Number(prices[tier]||0);
+      var fin=await refreshFinancialState();
+      var balance=fin&&fin.wallet?Number(fin.wallet.available_balance||0):Number(u.wallet&&u.wallet.UGX||0);
+      var old=document.getElementById('aqeUpgradeFundingModal');if(old)old.remove();
+      var box=document.createElement('div');box.id='aqeUpgradeFundingModal';box.className='mc';
+      box.innerHTML='<div class="mbox p4" style="max-width:620px;width:calc(100% - 24px)"><div class="flex aic jb mb3"><div><div class="xs cg fw8 up">AQE MEMBERSHIP</div><h2 class="px-title">Upgrade to '+esc(tier.toUpperCase())+'</h2><div class="px-sub">Price: UGX '+price.toLocaleString()+'</div></div><button class="mx-iconbtn" id="aqeUpgradeFundingClose"><i class="fas fa-times"></i></button></div>'+
+        '<div class="px-card mb3"><div class="px-label">Available wallet cash</div><div class="px-metric">UGX '+balance.toLocaleString()+'</div><div class="px-sub">Wallet-funded upgrades reserve the money and remain pending until AQE Manager confirmation.</div></div>'+
+        '<div class="flex g2" style="flex-wrap:wrap"><button id="aqeWalletUpgradeBtn" class="px-btn ok" style="flex:1;min-width:220px" '+(balance>=price?'':'disabled')+'>Use wallet cash</button><button id="aqeExternalUpgradeBtn" class="px-btn primary" style="flex:1;min-width:220px">Create payment request</button></div>'+
+        (balance>=price?'':'<div class="xs cr mt3">Your wallet needs UGX '+Math.max(0,price-balance).toLocaleString()+' more before wallet funding can be used.</div>')+
+        '<div id="aqeUpgradeFundingMsg" class="xs ca4 mt3"></div></div>';
+      document.body.appendChild(box);box.classList.remove('hidden');
+      document.getElementById('aqeUpgradeFundingClose').onclick=function(){box.remove();};
+      document.getElementById('aqeWalletUpgradeBtn').onclick=async function(){
+        if(balance<price)return;
+        var btn=this;btn.disabled=true;btn.textContent='Submitting…';
+        try{
+          var r=await api('/api/wallet/pay',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({paymentKind:'membership_upgrade',tier:tier})});
+          box.remove();
+          notify(r.message||('Upgrade request submitted for Manager confirmation.'),'success');
+          await refreshFinancialState();
+        }catch(e){btn.disabled=false;btn.textContent='Use wallet cash';notify(e.message||'Wallet upgrade request failed.','error');}
+      };
+      document.getElementById('aqeExternalUpgradeBtn').onclick=function(){
+        box.remove();
+        window.__aqeUpgradeContext={tier:tier};
+        if(typeof window.aqeExactOpen==='function')window.aqeExactOpen();
+        setTimeout(function(){
+          var title=document.querySelector('#aqePayStep1 h1');if(title)title.textContent='Membership Upgrade';
+          var input=document.getElementById('aqeExactAmount');if(input){input.value=String(price);input.readOnly=true;input.dispatchEvent(new Event('input',{bubbles:true}));}
+          var status=document.getElementById('aqeExactStatus');if(status)status.textContent='Complete the payment and wait for AQE Manager confirmation before your membership unlocks.';
+        },80);
+      };
+    }catch(e){notify(e.message||'Could not open membership upgrade.','error');}
+  };
+
+  /* Make the final payment submit honor the selected upgrade tier. */
+  var oldPaymentSubmit=window.aqeExactSaveAndContinue;
+  if(oldPaymentSubmit&&!oldPaymentSubmit.__aqeUpgradeContext){
+    window.aqeExactSaveAndContinue=async function(){
+      var ctx=window.__aqeUpgradeContext;
+      if(!ctx||!ctx.tier)return oldPaymentSubmit.apply(this,arguments);
+      var amount=Number((document.getElementById('aqeExactAmount')||{}).value||0);
+      var name=((document.getElementById('aqeExactSenderName')||{}).value||'').trim();
+      var num=((document.getElementById('aqeExactSenderNumber')||{}).value||'').trim();
+      if(amount<=0){notify('Enter the membership payment amount.','error');return;}
+      if(!name){notify('Enter sender registered name.','error');return;}
+      if(!num){notify('Enter sender mobile money number.','error');return;}
+      try{
+        var provider=(window.pay&&window.pay.method==='AQE_MANAGER')?'AQE_MANAGER':'MukuruPay';
+        var payload=await api(provider==='AQE_MANAGER'?'/api/payments/manager-direct':'/api/payments/initialize',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+          amount:amount,currency:'UGX',qcPackageId:'membership_upgrade',tier:ctx.tier,kind:'membership_upgrade',paymentKind:'membership_upgrade',
+          provider:provider,reference:(window.pay&&window.pay.reference)||('AQE-UPGRADE-'+Date.now()),
+          senderDetails:{name:name,number:num,network:(window.pay&&window.pay.network)||'MTN'}
+        })});
+        var order=payload.order||payload;
+        if(document.getElementById('aqeExactTxn'))document.getElementById('aqeExactTxn').textContent='Payment #'+(order.id||'—');
+        if(document.getElementById('aqeExactReference'))document.getElementById('aqeExactReference').textContent=order.reference||'—';
+        var status=document.getElementById('aqeExactStatus');if(status)status.textContent='Upgrade payment submitted. Your tier will unlock only after AQE Manager confirmation.';
+        var s1=document.getElementById('aqePayStep1'),s2=document.getElementById('aqePayStep2');if(s1)s1.classList.remove('on');if(s2)s2.classList.add('on');
+        window.__aqeUpgradeContext=null;
+        await refreshFinancialState();
+      }catch(e){notify(e.message||'Upgrade payment failed.','error');}
+    };
+    window.aqeExactSaveAndContinue.__aqeUpgradeContext=true;
+  }
+
+  /* VIP Asset Room: no shared/demo PIN. Every VIP creates a private server-side PIN. */
+  var originalEnterAssetRoom=window.enterAssetRoom;
+  window.enterAssetRoom=async function(){
+    var u=current();if(!u||String(u.tier||'').toLowerCase()!=='vip'){notify('VIP membership required for the Asset Room.','error');return;}
+    try{
+      var info=await api('/api/vip/asset-room');
+      if(!info.pinSet){
+        var p1=prompt('Create your private 4-digit Asset Room PIN:','');
+        if(p1===null)return;
+        var p2=prompt('Confirm your new 4-digit Asset Room PIN:','');
+        if(p2===null)return;
+        if(!/^\d{4}$/.test(p1)||p1!==p2){notify('PIN must be exactly 4 digits and both entries must match.','error');return;}
+        await api('/api/vip/asset-room',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'set_pin',pin:p1})});
+        notify('Your private Asset Room PIN has been created.','success');
+      }
+      currentPin='';
+      if(typeof updatePinDots==='function')updatePinDots();
+      var err=document.getElementById('pinError');if(err)err.classList.add('hidden');
+      var gate=document.getElementById('assetRoomGate');if(gate)gate.classList.remove('hidden');
+    }catch(e){notify(e.message||'Asset Room could not be opened.','error');}
+  };
+
+  window.enterPin=async function(n){
+    if(currentPin.length>=4)return;
+    currentPin+=String(n);
+    if(typeof updatePinDots==='function')updatePinDots();
+    if(currentPin.length!==4)return;
+    try{
+      await api('/api/vip/asset-room',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'verify',pin:currentPin})});
+      if(typeof closeAssetRoomGate==='function')closeAssetRoomGate();
+      var screen=document.getElementById('assetRoomScreen');if(screen)screen.classList.remove('hidden');
+      await refreshFinancialState();
+      if(typeof updateAssetRoom==='function')updateAssetRoom();
+    }catch(e){
+      var err=document.getElementById('pinError');if(err){err.textContent=e.message||'Incorrect PIN.';err.classList.remove('hidden');}
+      currentPin='';if(typeof updatePinDots==='function')updatePinDots();
+    }
+  };
+
+  window.clearPin=function(){currentPin='';if(typeof updatePinDots==='function')updatePinDots();};
+  window.backspacePin=function(){currentPin=currentPin.slice(0,-1);if(typeof updatePinDots==='function')updatePinDots();};
+
+  /* Remove the old hard-coded local PIN state. */
+  try{if(typeof state!=='undefined')state.pin=null;}catch(_){}
+
+  /* Own avatar/profile-photo rendering uses the authenticated server profile/media. */
+  function paintOwnAvatar(){
+    var u=current();if(!u)return;
+    var src=(u.profile&&u.profile.image)||u.avatarUrl||'';
+    ['dashAvatar','drawerAvatar','profileAvatar'].forEach(function(id){
+      var e=document.getElementById(id);if(!e)return;
+      if(src){
+        e.textContent='';
+        e.style.backgroundImage='url("'+String(src).replace(/"/g,'&quot;')+'")';
+        e.style.backgroundSize='cover';e.style.backgroundPosition='center';
+      }
+    });
+  }
+  var oldUI=window.updateUIForUser;
+  if(oldUI&&!oldUI.__aqeAvatarFix){
+    window.updateUIForUser=function(){var r=oldUI.apply(this,arguments);paintOwnAvatar();return r;};
+    window.updateUIForUser.__aqeAvatarFix=true;
+  }
+  setTimeout(paintOwnAvatar,300);
+
+  /* Poll authenticated financial state so Manager confirmation appears without logout/login. */
+  var pollKey='__aqeFinancialPollStarted';
+  if(!window[pollKey]){
+    window[pollKey]=true;
+    setInterval(function(){if(current())refreshFinancialState();},30000);
+  }
+})();
+</script>
 </body>
 </html>
