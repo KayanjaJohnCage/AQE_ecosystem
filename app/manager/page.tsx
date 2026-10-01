@@ -1172,6 +1172,18 @@ export default function ManagerPage() {
             </div>
           ) : null}
 
+          <div className="manager-page-actions">
+            <button type="button" onClick={() => window.dispatchEvent(new Event("aqe-manager-live-event"))}>Refresh live data</button>
+            {active === "Dashboard" ? <><button type="button" onClick={() => setActive("Payments & Approvals")}>Payment queue</button><button type="button" onClick={() => setActive("Withdrawals")}>Withdrawal queue</button><button type="button" onClick={() => setActive("Customer Support")}>Support queue</button></> : null}
+            {active === "Users & Profiles" ? <button type="button" onClick={() => setProfileQuery("")}>Clear profile search</button> : null}
+            {active === "Profile Media" ? <button type="button" onClick={() => setActive("Profile Media")}>Open moderation queue</button> : null}
+            {active === "Bookings & Requests" ? <button type="button" onClick={() => setActive("Bookings & Requests")}>Open booking queue</button> : null}
+            {active === "Payments & Approvals" ? <button type="button" onClick={() => setActive("Payments & Approvals")}>Open pending payments</button> : null}
+            {active === "Withdrawals" ? <button type="button" onClick={() => setActive("Withdrawals")}>Open withdrawal queue</button> : null}
+            {active === "Customer Support" ? <button type="button" onClick={() => setReviewMessage("Troubleshoot requests are listed below.")}>Troubleshoot queue</button> : null}
+            {active === "Transactions & QC" ? <><button type="button" onClick={() => setActive("Transactions & QC")}>Refresh history</button><button type="button" className="manager-danger-button" onClick={managerClear}>Clear transaction history</button></> : null}
+          </div>
+
           {active === "Dashboard" ? (
             <>
               <div className="manager-metrics">
