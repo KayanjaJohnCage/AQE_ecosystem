@@ -189,39 +189,62 @@ export async function GET(request: Request) {
         { status: 500 },
       );
 
-    const rows = data ?? [];
+    type PaymentRow = {
+      id: string;
+      user_id: string;
+      amount: number;
+      currency: string;
+      qc_package_id: string;
+      reference: string;
+      provider: string;
+      status: string;
+      metadata: Record<string, unknown> | null;
+      created_at: string;
+      updated_at: string;
+    };
+    const rows = (data ?? []) as PaymentRow[];
     const userIds = [...new Set(rows.map((row) => row.user_id).filter(Boolean))];
-    const profiles = userIds.length
+
+    const profileRows = userIds.length
       ? await client
           .from("profiles")
           .select("user_id,display_name,phone,tier,verification_status")
           .in("user_id", userIds)
-      : { data: [] };
+      : null;
+
     const receiver = await client
       .from("payment_receiver_settings")
       .select("receiver_name,receiver_phone,receiver_card")
       .eq("id", 1)
       .maybeSingle();
+
+    type ProfileRow = {
+      user_id: string;
+      display_name: string | null;
+      phone: string | null;
+      tier: string | null;
+      verification_status: string | null;
+    };
+    const profileByUser = new Map<string, ProfileRow>(
+      ((profileRows?.data ?? []) as ProfileRow[]).map((profile) => [profile.user_id, profile]),
+    );
+
     const receiverDetails = {
       name: receiver.data?.receiver_name || process.env.MUKURU_RECEIVER_NAME || "AQE Payments Receiver",
       phone: receiver.data?.receiver_phone || process.env.MUKURU_RECEIVER_PHONE || "Not configured",
       card: receiver.data?.receiver_card || process.env.MUKURU_RECEIVER_CARD || "Not configured",
     };
-    const profileByUser = new Map(
-      (profiles.data ?? []).map((profile) => [profile.user_id, profile]),
-    );
 
     return NextResponse.json({
       ok: true,
       source: "supabase",
       payments: rows.map((row) => {
         const profile = profileByUser.get(row.user_id);
-        const metadata =
-          row.metadata && typeof row.metadata === "object" && !Array.isArray(row.metadata)
-            ? (row.metadata as Record<string, unknown>)
-            : {};
+        const metadata = row.metadata ?? {};
         const sender =
-          metadata.senderDetails && typeof metadata.senderDetails === "object" && !Array.isArray(metadata.senderDetails)
+          metadata.senderDetails &&
+          typeof metadata.senderDetails === "object" &&
+          !Array.isArray(metadata.senderDetails)
             ? (metadata.senderDetails as Record<string, unknown>)
             : {};
         const terminal = ["confirmed", "rejected", "cancelled"].includes(row.status);
