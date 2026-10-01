@@ -209,21 +209,26 @@ function normalizeSettings(value: Partial<AqePlatformSettings> = {}): AqePlatfor
         ? Number(value.referralRates?.indirect) : defaults.referralRates.indirect,
     },
     referralRatesByTier: {
+      basic: { direct: 0.10, indirect: 0 },
+      premium: { direct: 0.10, indirect: 0 },
+      vip: { direct: 0.12, indirect: 0.12 },
+    },
+    mediaLimits: {
       basic: {
-        imagesPerMonth: (() => { const v = value.mediaLimits?.basic?.imagesPerMonth; return v === null ? null : Math.max(0, Math.round(positive(v, defaults.mediaLimits.basic.imagesPerMonth ?? 0))); })(),
-        videosPerMonth: (() => { const v = value.mediaLimits?.basic?.videosPerMonth; return v === null ? null : Math.max(0, Math.round(positive(v, defaults.mediaLimits.basic.videosPerMonth ?? 0))); })(),
+        imagesPerMonth: value.mediaLimits?.basic?.imagesPerMonth === null ? null : Math.max(0, Math.round(positive(value.mediaLimits?.basic?.imagesPerMonth, defaults.mediaLimits.basic.imagesPerMonth ?? 10))),
+        videosPerMonth: value.mediaLimits?.basic?.videosPerMonth === null ? null : Math.max(0, Math.round(positive(value.mediaLimits?.basic?.videosPerMonth, defaults.mediaLimits.basic.videosPerMonth ?? 10))),
         maxImageSizeMB: positive(value.mediaLimits?.basic?.maxImageSizeMB, defaults.mediaLimits.basic.maxImageSizeMB),
         maxVideoSizeMB: positive(value.mediaLimits?.basic?.maxVideoSizeMB, defaults.mediaLimits.basic.maxVideoSizeMB),
       },
       premium: {
-        imagesPerMonth: (() => { const v = value.mediaLimits?.premium?.imagesPerMonth; return v === null ? null : Math.max(0, Math.round(positive(v, defaults.mediaLimits.premium.imagesPerMonth ?? 0))); })(),
-        videosPerMonth: (() => { const v = value.mediaLimits?.premium?.videosPerMonth; return v === null ? null : Math.max(0, Math.round(positive(v, defaults.mediaLimits.premium.videosPerMonth ?? 0))); })(),
+        imagesPerMonth: value.mediaLimits?.premium?.imagesPerMonth === null ? null : Math.max(0, Math.round(positive(value.mediaLimits?.premium?.imagesPerMonth, defaults.mediaLimits.premium.imagesPerMonth ?? 20))),
+        videosPerMonth: value.mediaLimits?.premium?.videosPerMonth === null ? null : Math.max(0, Math.round(positive(value.mediaLimits?.premium?.videosPerMonth, defaults.mediaLimits.premium.videosPerMonth ?? 20))),
         maxImageSizeMB: positive(value.mediaLimits?.premium?.maxImageSizeMB, defaults.mediaLimits.premium.maxImageSizeMB),
         maxVideoSizeMB: positive(value.mediaLimits?.premium?.maxVideoSizeMB, defaults.mediaLimits.premium.maxVideoSizeMB),
       },
       vip: {
-        imagesPerMonth: (() => { const v = value.mediaLimits?.vip?.imagesPerMonth; return v === null ? null : Math.max(0, Math.round(positive(v, defaults.mediaLimits.vip.imagesPerMonth ?? 0))); })(),
-        videosPerMonth: (() => { const v = value.mediaLimits?.vip?.videosPerMonth; return v === null ? null : Math.max(0, Math.round(positive(v, defaults.mediaLimits.vip.videosPerMonth ?? 0))); })(),
+        imagesPerMonth: value.mediaLimits?.vip?.imagesPerMonth === null ? null : Math.max(0, Math.round(positive(value.mediaLimits?.vip?.imagesPerMonth, defaults.mediaLimits.vip.imagesPerMonth ?? 0))),
+        videosPerMonth: value.mediaLimits?.vip?.videosPerMonth === null ? null : Math.max(0, Math.round(positive(value.mediaLimits?.vip?.videosPerMonth, defaults.mediaLimits.vip.videosPerMonth ?? 0))),
         maxImageSizeMB: positive(value.mediaLimits?.vip?.maxImageSizeMB, defaults.mediaLimits.vip.maxImageSizeMB),
         maxVideoSizeMB: positive(value.mediaLimits?.vip?.maxVideoSizeMB, defaults.mediaLimits.vip.maxVideoSizeMB),
       },
