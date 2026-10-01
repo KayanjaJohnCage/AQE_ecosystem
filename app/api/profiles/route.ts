@@ -42,6 +42,11 @@ export async function GET(request: Request) {
 
     const profiles = data ?? [];
     const ownerIds = profiles.map((profile) => profile.user_id);
+    const roleByUser = new Map<string,string>();
+    if (isManager && ownerIds.length) {
+      const { data: roleRows } = await client.from("user_roles").select("user_id,role_name").in("user_id", ownerIds);
+      for (const row of roleRows ?? []) roleByUser.set(row.user_id, String(row.role_name).toLowerCase());
+    }
 
     const { data: boostRows } = ownerIds.length
       ? await client
@@ -153,6 +158,7 @@ export async function GET(request: Request) {
 
         id: profile.id,
         userId: profile.user_id,
+        ...(isManager ? { role: roleByUser.get(profile.user_id) || "customer" } : {}),
         name: profile.display_name || "AQE Member",
         city: profile.location || profile.area || profile.country || "East Africa",
         location: profile.location || "",
