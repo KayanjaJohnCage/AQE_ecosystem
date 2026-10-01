@@ -159,7 +159,13 @@ export default function ManagerPage() {
   const [troubleshootRequests, setTroubleshootRequests] = useState<TroubleshootRequest[]>([]);
   const [urgentAlerts, setUrgentAlerts] = useState<string[]>([]);
   const [recentActivity, setRecentActivity] = useState<ManagerRow[]>([]);
-  const [browserAlertsEnabled, setBrowserAlertsEnabled] = useState(false);
+  const [browserAlertsEnabled, setBrowserAlertsEnabled] = useState(() => {
+    try {
+      return typeof Notification !== "undefined" && Notification.permission === "granted";
+    } catch {
+      return false;
+    }
+  });
   const [receiver, setReceiver] = useState<ReceiverDetails>({
     receiverName: "",
     receiverPhone: "",
@@ -546,9 +552,179 @@ export default function ManagerPage() {
     };
 
     pollUrgentQueues();
-    timer = setInterval(pollUrgentQueues, 15000);
+    timer = setInterval(pollUrgentQueues, 5000);
     return () => { if (timer) clearInterval(timer); };
   }, [browserAlertsEnabled]);
+
+  const managerHeaders = (): HeadersInit => {
+    const { session, user } = readStoredSession();
+    const headers: HeadersInit = { "Content-Type": "application/json" };
+    if (session.access_token) headers.authorization = `Bearer ${session.access_token}`;
+    if (user.id) headers["x-user-id"] = user.id;
+    return headers;
+  };
+
+  const managerResourceForActive = (section: string) => ({
+    "Users & Profiles": "profiles",
+    "Bookings & Requests": "bookings",
+    "Messages & DM": "direct_messages",
+    "Marketplace & Stores": "marketplace_products",
+    "Customer Support": "support_ticket",
+    "Profile Media": "profile_media",
+    "Campaign Room": "campaigns",
+    "Raffle": "campaign_redemptions",
+    "Announcements": "notifications",
+    "Notifications": "notifications",
+    "My Team / Referrals": "referral_earnings",
+    "Tasks & Rewards": "aqe_prizes",
+    "VIP Asset Room": "vip_asset_rooms",
+    "Withdrawals": "vip_withdrawal_requests",
+    "Transactions & QC": "transaction_receipts",
+    "Payments & Approvals": "payment_orders",
+  } as Record<string,string>)[section] || "";
+
+  const controlRequest = async (action: string, resource: string, payload: Record<string, unknown> = {}) => {
+    const response = await fetch("/api/manager/control", {
+      method: "POST",
+      headers: managerHeaders(),
+      body: JSON.stringify({ action, resource, ...payload }),
+      cache: "no-store",
+    });
+    const body = await response.json().catch(() => ({}));
+    if (!response.ok || !body.ok) throw new Error(body.reason || "Manager action failed.");
+    return body;
+  };
+
+  const managerCreate = async () => {
+    const resource = managerResourceForActive(active);
+    if (!resource || !["notifications","bookings","direct_messages","marketplace_products","campaigns","aqe_prizes","support_ticket"].includes(resource)) {
+      setReviewMessage("Create-new is not available for this financial/audit queue. Use its dedicated workflow.");
+      return;
+    }
+    try {
+      const payload: Record<string, unknown> = {};
+      if (resource === "notifications") {
+        payload.userId = window.prompt("Customer user ID"); if (!payload.userId) return;
+        payload.title = window.prompt("Notification title") || ""; payload.body = window.prompt("Notification message") || "";
+      } else if (resource === "bookings") {
+        payload.customerId = window.prompt("Customer user ID") || ""; payload.providerId = window.prompt("Provider user ID") || "";
+        payload.service = window.prompt("Service") || ""; payload.amount = Number(window.prompt("Amount (UGX)") || 0); payload.currency = "UGX"; payload.status = "pending";
+      } else if (resource === "direct_messages") {
+        payload.recipientId = window.prompt("Recipient user ID") || ""; payload.body = window.prompt("Message") || "";
+      } else if (resource === "marketplace_products") {
+        payload.sellerId = window.prompt("Seller user ID") || ""; payload.title = window.prompt("Product title") || "";
+        payload.price = Number(window.prompt("Price (UGX)") || 0); payload.inventory = Number(window.prompt("Inventory") || 1); payload.currency = "UGX"; payload.status = "active";
+      } else if (resource === "campaigns") {
+        payload.name = window.prompt("Campaign name") || ""; payload.description = window.prompt("Description") || ""; payload.status = "draft";
+      } else if (resource === "aqe_prizes") {
+        payload.title = window.prompt("Prize title") || ""; payload.inviteRequirement = Number(window.prompt("Invite requirement") || 1);
+        payload.tierScope = window.prompt("Tier scope", "vip") || "vip"; payload.rewardType = window.prompt("Reward type", "physical") || "physical";
+      } else {
+        payload.userId = window.prompt("Customer user ID") || ""; payload.category = window.prompt("Category", "GENERAL") || "GENERAL"; payload.subject = window.prompt("Subject") || ""; payload.priority = "MEDIUM"; payload.status = "OPEN";
+      }
+      await controlRequest("create", resource, payload);
+      setReviewMessage(`${active}: new record created.`);
+    } catch (error) { setReviewMessage(error instanceof Error ? error.message : "Create failed."); }
+  };
+
+  const managerEdit = async (row: ManagerRow) => {
+    const resource = managerResourceForActive(active);
+    if (!resource || !row.id) return;
+    if (resource === "transaction_receipts" || resource === "payment_orders" || resource === "referral_earnings") {
+      setReviewMessage("Financial records are immutable; use the dedicated approval/reversal workflow.");
+      return;
+    }
+    const field = window.prompt("Field to update (for example status, title, body, notes, price, inventory)", "status");
+    if (!field) return;
+    const value = window.prompt(`New value for ${field}`);
+    if (value === null) return;
+    try {
+      const payload: Record<string, unknown> = { id: row.id };
+      const numericFields = ["amount","price","inventory","cash_value","invite_requirement","qc_charge"];
+      payload[field] = numericFields.includes(field) ? Number(value) : value;
+      await controlRequest("update", resource, payload);
+      setReviewMessage(`${active}: record updated.`);
+    } catch (error) { setReviewMessage(error instanceof Error ? error.message : "Update failed."); }
+  };
+
+  const managerDelete = async (row: ManagerRow) => {
+    const resource = managerResourceForActive(active);
+    if (!resource || !row.id) return;
+    if (resource === "transaction_receipts" || resource === "payment_orders" || resource === "referral_earnings" || resource === "profile_media") {
+      setReviewMessage(resource === "profile_media" ? "Use media moderation controls to remove media so storage is cleaned safely." : "Financial records are immutable and cannot be deleted.");
+      return;
+    }
+    if (!window.confirm(`Delete this ${active} record? This action cannot be undone.`)) return;
+    try {
+      await controlRequest("delete", resource, { id: row.id });
+      setReviewMessage(`${active}: record deleted.`);
+    } catch (error) { setReviewMessage(error instanceof Error ? error.message : "Delete failed."); }
+  };
+
+  const managerBlock = async (row: ManagerRow) => {
+    if (!row.id || active !== "Users & Profiles") return;
+    const currentlyBlocked = /blocked/i.test(row.value);
+    try {
+      await controlRequest(currentlyBlocked ? "unblock" : "block", "profiles", { userId: row.id });
+      setReviewMessage(currentlyBlocked ? `${row.title} unblocked.` : `${row.title} blocked.`);
+    } catch (error) { setReviewMessage(error instanceof Error ? error.message : "Block action failed."); }
+  };
+
+  const managerClear = async () => {
+    const resource = managerResourceForActive(active);
+    if (!resource || ["transaction_receipts","payment_orders","referral_earnings","cash_wallet","cash_wallet_ledger","qc_ledger","creator_earnings","audit_log"].includes(resource)) {
+      setReviewMessage("Clear-all is disabled for financial and audit data. Those records are retained for traceability.");
+      return;
+    }
+    if (!window.confirm(`Clear ALL records in ${active}? This cannot be undone.`)) return;
+    try {
+      await controlRequest("clear", resource);
+      setReviewMessage(`${active}: all records cleared.`);
+    } catch (error) { setReviewMessage(error instanceof Error ? error.message : "Clear-all failed."); }
+  };
+
+  /* Live manager sync: refreshes the current operational queue every 3 seconds without page reload. */
+  useEffect(() => {
+    let timer: ReturnType<typeof setInterval> | undefined;
+    const refresh = async () => {
+      const headers = managerHeaders();
+      try {
+        const dashboardResponse = await fetch("/api/dashboard", { headers, cache: "no-store" });
+        if (dashboardResponse.ok) {
+          const payload = await dashboardResponse.json();
+          if (payload.manager) setData(payload.manager);
+        }
+        const endpoints: Record<string,string> = {
+          "Users & Profiles": "/api/profiles",
+          "Bookings & Requests": "/api/bookings",
+          "Messages & DM": "/api/messages",
+          "Marketplace & Stores": "/api/marketplace/products",
+          "Customer Support": "/api/support/tickets",
+          "Withdrawals": "/api/vip/withdrawals",
+          "Payments & Approvals": "/api/payments/manager-direct",
+          "Profile Media": "/api/media/manager",
+          "Transactions & QC": "/api/receipts",
+        };
+        const endpoint = endpoints[active];
+        if (!endpoint) return;
+        const response = await fetch(endpoint, { headers, cache: "no-store" });
+        if (!response.ok) return;
+        const payload = await response.json();
+        if (active === "Users & Profiles" && Array.isArray(payload.profiles)) setProfiles(payload.profiles);
+        if (active === "Bookings & Requests" && Array.isArray(payload.bookings)) setLiveRows(x => ({...x,"Bookings & Requests":payload.bookings.map((b:any)=>({id:b.id,title:b.title||"Booking request",meta:b.date||b.created_at||"Date pending",value:b.status||String(b.amount||"Pending")}))}));
+        if (active === "Messages & DM" && Array.isArray(payload.messages)) setLiveRows(x => ({...x,"Messages & DM":payload.messages.map((m:any)=>({id:m.id,title:m.userId||m.sender_id||"Community member",meta:m.preview||m.body||"Message",value:m.read?"Read":"Unread"}))}));
+        if (active === "Marketplace & Stores" && Array.isArray(payload.products)) setLiveRows(x => ({...x,"Marketplace & Stores":payload.products.map((p:any)=>({id:p.id,title:p.title||"Product",meta:`Seller: ${p.seller_id||"AQE"}`,value:`${p.currency||"UGX"} ${Number(p.price||0).toLocaleString()} • ${p.inventory??0} left`}))}));
+        if (active === "Customer Support" && Array.isArray(payload.tickets)) setLiveRows(x => ({...x,"Customer Support":payload.tickets.map((t:any)=>({id:t.id,title:t.subject||"Support ticket",meta:`${t.category||"OTHER"} • ${t.priority||"MEDIUM"}`,value:t.status||"OPEN"}))}));
+        if (active === "Withdrawals" && Array.isArray(payload.withdrawals)) setLiveRows(x => ({...x,"Withdrawals":payload.withdrawals.map((w:any)=>({id:w.id,title:`${String(w.tier||"basic").toUpperCase()} payout • ${w.recipient_name||"member"}`,meta:`${w.payment_method||"MOBILE_MONEY"} • ${w.recipient_account||"No destination"}`,value:`${w.status||"PENDING"} • Gross ${w.currency||"UGX"} ${Number(w.amount||0).toLocaleString()}`}))}));
+        if (active === "Payments & Approvals" && Array.isArray(payload.payments)) setLiveRows(x => ({...x,"Payments & Approvals":payload.payments.map((p:any)=>({id:p.id,title:`${p.currency||"UGX"} ${Number(p.amount||0).toLocaleString()} • ${p.senderName||p.user_id||"member"}`,meta:`${p.metadata?.paymentKind==="wallet_deposit"?"WALLET":"UPGRADE"} • ${p.created_at?new Date(p.created_at).toLocaleString():"Time unavailable"} • From ${p.senderPhone||"—"} → ${p.receiverName||"—"}`,value:`${p.displayStatus||p.status||"pending"} • ${p.locked?"LOCKED":"ACTION REQUIRED"}`}))}));
+        if (active === "Profile Media" && Array.isArray(payload.media)) setLiveRows(x => ({...x,"Profile Media":payload.media.map((m:any)=>({id:m.id,title:`${String(m.type||"image").toUpperCase()} • ${m.isProfilePhoto?"PROFILE PHOTO":"PROFILE CONTENT"}`,meta:`Owner: ${m.ownerUserId||"member"}`,value:m.moderationStatus||"pending"}))}));
+        if (active === "Transactions & QC" && Array.isArray(payload.receipts)) setLiveRows(x => ({...x,"Transactions & QC":payload.receipts.map((q:any)=>({id:q.id,title:q.description||q.transaction_type||"Transaction",meta:q.receipt_number||"Receipt",value:`${q.status||"COMPLETED"} • ${q.currency||"UGX"} ${Number(q.amount||0).toLocaleString()}`}))}));
+      } catch (_) {}
+    };
+    refresh();
+    timer = setInterval(refresh, 3000);
+    return () => { if (timer) clearInterval(timer); };
+  }, [active]);
 
   const enableManagerNotifications = async () => {
     if (!("Notification" in window)) {
@@ -557,6 +733,7 @@ export default function ManagerPage() {
     }
     if (Notification.permission === "granted") {
       setBrowserAlertsEnabled(true);
+      try { localStorage.setItem("aqe-manager-browser-alerts", "1"); } catch {}
       return;
     }
     if (Notification.permission === "denied") {
@@ -566,6 +743,7 @@ export default function ManagerPage() {
     const permission = await Notification.requestPermission();
     if (permission === "granted") {
       setBrowserAlertsEnabled(true);
+      try { localStorage.setItem("aqe-manager-browser-alerts", "1"); } catch {}
       setReviewMessage("Manager browser alerts enabled.");
     }
   };
@@ -826,7 +1004,7 @@ export default function ManagerPage() {
   return (
     <div className="manager-shell">
       <aside className="manager-shell-sidebar">
-        <div className="manager-brand">AQE ADMIN</div>
+        <div className="manager-brand"><img src="/AQE-Nav&Icon.jpeg" alt="AQE" /><span>AQE ADMIN</span></div>
         {navGroups.map((group) => (
           <div key={group.title}>
             <div className="manager-section-label">{group.title}</div>
@@ -1541,6 +1719,14 @@ export default function ManagerPage() {
                 <div className="manager-review-message">{reviewMessage}</div>
               ) : null}
 
+              <div className="manager-control-bar">
+                <span className="manager-live-status"><span className="manager-live-dot" /> LIVE · auto-sync every 3s</span>
+                <div className="manager-control-actions">
+                  <button type="button" onClick={() => window.location.reload()}>Hard refresh</button>
+                  <button type="button" onClick={managerCreate}>Create new</button>
+                  <button type="button" onClick={managerClear}>Clear all</button>
+                </div>
+              </div>
               <div className="manager-metrics condensed">
                 <Metric label="BOOKINGS" value={data.bookings} />
                 <Metric label="MESSAGES" value={data.messages} />
@@ -1639,13 +1825,23 @@ export default function ManagerPage() {
                         </>
                       ) : null}
                       {active === "Users & Profiles" && row.id ? (
-                        <button
-                          type="button"
-                          className="manager-danger-button"
-                          onClick={() => deleteCustomer(row.id!, row.title)}
-                        >
-                          Delete account
-                        </button>
+                        <>
+                          <button type="button" onClick={() => managerEdit(row)}>Update</button>
+                          <button type="button" onClick={() => managerBlock(row)}>{/blocked/i.test(row.value) ? "Unblock" : "Block"}</button>
+                          <button
+                            type="button"
+                            className="manager-danger-button"
+                            onClick={() => deleteCustomer(row.id!, row.title)}
+                          >
+                            Delete account
+                          </button>
+                        </>
+                      ) : null}
+                      {active !== "Users & Profiles" && row.id && !["Payments & Approvals","Transactions & QC","Withdrawals","Profile Media"].includes(active) ? (
+                        <>
+                          <button type="button" onClick={() => managerEdit(row)}>Update</button>
+                          <button type="button" onClick={() => managerDelete(row)}>Delete</button>
+                        </>
                       ) : null}
                     </div>
                   </div>
