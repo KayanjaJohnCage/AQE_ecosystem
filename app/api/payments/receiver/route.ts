@@ -80,7 +80,8 @@ export async function GET() {
     }
 
     const receiver=envReceiver();
-    return NextResponse.json({ok:true,source:"environment",receiver,receivers:[receiver]});
+    if (isConfigured(receiver)) return NextResponse.json({ok:true,source:"environment",receiver,receivers:[receiver]});
+    return NextResponse.json({ok:true,source:"none",configured:false,receiver:null,receivers:[]});
   } catch(error) {
     return NextResponse.json({ok:false,reason:error instanceof Error?error.message:"Receiver details unavailable."},{status:500});
   }
