@@ -6056,19 +6056,11 @@ window.addEventListener('DOMContentLoaded', init);
 
     if(!window.state) window.state={};
 
-    if(!state.px) state.px={ qc:125, dailyChatDate:'', dailyChatUsed:0, wallet:240000, bookings:[], comments:[], ledger:[],
-
-      dmQueue:[{id:'d1',from:'Sarah',note:'DM access request',status:'pending'},{id:'d2',from:'Amara J.',note:'DM access request',status:'pending'},{id:'d3',from:'Leah W.',note:'DM access request',status:'pending'}],
-
-      contentQueue:[{id:'c1',from:'Nia M.',note:'Photo set request · 10 credits',status:'pending'},{id:'c2',from:'Tina O.',note:'Video request · 20 credits',status:'pending'}],
-
-      completed:4,
-
-      vault:[{id:'v1',name:'Photo Set A',price:50,forSale:true},{id:'v2',name:'Private Clip 01',price:120,forSale:true},{id:'v3',name:'Archive Folder',price:0,forSale:false}],
-
-      store:[{name:'Digital Collection',price:'75 credits',status:'LIVE'},{name:'Premium Package',price:'UGX 100,000',status:'LIVE'}],
-
-      groups:[{name:'VIP Lounge',members:24}] };
+    if(!state.px) state.px={
+      qc:0, dailyChatDate:'', dailyChatUsed:0, wallet:0,
+      bookings:[], comments:[], ledger:[], dmQueue:[], contentQueue:[],
+      completed:0, vault:[], store:[], groups:[]
+    };
 
     var d=state.px;
 
