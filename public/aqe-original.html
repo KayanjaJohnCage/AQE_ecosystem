@@ -12104,5 +12104,16 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
   if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",installLive);else installLive();
 })();
 </script>
+<script id="aqe-remove-legacy-demo-state">
+(function(){
+  try{
+    if(window.state&&state.currentUser){
+      state.notifications=[];
+      state.transactions=[];
+      if(typeof saveState==="function")saveState();
+    }
+  }catch(_){}
+})();
+</script>
 </body>
 </html>
