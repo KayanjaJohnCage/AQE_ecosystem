@@ -27,14 +27,19 @@ type ManagerProfile = {
   tag: string;
   status: string;
   tier?: string;
+  role?: string;
 };
 
 type ManagerRow = { id?: string; title: string; meta: string; value: string };
 type ReceiverDetails = {
+  id?: string;
   receiverName: string;
   receiverPhone: string;
   receiverCard: string;
+  network?: string;
   instructions: string;
+  status?: "available" | "busy" | "inactive";
+  updatedAt?: string;
 };
 
 type TroubleshootRequest = { id: string; user_id: string; requested_change: string; details: string; qc_charge: number; status: string; created_at: string };
@@ -151,6 +156,7 @@ export default function ManagerPage() {
     withdrawals: 0,
   });
   const [active, setActive] = useState("Dashboard");
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [managerLabel, setManagerLabel] = useState("Administrator");
   const [profiles, setProfiles] = useState<ManagerProfile[]>([]);
   const [liveRows, setLiveRows] = useState<Record<string, ManagerRow[]>>({});
@@ -158,15 +164,17 @@ export default function ManagerPage() {
   const [reviewMessage, setReviewMessage] = useState("");
   const [managerNumbers, setManagerNumbers] = useState<ManagerPaymentNumber[]>([]);
   const [troubleshootRequests, setTroubleshootRequests] = useState<TroubleshootRequest[]>([]);
-  const [urgentAlerts, setUrgentAlerts] = useState<string[]>([]);
+  const [urgentAlerts, setUrgentAlerts] = useState<Array<{text:string;target:string}>>([]);
   const [recentActivity, setRecentActivity] = useState<ManagerRow[]>([]);
   const [browserAlertsEnabled, setBrowserAlertsEnabled] = useState(() => {
     try {
-      return typeof Notification !== "undefined" && Notification.permission === "granted";
+      return typeof Notification !== "undefined" && Notification.permission === "granted" &&
+        localStorage.getItem("aqe-manager-browser-alerts") === "1";
     } catch {
       return false;
     }
   });
+  const [receivers, setReceivers] = useState<ReceiverDetails[]>([]);
   const [receiver, setReceiver] = useState<ReceiverDetails>({
     receiverName: "",
     receiverPhone: "",
@@ -178,7 +186,8 @@ export default function ManagerPage() {
     renewalPrices: { basic: 2500, premium: 5000, vip: 8500 },
     walletCurrency: "UGX",
     qcExchangeRate: 1000,
-    referralRates: { direct: 0.1, indirect: 0.05 },
+    referralRates: { direct: 0.1, indirect: 0.12 },
+    referralRatesByTier: { basic: { direct: 0.10, indirect: 0 }, premium: { direct: 0.10, indirect: 0 }, vip: { direct: 0.12, indirect: 0.12 } },
     about: "",
     contact: "",
     commercial: {
@@ -203,7 +212,8 @@ export default function ManagerPage() {
       withdrawalBefore20th: false,
     },
     customerContent: {
-      home: {},
+      home: { filters: ["All","Available","VIP","Premium","Kampala","Entebbe","Female","Male","Lesbian"] },
+      explore: { filters: ["All","Photography","Video","Art","Styling","Audio"] },
       rewards: {},
       campaign: {},
       raffle: {},
@@ -469,11 +479,11 @@ export default function ManagerPage() {
 
           const alerts: string[] = [];
           const pendingPayments = (payments.payments || []).filter((p: { status?: string }) => ["initiated","pending"].includes(String(p.status)));
-          if (pendingPayments.length) alerts.push(`${pendingPayments.length} payment request${pendingPayments.length === 1 ? "" : "s"} awaiting action.`);
+          if (pendingPayments.length) alerts.push({text:`${pendingPayments.length} payment request${pendingPayments.length === 1 ? "" : "s"} awaiting action.`,target:"Payments & Approvals"});
           const pendingWithdrawals = (withdrawals.withdrawals || []).filter((w: { status?: string }) => ["PENDING","APPROVED"].includes(String(w.status)));
-          if (pendingWithdrawals.length) alerts.push(`${pendingWithdrawals.length} withdrawal request${pendingWithdrawals.length === 1 ? "" : "s"} need attention.`);
+          if (pendingWithdrawals.length) alerts.push({text:`${pendingWithdrawals.length} withdrawal request${pendingWithdrawals.length === 1 ? "" : "s"} need attention.`,target:"Withdrawals"});
           const openSupport = (support.tickets || []).filter((t: { status?: string }) => String(t.status).toUpperCase() === "OPEN");
-          if (openSupport.length) alerts.push(`${openSupport.length} open customer support ticket${openSupport.length === 1 ? "" : "s"} need attention.`);
+          if (openSupport.length) alerts.push({text:`${openSupport.length} open customer support ticket${openSupport.length === 1 ? "" : "s"} need attention.`,target:"Customer Support"});
           setUrgentAlerts(alerts);
           setLiveRows(nextRows);
         },
@@ -500,6 +510,7 @@ export default function ManagerPage() {
       .then(async (response) => {
         if (!response.ok) return;
         const payload = await response.json();
+        if (Array.isArray(payload.receivers)) setReceivers(payload.receivers);
         if (payload.receiver) setReceiver(payload.receiver);
       })
       .catch(() => undefined);
@@ -821,6 +832,7 @@ export default function ManagerPage() {
     title: profile.name,
     meta: `${profile.city} • ${profile.tag}`,
     value: `${profile.status} • ${(profile.tier || "basic").toUpperCase()}`,
+    role: profile.role,
   }));
   const rows: ManagerRow[] =
     active === "Users & Profiles" && profileRows.length > 0
@@ -1064,7 +1076,7 @@ export default function ManagerPage() {
 
   return (
     <div className="manager-shell">
-      <aside className="manager-shell-sidebar">
+      <aside className={`manager-shell-sidebar ${mobileMenuOpen ? "mobile-open" : ""}`}>
         <div className="manager-brand"><img src="/AQE-Nav&Icon.jpeg" alt="AQE" /><span>AQE ADMIN</span></div>
         {navGroups.map((group) => (
           <div key={group.title}>
@@ -1075,7 +1087,7 @@ export default function ManagerPage() {
                   className={active === item ? "active" : ""}
                   type="button"
                   key={item}
-                  onClick={() => setActive(item)}
+                  onClick={() => { setActive(item); setMobileMenuOpen(false); }}
                 >
                   <span className="manager-nav-icon">
                     {["▣", "♙", "▧", "✓", "◆", "◫", "✉", "▤", "♢"].at(
@@ -1092,6 +1104,9 @@ export default function ManagerPage() {
 
       <main className="manager-shell-main">
         <header className="manager-shell-top">
+          <button type="button" className="manager-mobile-menu" onClick={() => setMobileMenuOpen((open) => !open)} aria-label={mobileMenuOpen ? "Close Manager menu" : "Open Manager menu"} aria-expanded={mobileMenuOpen}>
+            {mobileMenuOpen ? "✕" : "☰"} <span>MENU</span>
+          </button>
           <div>
             <strong>AQE Ecosystem Manager</strong>
             <span>Live ecosystem oversight & operational control</span>
@@ -1104,7 +1119,7 @@ export default function ManagerPage() {
             <button type="button" onClick={enableManagerNotifications} title="Enable urgent browser alerts">
               {browserAlertsEnabled ? "🔔" : "🔕"}
             </button>
-            <button type="button">⌄</button>
+            <button type="button" onClick={() => setMobileMenuOpen(false)}>⌄</button>
           </div>
         </header>
 
@@ -1121,7 +1136,11 @@ export default function ManagerPage() {
           {urgentAlerts.length ? (
             <div className="manager-urgent-alert" role="alert">
               <strong>Urgent attention required</strong>
-              {urgentAlerts.map((alert) => <span key={alert}>{alert}</span>)}
+              {urgentAlerts.map((alert) => (
+                <button key={alert.text} type="button" onClick={() => { setActive(alert.target); setMobileMenuOpen(false); }} title={`Open ${alert.target}`}>
+                  {alert.text} <span>Open {alert.target} →</span>
+                </button>
+              ))}
             </div>
           ) : null}
 
