@@ -2592,3 +2592,5 @@ body {
   .manager-list-table{overflow-x:auto}
   .manager-row{min-width:560px}
 }
+
+.manager-page-actions{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0 16px}.manager-page-actions button{border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.04);color:inherit;border-radius:9px;padding:8px 12px;font-weight:700;cursor:pointer}.manager-page-actions .manager-danger-button{border-color:rgba(239,68,68,.35);color:#fca5a5}
