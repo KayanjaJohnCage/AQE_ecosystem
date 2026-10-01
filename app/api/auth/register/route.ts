@@ -97,7 +97,7 @@ export async function POST(request: Request) {
     if (normalizedPhone) {
       const duplicatePhone = await client
         .from("profiles")
-        .select("user_id")
+        .select("user_id,phone")
         .neq("phone", "")
         .not("phone", "is", null)
         .limit(1000);
