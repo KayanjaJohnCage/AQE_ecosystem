@@ -1,0 +1,29 @@
+{
+  "name": "AfriQueer Escorts Ecosystem",
+  "short_name": "AQE",
+  "description": "AfriQueer Escorts Ecosystem — verified profiles, secure payments and community tools.",
+  "id": "/customer",
+  "start_url": "/customer",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": ["window-controls-overlay","standalone","minimal-ui"],
+  "background_color": "#07070b",
+  "theme_color": "#0b0b11",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/icons/aqe-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/aqe-512.png",
+      "sizes": "512x512",
+      "type": "image/jpeg",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["social","lifestyle"],
+  "prefer_related_applications": false
+}

@@ -1,3 +1,33 @@
+export async function POST(request: Request) {
+  try {
+    const access = await requireAuthenticatedRoleAccess(request, ["manager", "admin"]);
+    if (!access.ok) return NextResponse.json({ ok: false, reason: access.reason }, { status: 403 });
+    const body = await request.json().catch(() => ({}));
+    const email = String(body.email ?? "").trim().toLowerCase();
+    const password = String(body.password ?? "");
+    const displayName = String(body.displayName ?? body.name ?? "").trim();
+    const phone = String(body.phone ?? "").trim();
+    if (!email || !password || !displayName || !phone) return NextResponse.json({ ok:false, reason:"Email, password, name and phone are required." },{status:400});
+    if (password.length < 8) return NextResponse.json({ok:false,reason:"Password must contain at least 8 characters."},{status:400});
+    const client=createServerSupabaseClient();if(!client)return NextResponse.json({ok:false,reason:"Supabase is not configured."},{status:503});
+    const created=await client.auth.admin.createUser({email,password,email_confirm:true});
+    if(created.error||!created.data.user)return NextResponse.json({ok:false,reason:created.error?.message||"Customer account could not be created."},{status:400});
+    const userId=created.data.user.id;
+    const profile=await client.from("profiles").insert({
+      user_id:userId,display_name:displayName,phone,country:String(body.country||"Uganda"),
+      location:String(body.city||"Kampala"),category:String(body.category||"client"),
+      tier:"basic",verification_status:"pending",visibility:"public",account_status:"active",
+      timezone:"Africa/Kampala"
+    }).select("id,user_id,display_name,phone,tier,verification_status,account_status").single();
+    if(profile.error){
+      await client.auth.admin.deleteUser(userId);
+      return NextResponse.json({ok:false,reason:profile.error.message},{status:400});
+    }
+    await client.from("audit_log").insert({actor_id:access.session.userId,actor_role:access.session.role,action:"CREATE_CUSTOMER",entity_type:"profiles",entity_id:userId,after_state:profile.data,metadata:{source:"manager-user-console"}});
+    return NextResponse.json({ok:true,userId,profile:profile.data,message:"Customer account created by Manager."});
+  } catch(error){return NextResponse.json({ok:false,reason:error instanceof Error?error.message:"Customer creation failed."},{status:400});}
+}
+
 import { NextResponse } from "next/server";
 import { requireAuthenticatedRoleAccess } from "../../../../lib/aqe/auth";
 import { createServerSupabaseClient } from "../../../../lib/supabaseServer";
@@ -55,6 +85,11 @@ export async function DELETE(request: Request) {
     // Remove customer-facing identity/content records. Immutable financial/audit
     // records are deliberately retained for accounting and traceability.
     const cleanupErrors: string[] = [];
+    const mediaPaths = await client.from("profile_media").select("storage_path").eq("owner_user_id", userId);
+    if (mediaPaths.data?.length) {
+      const storageDelete = await client.storage.from("profile-media").remove(mediaPaths.data.map((row) => row.storage_path).filter(Boolean));
+      if (storageDelete.error) cleanupErrors.push("profile-media storage: " + storageDelete.error.message);
+    }
     const deleteRows = async (table: string, column: string, value: string) => {
       const result = await client.from(table).delete().eq(column, value);
       if (result.error) cleanupErrors.push(table + ": " + result.error.message);

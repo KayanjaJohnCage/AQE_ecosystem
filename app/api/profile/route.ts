@@ -24,7 +24,7 @@ export async function GET(request: Request) {
     const { data, error } = await client
       .from("profiles")
       .select(
-        "id, user_id, display_name, bio, phone, country, nationality, location, area, category, services, content_categories, age, gender, pronouns, headline, languages, availability, timezone, visibility, social_platforms, contact_methods, tier, verification_status, profile_photo_id, created_at, updated_at",
+        "id, user_id, display_name, bio, phone, country, nationality, location, area, category, services, content_categories, age, gender, pronouns, headline, languages, availability, timezone, visibility, social_platforms, contact_methods, tier, verification_status, profile_photo_id, account_status, created_at, updated_at",
       )
       .eq("user_id", identity.userId)
       .maybeSingle();
@@ -83,6 +83,7 @@ export async function GET(request: Request) {
         tier: data.tier,
         verificationStatus: data.verification_status,
         profilePhotoId: data.profile_photo_id,
+        accountStatus: data.account_status || "active",
         avatarUrl,
         tierVerified: data.verification_status === "approved",
         membershipStatus: data.verification_status === "approved" ? "active" : "pending_payment",
@@ -224,7 +225,7 @@ export async function PATCH(request: Request) {
       .from("profiles")
       .update(update)
       .eq("user_id", identity.userId)
-      .select("id,user_id,display_name,bio,phone,country,nationality,location,area,category,services,content_categories,age,gender,pronouns,headline,languages,availability,timezone,visibility,social_platforms,contact_methods,tier,verification_status,profile_photo_id,created_at,updated_at")
+      .select("id,user_id,display_name,bio,phone,country,nationality,location,area,category,services,content_categories,age,gender,pronouns,headline,languages,availability,timezone,visibility,social_platforms,contact_methods,tier,verification_status,profile_photo_id,account_status,created_at,updated_at")
       .maybeSingle();
 
     if (error) {

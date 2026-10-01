@@ -867,7 +867,7 @@ body{
 
   <button onclick="toggleDrawer()" style="background:none;border:none;color:var(--a1);font-size:20px;cursor:pointer;"><i class="fas fa-bars"></i></button>
 
-  <div style="font-weight:800;font-size:18px;letter-spacing:1px;background:linear-gradient(90deg,var(--r),var(--pu));background-clip:text;-webkit-background-clip:text;-webkit-text-fill-color:transparent;">AQE</div>
+  <div class="aqe-live-wordmark" aria-label="AfriQueer Escorts Ecosystem"><img src="/AQE-Nav&Icon.jpeg" alt="AQE" style="width:34px;height:34px;border-radius:9px;object-fit:cover;display:block;"><span style="font-weight:800;font-size:14px;line-height:1.05;background:linear-gradient(90deg,var(--r),var(--pu));background-clip:text;-webkit-background-clip:text;-webkit-text-fill-color:transparent;">AQE<br><small style="font-size:8px;letter-spacing:.3px;">AfriQueer Escorts Ecosystem</small></span></div>
 
   <div class="flex g3 aic">
 
@@ -946,6 +946,8 @@ body{
       <button onclick="showScreen('screen-explore');toggleDrawer();" class="dl"><i class="fas fa-compass"></i> Explore</button>
 
       <button onclick="showScreen('screen-shop');toggleDrawer();" class="dl"><i class="fas fa-shopping-bag"></i> Marketplace</button>
+      <button onclick="showScreen('screen-notifications');toggleDrawer();" class="dl"><i class="fas fa-bell"></i> Notifications</button>
+      <button onclick="showScreen('screen-bill');toggleDrawer();" class="dl"><i class="fas fa-receipt"></i> Receipts & Transactions</button>
 
       <button onclick="showScreen('screen-messages');toggleDrawer();" class="dl"><i class="fas fa-comment"></i> Messages</button>
 
@@ -1282,6 +1284,28 @@ body{
 
 
 
+<!-- DEDICATED NOTIFICATIONS / RECEIPTS -->
+<div id="screen-notifications" class="screen hidden">
+  <div class="px4 py4">
+    <div class="flex aic g3 mb4">
+      <button onclick="showScreen('screen-me')" style="background:none;border:none;color:var(--a1);font-size:18px;cursor:pointer;"><i class="fas fa-arrow-left"></i></button>
+      <div><h3 class="xl fw8">Notifications</h3><div class="xs ca5 mt1">Live account notifications from AQE.</div></div>
+      <button onclick="markAllRead();aqeRefreshFinancialState&&aqeRefreshFinancialState();" class="xs cr" style="margin-left:auto;background:none;border:0;cursor:pointer;">Mark all read</button>
+    </div>
+    <div id="notificationPageList" class="fc g2"></div>
+  </div>
+</div>
+
+<div id="screen-receipts" class="screen hidden">
+  <div class="px4 py4">
+    <div class="flex aic g3 mb4">
+      <button onclick="showScreen('screen-me')" style="background:none;border:none;color:var(--a1);font-size:18px;cursor:pointer;"><i class="fas fa-arrow-left"></i></button>
+      <div><h3 class="xl fw8">Receipts & Transactions</h3><div class="xs ca5 mt1">Immutable transaction proof retrieved from AQE.</div></div>
+    </div>
+    <div id="receiptPageList" class="fc g2"></div>
+  </div>
+</div>
+
 <!-- TEAM -->
 
 <div id="screen-team" class="screen hidden">
@@ -1506,11 +1530,11 @@ body{
 
     <p style="font-size:13px;color:var(--a4);margin-bottom:24px;max-width:280px;margin-left:auto;margin-right:auto;">Install AQE on your home screen for the best experience. Works offline, push notifications, and native feel.</p>
 
-    <button class="btn bp mb3"><i class="fab fa-apple"></i> Download for iOS</button>
-
-    <button class="btn bs2"><i class="fab fa-android"></i> Download for Android</button>
-
-    <p style="font-size:11px;color:var(--a5);margin-top:24px;">Or open in your browser and tap "Add to Home Screen"</p>
+    <button id="aqeInstallPwaButton" class="btn bp mb3" onclick="installAQEPWA()"><i class="fas fa-download"></i> Install AQE App</button>
+    <button class="btn bs2 mb3" onclick="showPWAInstructions('android')"><i class="fab fa-android"></i> Android install steps</button>
+    <button class="btn bs2 mb3" onclick="showPWAInstructions('windows')"><i class="fab fa-windows"></i> Windows install steps</button>
+    <button class="btn bs2" onclick="showPWAInstructions('apple')"><i class="fab fa-apple"></i> iPhone / iPad / Mac steps</button>
+    <p id="aqePwaStatus" style="font-size:11px;color:var(--a5);margin-top:24px;">The same secure AQE PWA works on Android, Windows and Apple devices.</p>
 
   </div>
 
@@ -10325,7 +10349,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 (function(){
   'use strict';
   var SCREEN_ROUTES={
-    'screen-home':'/customer','screen-explore':'/customer/explore','screen-shop':'/customer/shop','screen-messages':'/customer/messages','screen-me':'/customer/profile','screen-bill':'/customer/bill','screen-team':'/customer/team','screen-tasks':'/customer/tasks','screen-rewards':'/customer/rewards','screen-raffle':'/customer/raffle','screen-download':'/customer/download','screen-manager':'/customer/manager','screen-aqe-payments':'/customer/payments','screen-settings':'/customer/settings','screen-book':'/customer/book-now','screen-comments':'/customer/comments','screen-wallet':'/customer/wallet','screen-premium':'/customer/premium','screen-vip':'/customer/vip-hub','screen-queue':'/customer/queue','screen-vault':'/customer/vault','screen-store':'/customer/store','screen-groups':'/customer/groups','screen-aqe-plans':'/customer/plans','screen-aqe-wallet':'/customer/aqe-wallet','screen-aqe-gifts':'/customer/gifts','screen-aqe-campaigns':'/customer/campaigns','screen-aqe-prizes':'/customer/prizes','screen-aqe-referrals':'/customer/referrals','screen-aqe-withdraw':'/customer/withdraw','screen-aqe-media':'/customer/media','screen-booking':'/customer/booking','screen-booking-inbox':'/customer/booking-inbox'
+    'screen-home':'/customer','screen-explore':'/customer/explore','screen-notifications':'/customer/notifications','screen-receipts':'/customer/receipts','screen-shop':'/customer/shop','screen-messages':'/customer/messages','screen-me':'/customer/profile','screen-bill':'/customer/bill','screen-team':'/customer/team','screen-tasks':'/customer/tasks','screen-rewards':'/customer/rewards','screen-raffle':'/customer/raffle','screen-download':'/customer/download','screen-manager':'/customer/manager','screen-aqe-payments':'/customer/payments','screen-settings':'/customer/settings','screen-book':'/customer/book-now','screen-comments':'/customer/comments','screen-wallet':'/customer/wallet','screen-premium':'/customer/premium','screen-vip':'/customer/vip-hub','screen-queue':'/customer/queue','screen-vault':'/customer/vault','screen-store':'/customer/store','screen-groups':'/customer/groups','screen-aqe-plans':'/customer/plans','screen-aqe-wallet':'/customer/aqe-wallet','screen-aqe-gifts':'/customer/gifts','screen-aqe-campaigns':'/customer/campaigns','screen-aqe-prizes':'/customer/prizes','screen-aqe-referrals':'/customer/referrals','screen-aqe-withdraw':'/customer/withdraw','screen-aqe-media':'/customer/media','screen-booking':'/customer/booking','screen-booking-inbox':'/customer/booking-inbox'
   };
   function E(id){return document.getElementById(id)}
   function esc(v){return String(v==null?'':v).replace(/[&<>'"]/g,function(c){return({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'})[c]})}
@@ -11356,7 +11380,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 
   function addLogoFaviconFallback(){
     if(!document.querySelector('link[data-aqe-favicon]')){
-      var l=document.createElement("link");l.rel="icon";l.href="/aqe_logo.png";l.dataset.aqeFavicon="1";document.head.appendChild(l);
+      var l=document.createElement("link");l.rel="icon";l.href="/AQE-Nav&Icon.jpeg";l.dataset.aqeFavicon="1";document.head.appendChild(l);
     }
   }
 
@@ -12092,7 +12116,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
             var response=await fetch("/api/wallet/pay",{method:"POST",headers:Object.assign({"Content-Type":"application/json"},authHeaders()),body:JSON.stringify({paymentKind:"membership_upgrade",tier:tier})});
             var body=await response.json().catch(function(){return {}});
             if(!response.ok||!body.ok)throw new Error(body.reason||"Wallet upgrade failed.");
-            toast("Wallet upgrade completed. Your "+tier.toUpperCase()+" membership is now active.");
+            toast("Wallet upgrade request submitted. Funds are reserved and the membership unlocks after Manager confirmation.");
             await syncOwnProfileServer();
             await loadReceiptsAndNotifications();
             if(typeof updateUIForUser==="function")updateUIForUser();
@@ -12579,6 +12603,264 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
     window[pollKey]=true;
     setInterval(function(){if(current())refreshFinancialState();},30000);
   }
+})();
+</script>
+<script id="aqe-production-completion-oct2">
+(function(){
+  "use strict";
+  function E(id){return document.getElementById(id)}
+  function U(){return window.state&&state.currentUser?state.currentUser:null}
+  function session(){try{return JSON.parse(localStorage.getItem("aqe_next_session")||localStorage.getItem("aqe-session")||"null")||null}catch(_){return null}}
+  function headers(){var s=session(),h={"Cache-Control":"no-store"};if(s&&s.access_token)h.Authorization="Bearer "+s.access_token;return h}
+  function esc(v){return String(v==null?"":v).replace(/[&<>'"]/g,function(c){return({"&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;","\"":"&quot;"})[c]})}
+  function notify(m,t){if(typeof showToast==="function")showToast(m,t||"success");else if(typeof toast==="function")toast(m,t||"success")}
+
+  /* The old page referenced these inputs without actually rendering them.
+     Create them once so Add Photos / Upload Video always opens the OS picker. */
+  function ensureMediaInputs(){
+    function ensure(id,accept,multiple){
+      if(E(id))return;
+      var input=document.createElement("input");
+      input.id=id;input.type="file";input.accept=accept;input.multiple=!!multiple;
+      input.style.cssText="position:fixed;left:-99999px;top:-99999px;width:1px;height:1px;opacity:0";
+      input.addEventListener("change",function(ev){
+        if(typeof window.handleProfileFiles==="function")window.handleProfileFiles(ev.target.files,id==="profileVideoInput"?"video":"image");
+        ev.target.value="";
+      });
+      document.body.appendChild(input);
+    }
+    ensure("profilePhotoInput","image/jpeg,image/png,image/webp",true);
+    ensure("profileVideoInput","video/mp4,video/webm,video/quicktime",true);
+  }
+
+  async function cacheMedia(url){
+    if(!url||!window.caches)return;
+    try{
+      var cache=await caches.open("aqe-media-v2");
+      var hit=await cache.match(url);
+      if(!hit){
+        var response=await fetch(url,{cache:"no-store"});
+        if(response.ok)await cache.put(url,response.clone());
+      }
+    }catch(_){}
+  }
+  function cacheVisibleMedia(){
+    try{
+      document.querySelectorAll("img[src],video[src]").forEach(function(el){
+        var src=el.currentSrc||el.src;if(src)cacheMedia(src);
+      });
+    }catch(_){}
+  }
+
+  /* Dedicated receipt and notification pages; data stays server-authoritative. */
+  window.renderAqeReceiptPage=function(){
+    var list=E("receiptPageList");if(!list)return;
+    var rows=Array.isArray(state.transactions)?state.transactions:[];
+    list.innerHTML=rows.length?rows.map(function(t){
+      return '<article class="bga8 rxl p3 b1 ba7"><div class="flex aic jb g3"><div class="f1 mw0"><div class="sm fw7 ca1">'+esc(t.description||t.type||"Transaction")+'</div><div class="xs ca5 mt1">'+esc(t.date||"")+'</div><div class="xs ca5 mt1">Receipt: '+esc(t.receiptNumber||t.reference||"—")+'</div></div><div class="tr"><div class="sm fw8 cg">'+esc((t.currency||"UGX")+" "+Number(t.amount||0).toLocaleString())+'</div><div class="xs ca5 mt1">'+esc(String(t.status||"completed").toUpperCase())+'</div></div></div></article>';
+    }).join(""):'<div class="tc ca5 xs py6">No receipts yet. Completed deposits, upgrades, QC recharge and other financial actions will appear here.</div>';
+  };
+  window.renderAqeNotificationPage=function(){
+    var list=E("notificationPageList");if(!list)return;
+    var rows=Array.isArray(state.notifications)?state.notifications:[];
+    list.innerHTML=rows.length?rows.map(function(n){
+      return '<article class="bga8 rxl p3 b1 ba7 '+(n.read?"o6":"")+'"><button style="display:block;width:100%;text-align:left;background:none;border:0;color:inherit;cursor:pointer" onclick="markNotifRead(\''+esc(n.id)+'\')"><div class="sm fw7 ca1">'+esc(n.text||"AQE notification")+'</div><div class="xs ca5 mt1">'+esc(n.time||"")+'</div></button></article>';
+    }).join(""):'<div class="tc ca5 xs py6">No notifications yet.</div>';
+  };
+
+  var oldBill=window.renderBill;
+  if(oldBill&&!oldBill.__aqeCompletion){window.renderBill=function(){var r=oldBill.apply(this,arguments);window.renderAqeReceiptPage();return r};window.renderBill.__aqeCompletion=true;}
+  var oldNotif=window.renderNotifications;
+  if(oldNotif&&!oldNotif.__aqeCompletion){window.renderNotifications=function(){var r=oldNotif.apply(this,arguments);window.renderAqeNotificationPage();return r};window.renderNotifications.__aqeCompletion=true;}
+
+  /* Correct wallet-funded upgrade messaging: money is reserved until Manager confirms. */
+  var oldSetTier=window.pxSetTier;
+  if(oldSetTier&&!oldSetTier.__aqePendingLanguage){
+    window.pxSetTier=async function(tier){
+      var result=await oldSetTier.apply(this,arguments);
+      return result;
+    };
+    window.pxSetTier.__aqePendingLanguage=true;
+  }
+
+  /* PWA install and platform-specific help. */
+  var deferredPrompt=null;
+  window.addEventListener("beforeinstallprompt",function(e){e.preventDefault();deferredPrompt=e;var b=E("aqeInstallPwaButton");if(b)b.textContent="Install AQE App";});
+  window.addEventListener("appinstalled",function(){deferredPrompt=null;var s=E("aqePwaStatus");if(s)s.textContent="AQE is installed. Open it from your device app launcher or home screen.";});
+  window.installAQEPWA=async function(){
+    if(deferredPrompt){
+      deferredPrompt.prompt();
+      try{await deferredPrompt.userChoice}catch(_){}
+      deferredPrompt=null;return;
+    }
+    showPWAInstructions(/Android/i.test(navigator.userAgent)?"android":(/iPhone|iPad|Mac/i.test(navigator.userAgent)?"apple":"windows"));
+  };
+  window.showPWAInstructions=function(platform){
+    var text=platform==="android"
+      ?"Android: open AQE in Chrome, tap the browser menu, then choose Install app or Add to Home screen."
+      :platform==="windows"
+      ?"Windows: open AQE in Edge or Chrome, use the Install app icon in the address bar or browser menu, then choose Install."
+      :"Apple: on iPhone/iPad open AQE in Safari, tap Share, then Add to Home Screen. On macOS Safari use File > Add to Dock.";
+    var s=E("aqePwaStatus");if(s)s.textContent=text;
+    notify(text,"info");
+  };
+  if("serviceWorker" in navigator){
+    navigator.serviceWorker.register("/sw.js",{scope:"/"}).catch(function(){});
+  }
+
+  /* VIP marketplace seller: real DB product + optional product image. */
+  window.pxAddProduct=async function(){
+    var u=U();if(!u||String(u.tier||"").toLowerCase()!=="vip"){notify("Verified VIP membership is required to sell in the marketplace.","error");return;}
+    var name=prompt("Product name");if(!name)return;
+    var price=Number(prompt("Price (UGX)")||0);if(!price||price<=0){notify("Enter a valid product price.","error");return;}
+    var inventory=Number(prompt("Inventory quantity")||1);if(!Number.isInteger(inventory)||inventory<0){notify("Enter a valid inventory quantity.","error");return;}
+    var input=document.createElement("input");input.type="file";input.accept="image/jpeg,image/png,image/webp";input.style.display="none";document.body.appendChild(input);
+    input.onchange=async function(){
+      try{
+        var fd=new FormData();fd.append("title",name.trim());fd.append("price",String(price));fd.append("inventory",String(inventory));fd.append("currency","UGX");fd.append("status","active");
+        if(input.files&&input.files[0])fd.append("image",input.files[0]);
+        var response=await fetch("/api/marketplace/products",{method:"POST",headers:headers(),body:fd});
+        var body=await response.json().catch(function(){return {}});
+        if(!response.ok||!body.ok)throw new Error(body.reason||"Product creation failed.");
+        notify("Marketplace product created successfully.","success");
+        if(typeof syncCollections==="function")await syncCollections();
+        if(typeof renderMarket==="function")renderMarket();
+        if(typeof renderStore==="function")renderStore();
+      }catch(e){notify(e.message||"Product creation failed.","error")}
+      input.remove();
+    };
+    input.click();
+  };
+
+  /* Keep marketplace image visible from the real database response. */
+  var oldMarket=window.renderMarket;
+  if(oldMarket&&!oldMarket.__aqeImageCompletion){
+    window.renderMarket=function(){
+      var r=oldMarket.apply(this,arguments);
+      try{
+        document.querySelectorAll("#marketGrid article").forEach(function(card,idx){
+          var p=state.products&&state.products[idx], cover=card.querySelector(".aqe-shop-cover,div[style*='height:112px']");
+          if(p&&p.image_url&&cover){cover.style.backgroundImage="url('"+String(p.image_url).replace(/'/g,"%27")+"')";cover.style.backgroundSize="cover";cover.style.backgroundPosition="center";var icon=cover.querySelector("i");if(icon)icon.style.display="none";}
+        });
+      }catch(_){}
+      cacheVisibleMedia();return r;
+    };
+    window.renderMarket.__aqeImageCompletion=true;
+  }
+
+  /* Media buttons now have real inputs, real server uploads and cached rendering. */
+  ensureMediaInputs();
+  setTimeout(function(){ensureMediaInputs();cacheVisibleMedia();window.renderAqeReceiptPage();window.renderAqeNotificationPage()},300);
+  setInterval(function(){cacheVisibleMedia()},15000);
+
+  /* Render dedicated pages whenever they are opened. */
+  var show=window.showScreen;
+  if(show&&!show.__aqeDedicatedPages){
+    window.showScreen=function(id){
+      var result=show.apply(this,arguments);
+      if(id==="screen-receipts"){window.renderAqeReceiptPage();if(window.aqeRefreshFinancialState)window.aqeRefreshFinancialState().then(window.renderAqeReceiptPage).catch(function(){});}
+      if(id==="screen-notifications"){window.renderAqeNotificationPage();if(window.aqeRefreshFinancialState)window.aqeRefreshFinancialState().then(window.renderAqeNotificationPage).catch(function(){});}
+      return result;
+    };
+    window.showScreen.__aqeDedicatedPages=true;
+  }
+})();
+</script>
+<script id="aqe-real-customer-ecosystem-oct2">
+(function(){
+  "use strict";
+  function E(id){return document.getElementById(id)}
+  function U(){return window.state&&state.currentUser?state.currentUser:null}
+  function authHeaders(json){
+    var h=json?{"Content-Type":"application/json"}:{};
+    try{var s=JSON.parse(localStorage.getItem("aqe_next_session")||"null");if(s&&s.access_token)h.Authorization="Bearer "+s.access_token}catch(_){}
+    return h;
+  }
+  function toast2(m,t){if(typeof showToast==="function")showToast(m,t||"success");else if(typeof toast==="function")toast(m)}
+  async function j(url,opt){var r=await fetch(url,Object.assign({headers:authHeaders(true),cache:"no-store"},opt||{}));var b=await r.json().catch(function(){return {}});if(!r.ok||b.ok===false)throw new Error(b.reason||"Request failed.");return b}
+
+  /* All customer collections below are refreshed from Supabase; local arrays are display caches only. */
+  async function syncRealCollections(){
+    try{
+      var c=await j("/api/comments");state.px=state.px||{};state.px.comments=(c.comments||[]).map(function(x){return{id:x.id,profileId:x.profile_id,authorId:x.author_id,text:x.body,when:x.created_at}});
+      if(typeof renderComments==="function")renderComments();
+    }catch(_){}
+    try{
+      var g=await j("/api/groups");state.px=state.px||{};state.px.groups=(g.groups||[]).map(function(x){return{id:x.id,name:x.name,members:x.member_count||1,description:x.description||"",status:x.status||"active"}});
+      if(typeof renderGroups==="function")renderGroups();
+    }catch(_){}
+    try{
+      var r=await j("/api/rewards");state.realRewards=r;state.px=state.px||{};state.px.qc=Number(U()&&U().qc||state.px.qc||0);
+      if(typeof renderRewardsReal==="function")renderRewardsReal();
+    }catch(_){}
+    try{
+      var e=await j("/api/earnings");state.realEarnings=e;if(U())U().earnings=Number(e.totalCreator||0)+Number(e.totalReferral||0);
+      if(typeof updateUIForUser==="function")updateUIForUser();
+    }catch(_){}
+  }
+
+  var oldSync=window.syncCollections;
+  if(oldSync&&!oldSync.__aqeRealCollections){
+    window.syncCollections=async function(){
+      await oldSync.apply(this,arguments);
+      await syncRealCollections();
+    };
+    window.syncCollections.__aqeRealCollections=true;
+  }
+
+  window.pxPostComment=async function(){
+    var text=String((E("pxCommentText")||{}).value||"").trim();
+    var target=E("pxCommentTarget");var profileId=target&&target.value;
+    if(!text||!profileId){toast2("Choose a profile and write a comment.","error");return;}
+    try{await j("/api/comments",{method:"POST",body:JSON.stringify({profileId:profileId,body:text})});E("pxCommentText").value="";await syncRealCollections();toast2("Comment posted.");}
+    catch(e){toast2(e.message,"error")}
+  };
+
+  window.pxSendBooking=async function(){
+    var target=E("pxBookTarget"),type=E("pxBookType"),note=E("pxBookNote");
+    var providerId=target&&target.value;if(!providerId){toast2("Choose a profile first.","error");return;}
+    var kind=type?type.value:"dm";var cost=kind==="dm"?5:kind==="photo"?10:20;
+    var label=kind==="dm"?"DM access request":kind==="photo"?"Photo content request":"Video content request";
+    if(!U()||!U().tierVerified){toast2("Verified membership is required before booking.","error");pxOpenUpgrade();return;}
+    try{
+      await j("/api/bookings",{method:"POST",body:JSON.stringify({providerId:providerId,service:label,amount:1,currency:"UGX",notes:String(note&&note.value||"").trim(),qcCost:cost})});
+      if(note)note.value="";await syncRealCollections();if(typeof aqeRefreshFinancialState==="function")await aqeRefreshFinancialState();if(typeof pxRenderAll==="function")pxRenderAll();
+      toast2("Booking request sent. "+cost+" QC charged.");
+    }catch(e){toast2(e.message,"error")}
+  };
+
+  window.pxCreateGroup=async function(){
+    if(!U()||String(U().tier||"").toLowerCase()!=="vip"){toast2("Verified VIP membership is required for groups.","error");pxOpenUpgrade();return;}
+    var name=prompt("Group name");if(!name)return;var description=prompt("Group description (optional)")||"";
+    try{await j("/api/groups",{method:"POST",body:JSON.stringify({name:name,description:description})});await syncRealCollections();toast2("Group created.");}
+    catch(e){toast2(e.message,"error")}
+  };
+
+  window.redeemReward=async function(key){
+    try{var b=await j("/api/rewards",{method:"POST",body:JSON.stringify({action:"redeem",rewardKey:key})});await aqeRefreshFinancialState();await syncRealCollections();toast2((b.reward&&b.reward.title)||"Reward redeemed.");}
+    catch(e){toast2(e.message,"error")}
+  };
+
+  window.claimDailyReward=async function(){
+    try{var b=await j("/api/rewards",{method:"POST",body:JSON.stringify({action:"daily"})});await aqeRefreshFinancialState();await syncRealCollections();toast2("Daily reward claimed: "+b.amount+" QC.");}
+    catch(e){toast2(e.message,"error")}
+  };
+
+  window.renderRewardsReal=function(){
+    var r=state.realRewards;if(!r)return;
+    var root=E("screen-rewards");if(!root)return;
+    var existing=root.querySelector(".aqe-real-rewards-panel");if(existing)existing.remove();
+    var panel=document.createElement("div");panel.className="px-card aqe-real-rewards-panel";panel.style.marginTop="14px";
+    var last=(r.dailyClaims||[])[0];var catalog=r.catalog||{};
+    panel.innerHTML='<div class="fw7 mb3">Live rewards</div><div class="px-sub mb3">'+(last?'Last daily claim: '+String(last.claim_date):"No daily claim recorded yet.")+'</div>'+
+      '<button class="px-btn primary" onclick="claimDailyReward()">Claim today\'s configured QC reward</button>'+
+      '<div class="px-sub" style="margin-top:10px">Redemptions are stored on the server with a receipt. Manager-controlled prize entries are also shown below.</div>'+
+      '<div style="margin-top:10px">'+Object.keys(catalog).map(function(k){return '<div class="px-item"><span>'+String(catalog[k].title)+'</span><button class="px-btn" onclick="redeemReward(\''+k+'\')">'+Number(catalog[k].qc).toLocaleString()+' QC</button></div>'}).join("")+'</div>';
+    root.querySelector(".px4")?.appendChild(panel);
+  };
+
+  setTimeout(syncRealCollections,800);
+  setInterval(syncRealCollections,10000);
 })();
 </script>
 </body>
