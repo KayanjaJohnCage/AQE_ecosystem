@@ -1325,6 +1325,47 @@ export default function ManagerPage() {
                     required
                   />
                 </label>
+                <div className="manager-rule-box">
+                  <strong>Authoritative referral earnings</strong>
+                  <p className="manager-subtitle">These tier rules are protected in the payment confirmation calculation: Basic direct 10%; Premium direct 10%; VIP direct 12% + indirect 12%. The manager UI must not silently change the percentages used by confirmed payments.</p>
+                  <div className="manager-two-column">
+                    {(["basic","premium","vip"] as const).map((tier) => (
+                      <div key={tier} className="manager-rule-item">
+                        <strong>{tier.toUpperCase()}</strong>
+                        <span>Direct {settings.referralRatesByTier[tier].direct * 100}%</span>
+                        <span>Indirect {settings.referralRatesByTier[tier].indirect * 100}%</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <h4>Home & Explore filter buttons</h4>
+                <p className="manager-subtitle">Edit the labels/order shown on the customer Home and Explore pages. These labels do not grant access or alter financial calculations.</p>
+                <label>
+                  Home filters (one label per line)
+                  <textarea rows={5}
+                    value={Array.isArray(settings.customerContent.home.filters) ? (settings.customerContent.home.filters as string[]).join("\n") : ""}
+                    onChange={(event) => setSettings({
+                      ...settings,
+                      customerContent: {
+                        ...settings.customerContent,
+                        home: { ...settings.customerContent.home, filters: event.target.value.split(/\n|,/).map((x)=>x.trim()).filter(Boolean).slice(0,20) }
+                      }
+                    })}
+                  />
+                </label>
+                <label>
+                  Explore filters (one label per line)
+                  <textarea rows={5}
+                    value={Array.isArray(settings.customerContent.explore.filters) ? (settings.customerContent.explore.filters as string[]).join("\n") : ""}
+                    onChange={(event) => setSettings({
+                      ...settings,
+                      customerContent: {
+                        ...settings.customerContent,
+                        explore: { ...settings.customerContent.explore, filters: event.target.value.split(/\n|,/).map((x)=>x.trim()).filter(Boolean).slice(0,20) }
+                      }
+                    })}
+                  />
+                </label>
                 <label>
                   About AQE
                   <textarea
