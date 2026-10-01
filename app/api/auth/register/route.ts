@@ -128,6 +128,31 @@ export async function POST(request: Request) {
       referredBy = referrer.data.user_id;
     }
 
+    // Supabase Auth enforces email uniqueness, but checking the server-side Auth index
+    // first gives the customer a deterministic duplicate-email message instead of
+    // relying on the provider's sign-up response behavior.
+    const normalizedEmail = email.toLowerCase();
+    try {
+      for (let page = 1; page <= 20; page += 1) {
+        const listed = await client.auth.admin.listUsers({ page, perPage: 1000 });
+        if (listed.error) break;
+        const duplicateEmail = (listed.data.users ?? []).some(
+          (user) =>
+            user.id !== undefined &&
+            String(user.email ?? "").trim().toLowerCase() === normalizedEmail,
+        );
+        if (duplicateEmail) {
+          return NextResponse.json(
+            { ok: false, reason: "That email address is already registered. Use a different email address or sign in." },
+            { status: 409 },
+          );
+        }
+        if ((listed.data.users ?? []).length < 1000) break;
+      }
+    } catch (emailLookupError) {
+      console.warn("[AQE registration] duplicate-email precheck unavailable", emailLookupError);
+    }
+
     const authClient = createAnonSupabaseClient();
     if (!authClient) {
       return NextResponse.json(
