@@ -365,44 +365,26 @@ export async function PATCH(request: Request) {
       nextState: nextState as any,
     });
     if (!transition.ok) return NextResponse.json(transition, { status: 409 });
-    const updated = await client
-      .from("payment_orders")
-      .update({ status: nextState, updated_at: new Date().toISOString() })
-      .eq("id", orderId)
-      .in("status", ["initiated", "pending"])
-      .select("id, user_id, amount, currency, reference, metadata, status, updated_at")
-      .single();
-    if (updated.error)
-      return NextResponse.json(
-        { ok: false, reason: updated.error.message },
-        { status: 500 },
-      );
 
-    if (updated.data?.user_id) {
-      await client.rpc("aqe_notify", {
-        p_user_id: updated.data.user_id,
-        p_type: nextState === "rejected" ? "payment_rejected" : "payment_cancelled",
-        p_title: nextState === "rejected" ? "Payment request rejected" : "Payment request cancelled",
-        p_body: `Your AQE payment request ${updated.data.reference} was ${nextState} by the manager.`,
-        p_reference_type: "payment_order",
-        p_reference_id: updated.data.id,
-        p_dedupe_key: `PAYMENT-${nextState.toUpperCase()}-${updated.data.id}`,
-        p_metadata: {
-          status: nextState,
-          amount: updated.data.amount,
-          currency: updated.data.currency,
-        },
-      });
+    const rejected = await client.rpc("reject_payment_order_atomic", {
+      p_order_id: orderId,
+      p_actor_id: access.session.userId,
+      p_next_state: nextState,
+    });
+    if (rejected.error) {
+      return NextResponse.json({ ok: false, reason: rejected.error.message }, { status: 500 });
     }
 
     return NextResponse.json({
       ok: true,
       saved: true,
       payment: {
-        ...updated.data,
-        displayStatus: nextState === "confirmed" ? "completed" : nextState,
+        ...current.data,
+        status: nextState,
+        displayStatus: nextState,
         locked: true,
       },
+      releasedWalletFunds: Boolean(rejected.data?.releasedWalletFunds),
     });
   } catch (error) {
     return NextResponse.json(
