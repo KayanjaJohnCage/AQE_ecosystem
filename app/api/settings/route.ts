@@ -8,6 +8,7 @@ export type AqePlatformSettings = {
   walletCurrency: string;
   qcExchangeRate: number;
   referralRates: { direct: number; indirect: number };
+  referralRatesByTier: { basic: { direct: number; indirect: number }; premium: { direct: number; indirect: number }; vip: { direct: number; indirect: number } };
   about: string;
   contact: string;
   withdrawal: {
@@ -64,7 +65,8 @@ const defaults: AqePlatformSettings = {
   renewalPrices: { basic: 2500, premium: 5000, vip: 8500 },
   walletCurrency: "UGX",
   qcExchangeRate: 1000,
-  referralRates: { direct: 0.1, indirect: 0.05 },
+  referralRates: { direct: 0.1, indirect: 0.12 },
+  referralRatesByTier: { basic: { direct: 0.10, indirect: 0 }, premium: { direct: 0.10, indirect: 0 }, vip: { direct: 0.12, indirect: 0.12 } },
   about: "AQE is a community ecosystem for connection, profiles, bookings, and trusted creator tools.",
   contact: "Contact an AQE manager for payment and account support.",
   withdrawal: {
@@ -113,6 +115,7 @@ const defaults: AqePlatformSettings = {
       heroDescription: "Verified professionals. Secure payments. Discreet experience.",
       featuredTitle: "Featured Profiles",
     },
+    explore: { filters: ["All","Photography","Video","Art","Styling","Audio"] },
     rewards: {
       title: "Rewards",
       eyebrow: "VIP ECOSYSTEM",
@@ -203,6 +206,11 @@ function normalizeSettings(value: Partial<AqePlatformSettings> = {}): AqePlatfor
         ? Number(value.referralRates?.direct) : defaults.referralRates.direct,
       indirect: Number(value.referralRates?.indirect) >= 0 && Number(value.referralRates?.indirect) <= 1
         ? Number(value.referralRates?.indirect) : defaults.referralRates.indirect,
+    },
+    referralRatesByTier: {
+      basic: { direct: 0.10, indirect: 0 },
+      premium: { direct: 0.10, indirect: 0 },
+      vip: { direct: 0.12, indirect: 0.12 },
     },
     about: String(value.about || defaults.about),
     contact: String(value.contact || defaults.contact),
@@ -310,6 +318,7 @@ function normalizeSettings(value: Partial<AqePlatformSettings> = {}): AqePlatfor
     },
     customerContent: {
       home: { ...defaults.customerContent.home, ...(value.customerContent?.home ?? {}) },
+      explore: { ...defaults.customerContent.explore, ...(value.customerContent?.explore ?? {}) },
       rewards: { ...defaults.customerContent.rewards, ...(value.customerContent?.rewards ?? {}) },
       campaign: { ...defaults.customerContent.campaign, ...(value.customerContent?.campaign ?? {}) },
       raffle: { ...defaults.customerContent.raffle, ...(value.customerContent?.raffle ?? {}) },
