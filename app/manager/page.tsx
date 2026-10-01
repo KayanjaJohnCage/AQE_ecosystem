@@ -548,7 +548,7 @@ export default function ManagerPage() {
         const pendingPayments = (payments.payments || []).filter((p: { status?: string }) => ["initiated", "pending"].includes(String(p.status))).length;
         const pendingWithdrawals = (withdrawals.withdrawals || []).filter((w: { status?: string }) => ["PENDING", "APPROVED"].includes(String(w.status))).length;
         const openSupport = (support.tickets || []).filter((t: { status?: string }) => String(t.status).toUpperCase() === "OPEN").length;
-        const alerts: string[] = [];
+        const alerts: Array<{text:string;target:string}> = [];
         if (pendingPayments) alerts.push({text:`${pendingPayments} payment request${pendingPayments === 1 ? "" : "s"} awaiting action.`,target:"Payments & Approvals"});
         if (pendingWithdrawals) alerts.push({text:`${pendingWithdrawals} withdrawal request${pendingWithdrawals === 1 ? "" : "s"} need attention.`,target:"Withdrawals"});
         if (openSupport) alerts.push({text:`${openSupport} open customer support ticket${openSupport === 1 ? "" : "s"} need attention.`,target:"Customer Support"});
