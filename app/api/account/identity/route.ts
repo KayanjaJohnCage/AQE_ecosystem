@@ -56,9 +56,38 @@ export async function PATCH(request: Request) {
       if (password.length < 8) return NextResponse.json({ ok:false, reason:"Password must be at least 8 characters." }, { status:400 });
       authUpdates.password = password;
     }
+    if (authUpdates.email) {
+      const requestedEmail = authUpdates.email.toLowerCase();
+      try {
+        for (let page = 1; page <= 20; page += 1) {
+          const listed = await client.auth.admin.listUsers({ page, perPage: 1000 });
+          if (listed.error) break;
+          const duplicateEmail = (listed.data.users ?? []).some(
+            (user) =>
+              user.id !== userId &&
+              String(user.email ?? "").trim().toLowerCase() === requestedEmail,
+          );
+          if (duplicateEmail) {
+            return NextResponse.json(
+              { ok:false, reason:"That email address is already registered. Use a different email address." },
+              { status:409 },
+            );
+          }
+          if ((listed.data.users ?? []).length < 1000) break;
+        }
+      } catch (emailLookupError) {
+        console.warn("[AQE identity] duplicate-email precheck unavailable", emailLookupError);
+      }
+    }
+
     if (Object.keys(authUpdates).length) {
       const { error } = await client.auth.admin.updateUserById(userId, authUpdates);
-      if (error) return NextResponse.json({ ok:false, reason:error.message }, { status:400 });
+      if (error) {
+        if (authUpdates.email && /already.*registered|already.*exists|duplicate/i.test(error.message || "")) {
+          return NextResponse.json({ ok:false, reason:"That email address is already registered. Use a different email address." }, { status:409 });
+        }
+        return NextResponse.json({ ok:false, reason:error.message }, { status:400 });
+      }
     }
 
     if (phone) {
