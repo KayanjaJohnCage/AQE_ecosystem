@@ -233,6 +233,43 @@ function normalizeSettings(value: Partial<AqePlatformSettings> = {}): AqePlatfor
         maxVideoSizeMB: positive(value.mediaLimits?.vip?.maxVideoSizeMB, defaults.mediaLimits.vip.maxVideoSizeMB),
       },
     },
+    about: String(value.about ?? defaults.about),
+    contact: String(value.contact ?? defaults.contact),
+    withdrawal: {
+      serviceChargeRate: Number(withdrawal.serviceChargeRate) >= 0 && Number(withdrawal.serviceChargeRate) <= 1
+        ? Number(withdrawal.serviceChargeRate) : defaults.withdrawal.serviceChargeRate,
+      serviceChargeLabel: String(withdrawal.serviceChargeLabel ?? defaults.withdrawal.serviceChargeLabel),
+    },
+    pricing: {
+      originalTierPrices: {
+        basic: positive(originalTierPrices.basic, defaults.pricing.originalTierPrices.basic),
+        premium: positive(originalTierPrices.premium, defaults.pricing.originalTierPrices.premium),
+        vip: positive(originalTierPrices.vip, defaults.pricing.originalTierPrices.vip),
+      },
+      currentTierPrices: {
+        basic: positive(currentTierPrices.basic, normalizedTierPrices.basic),
+        premium: positive(currentTierPrices.premium, normalizedTierPrices.premium),
+        vip: positive(currentTierPrices.vip, normalizedTierPrices.vip),
+      },
+      promotionalLabels: {
+        basic: String(promotionalLabels.basic ?? defaults.pricing.promotionalLabels.basic),
+        premium: String(promotionalLabels.premium ?? defaults.pricing.promotionalLabels.premium),
+        vip: String(promotionalLabels.vip ?? defaults.pricing.promotionalLabels.vip),
+      },
+      welcomeBonus: positive(pricing.welcomeBonus, defaults.pricing.welcomeBonus),
+      deduction: {
+        basic: positive(deduction.basic, defaults.pricing.deduction.basic),
+        premium: positive(deduction.premium, defaults.pricing.deduction.premium),
+        vip: positive(deduction.vip, defaults.pricing.deduction.vip),
+      },
+      teamLeaderRenewalCommission: {
+        basic: positive(teamLeaderRenewalCommission.basic, defaults.pricing.teamLeaderRenewalCommission.basic),
+        premium: positive(teamLeaderRenewalCommission.premium, defaults.pricing.teamLeaderRenewalCommission.premium),
+      },
+      vipSalary: positive(pricing.vipSalary, defaults.pricing.vipSalary),
+      vipSalaryDay: Math.max(1, Math.min(31, Math.round(positive(pricing.vipSalaryDay, defaults.pricing.vipSalaryDay)))),
+      withdrawalBefore20th: Boolean(pricing.withdrawalBefore20th ?? defaults.pricing.withdrawalBefore20th),
+    },
     commercial: {
       profileBoostPrices: {
         daily: positive(profileBoostPrices.daily, defaults.commercial.profileBoostPrices.daily),
