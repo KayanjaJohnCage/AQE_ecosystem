@@ -66,7 +66,7 @@ export async function POST(request: Request) {
     return NextResponse.json({
       ok: true,
       status: "confirmed",
-      order: inserted.data,
+      order: confirmed.data?.order ?? null,
       payment: confirmed.data,
       message: paymentKind === "membership_upgrade"
         ? "Wallet payment confirmed and membership upgraded."
