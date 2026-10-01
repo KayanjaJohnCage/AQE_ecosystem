@@ -54,6 +54,27 @@ export async function POST(request: Request) {
 
     const client = createServerSupabaseClient();
 
+    const cleanupFailedRegistration = async (userId: string, storagePath?: string) => {
+      if (storagePath) {
+        const storageCleanup = await client.storage.from("profile-media").remove([storagePath]);
+        if (storageCleanup.error) {
+          console.error("[AQE registration] failed to remove profile-media object", { userId, storagePath, error: storageCleanup.error.message });
+        }
+      }
+      const mediaCleanup = await client.from("profile_media").delete().eq("owner_user_id", userId);
+      if (mediaCleanup.error) {
+        console.error("[AQE registration] failed to remove profile_media rows", { userId, error: mediaCleanup.error.message });
+      }
+      const profileCleanup = await client.from("profiles").delete().eq("user_id", userId);
+      if (profileCleanup.error) {
+        console.error("[AQE registration] failed to remove profile row", { userId, error: profileCleanup.error.message });
+      }
+      const authCleanup = await client.auth.admin.deleteUser(userId);
+      if (authCleanup.error) {
+        console.error("[AQE registration] failed to remove Auth user after registration rollback", { userId, error: authCleanup.error.message });
+      }
+    };
+
     if (!client) {
       const profileRecord = createProfileRecord({
         userId: `demo-${Date.now()}`,
@@ -257,7 +278,7 @@ export async function POST(request: Request) {
     if (!persisted.ok || !persisted.saved) {
       // A unique phone constraint is the final race-safe duplicate check.
       if (/profiles_phone_normalized_unique_idx|duplicate key.*phone/i.test(persisted.reason ?? "")) {
-        if (data.user?.id) await client.auth.admin.deleteUser(data.user.id);
+        if (data.user?.id) await cleanupFailedRegistration(data.user.id);
         return NextResponse.json(
           { ok:false, reason:"That phone number is already registered. Use a different phone number." },
           { status:409 },
@@ -291,7 +312,7 @@ export async function POST(request: Request) {
     if (data.user?.id && profilePhotoDataUrl) {
       const match = profilePhotoDataUrl.match(/^data:(image\/(?:jpeg|png|webp));base64,(.+)$/i);
       if (!match) {
-        await client.auth.admin.deleteUser(data.user.id);
+        await cleanupFailedRegistration(data.user.id);
         return NextResponse.json(
           { ok: false, reason: "The profile photo format is invalid. Use JPG, PNG, or WEBP." },
           { status: 400 },
@@ -315,7 +336,7 @@ export async function POST(request: Request) {
         .upload(objectPath, buffer, { contentType, upsert: false });
 
       if (uploaded.error) {
-        await client.auth.admin.deleteUser(data.user.id);
+        await cleanupFailedRegistration(data.user.id, objectPath);
         return NextResponse.json(
           { ok: false, reason: uploaded.error.message },
           { status: 500 },
@@ -339,8 +360,7 @@ export async function POST(request: Request) {
         .single();
 
       if (media.error || !media.data) {
-        await client.storage.from("profile-media").remove([objectPath]);
-        await client.auth.admin.deleteUser(data.user.id);
+        await cleanupFailedRegistration(data.user.id, objectPath);
         return NextResponse.json(
           { ok: false, reason: media.error?.message ?? "Profile photo could not be registered." },
           { status: 500 },
@@ -356,9 +376,7 @@ export async function POST(request: Request) {
         .eq("user_id", data.user.id);
 
       if (photoUpdate.error) {
-        await client.storage.from("profile-media").remove([objectPath]);
-        await client.from("profile_media").delete().eq("id", media.data.id);
-        await client.auth.admin.deleteUser(data.user.id);
+        await cleanupFailedRegistration(data.user.id, objectPath);
         return NextResponse.json(
           { ok: false, reason: photoUpdate.error.message },
           { status: 500 },
@@ -369,6 +387,7 @@ export async function POST(request: Request) {
     if (data.user?.id) {
       const generatedReferralCode = `AQE-${randomUUID().replace(/-/g, "").slice(0, 12).toUpperCase()}`;
       if (referredBy === data.user.id) {
+        await cleanupFailedRegistration(data.user.id);
         return NextResponse.json(
           { ok: false, reason: "You cannot use your own referral link." },
           { status: 400 },
@@ -383,6 +402,7 @@ export async function POST(request: Request) {
         })
         .eq("user_id", data.user.id);
       if (referralUpdate.error) {
+        await cleanupFailedRegistration(data.user.id);
         return NextResponse.json(
           { ok: false, reason: referralUpdate.error.message },
           { status: 500 },
