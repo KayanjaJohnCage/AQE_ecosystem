@@ -186,23 +186,24 @@ export async function POST(request: Request) {
       },
     });
 
+    const createdAuthUserId = (data as { user?: { id?: string } } | null)?.user?.id;
     if (error || !data.user) {
       console.error("[AQE registration] Supabase signUp failed", {
         email,
         error: error?.message ?? "No user returned",
         status: error?.status ?? null,
         code: error?.code ?? null,
-        userId: data.user?.id ?? null,
+        userId: createdAuthUserId ?? null,
       });
 
       /* Supabase may create the Auth row before a confirmation-email transport
          failure is returned. Remove that orphan immediately so a retry cannot
          create a duplicate account. */
-      if (error && data.user?.id) {
-        const cleanup = await client.auth.admin.deleteUser(data.user.id);
+      if (error && createdAuthUserId) {
+        const cleanup = await client.auth.admin.deleteUser(createdAuthUserId);
         if (cleanup.error) {
           console.error("[AQE registration] Auth cleanup after signUp failure failed", {
-            userId: data.user.id,
+            userId: createdAuthUserId,
             error: cleanup.error.message,
           });
         }
