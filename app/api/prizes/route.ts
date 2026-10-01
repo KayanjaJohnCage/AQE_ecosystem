@@ -42,7 +42,9 @@ export async function POST(request: Request) {
     let body:any={}; let imageFile:File|null=null;
     if(contentType.includes("multipart/form-data")){
       const form=await request.formData();
-      form.forEach((value,key)=>{if(value instanceof File){if(key==="image")imageFile=value;}else body[key]=value;});
+      const imageCandidate=form.get("image");
+      if(imageCandidate instanceof File) imageFile=imageCandidate;
+      form.forEach((value,key)=>{if(!(value instanceof File)) body[key]=value;});
     }else body=await request.json().catch(()=>({}));
 
     const action=String(body.action??"create").trim().toLowerCase();
