@@ -109,11 +109,14 @@ export async function POST(request: Request) {
 
     const senderDetails =
       body.senderDetails && typeof body.senderDetails === "object"
-        ? (body.senderDetails as { name?: unknown; phone?: unknown })
+        ? (body.senderDetails as { name?: unknown; phone?: unknown; number?: unknown })
         : null;
     if (paymentKind === "wallet_deposit" || paymentKind === "membership_upgrade") {
       const senderName = String(senderDetails?.name ?? "").trim();
-      const senderPhone = String(senderDetails?.phone ?? "").trim();
+      // The customer UI historically called this field "number"; accept both
+      // names so an otherwise valid payment request is never rejected solely
+      // because of the client-side field label.
+      const senderPhone = String(senderDetails?.phone ?? senderDetails?.number ?? "").trim();
       if (!senderName || !senderPhone) {
         return NextResponse.json(
           { ok: false, reason: "Sender registered name and sending phone number are required for Manager Direct payments." },
