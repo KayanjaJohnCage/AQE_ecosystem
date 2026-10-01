@@ -12766,5 +12766,102 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
   }
 })();
 </script>
+<script id="aqe-real-customer-ecosystem-oct2">
+(function(){
+  "use strict";
+  function E(id){return document.getElementById(id)}
+  function U(){return window.state&&state.currentUser?state.currentUser:null}
+  function authHeaders(json){
+    var h=json?{"Content-Type":"application/json"}:{};
+    try{var s=JSON.parse(localStorage.getItem("aqe_next_session")||"null");if(s&&s.access_token)h.Authorization="Bearer "+s.access_token}catch(_){}
+    return h;
+  }
+  function toast2(m,t){if(typeof showToast==="function")showToast(m,t||"success");else if(typeof toast==="function")toast(m)}
+  async function j(url,opt){var r=await fetch(url,Object.assign({headers:authHeaders(true),cache:"no-store"},opt||{}));var b=await r.json().catch(function(){return {}});if(!r.ok||b.ok===false)throw new Error(b.reason||"Request failed.");return b}
+
+  /* All customer collections below are refreshed from Supabase; local arrays are display caches only. */
+  async function syncRealCollections(){
+    try{
+      var c=await j("/api/comments");state.px=state.px||{};state.px.comments=(c.comments||[]).map(function(x){return{id:x.id,profileId:x.profile_id,authorId:x.author_id,text:x.body,when:x.created_at}});
+      if(typeof renderComments==="function")renderComments();
+    }catch(_){}
+    try{
+      var g=await j("/api/groups");state.px=state.px||{};state.px.groups=(g.groups||[]).map(function(x){return{id:x.id,name:x.name,members:x.member_count||1,description:x.description||"",status:x.status||"active"}});
+      if(typeof renderGroups==="function")renderGroups();
+    }catch(_){}
+    try{
+      var r=await j("/api/rewards");state.realRewards=r;state.px=state.px||{};state.px.qc=Number(U()&&U().qc||state.px.qc||0);
+      if(typeof renderRewardsReal==="function")renderRewardsReal();
+    }catch(_){}
+    try{
+      var e=await j("/api/earnings");state.realEarnings=e;if(U())U().earnings=Number(e.totalCreator||0)+Number(e.totalReferral||0);
+      if(typeof updateUIForUser==="function")updateUIForUser();
+    }catch(_){}
+  }
+
+  var oldSync=window.syncCollections;
+  if(oldSync&&!oldSync.__aqeRealCollections){
+    window.syncCollections=async function(){
+      await oldSync.apply(this,arguments);
+      await syncRealCollections();
+    };
+    window.syncCollections.__aqeRealCollections=true;
+  }
+
+  window.pxPostComment=async function(){
+    var text=String((E("pxCommentText")||{}).value||"").trim();
+    var target=E("pxCommentTarget");var profileId=target&&target.value;
+    if(!text||!profileId){toast2("Choose a profile and write a comment.","error");return;}
+    try{await j("/api/comments",{method:"POST",body:JSON.stringify({profileId:profileId,body:text})});E("pxCommentText").value="";await syncRealCollections();toast2("Comment posted.");}
+    catch(e){toast2(e.message,"error")}
+  };
+
+  window.pxSendBooking=async function(){
+    var target=E("pxBookTarget"),type=E("pxBookType"),note=E("pxBookNote");
+    var providerId=target&&target.value;if(!providerId){toast2("Choose a profile first.","error");return;}
+    var kind=type?type.value:"dm";var cost=kind==="dm"?5:kind==="photo"?10:20;
+    var label=kind==="dm"?"DM access request":kind==="photo"?"Photo content request":"Video content request";
+    if(!U()||!U().tierVerified){toast2("Verified membership is required before booking.","error");pxOpenUpgrade();return;}
+    try{
+      await j("/api/bookings",{method:"POST",body:JSON.stringify({providerId:providerId,service:label,amount:1,currency:"UGX",notes:String(note&&note.value||"").trim(),qcCost:cost})});
+      if(note)note.value="";await syncRealCollections();if(typeof aqeRefreshFinancialState==="function")await aqeRefreshFinancialState();if(typeof pxRenderAll==="function")pxRenderAll();
+      toast2("Booking request sent. "+cost+" QC charged.");
+    }catch(e){toast2(e.message,"error")}
+  };
+
+  window.pxCreateGroup=async function(){
+    if(!U()||String(U().tier||"").toLowerCase()!=="vip"){toast2("Verified VIP membership is required for groups.","error");pxOpenUpgrade();return;}
+    var name=prompt("Group name");if(!name)return;var description=prompt("Group description (optional)")||"";
+    try{await j("/api/groups",{method:"POST",body:JSON.stringify({name:name,description:description})});await syncRealCollections();toast2("Group created.");}
+    catch(e){toast2(e.message,"error")}
+  };
+
+  window.redeemReward=async function(key){
+    try{var b=await j("/api/rewards",{method:"POST",body:JSON.stringify({action:"redeem",rewardKey:key})});await aqeRefreshFinancialState();await syncRealCollections();toast2((b.reward&&b.reward.title)||"Reward redeemed.");}
+    catch(e){toast2(e.message,"error")}
+  };
+
+  window.claimDailyReward=async function(){
+    try{var b=await j("/api/rewards",{method:"POST",body:JSON.stringify({action:"daily"})});await aqeRefreshFinancialState();await syncRealCollections();toast2("Daily reward claimed: "+b.amount+" QC.");}
+    catch(e){toast2(e.message,"error")}
+  };
+
+  window.renderRewardsReal=function(){
+    var r=state.realRewards;if(!r)return;
+    var root=E("screen-rewards");if(!root)return;
+    var existing=root.querySelector(".aqe-real-rewards-panel");if(existing)existing.remove();
+    var panel=document.createElement("div");panel.className="px-card aqe-real-rewards-panel";panel.style.marginTop="14px";
+    var last=(r.dailyClaims||[])[0];var catalog=r.catalog||{};
+    panel.innerHTML='<div class="fw7 mb3">Live rewards</div><div class="px-sub mb3">'+(last?'Last daily claim: '+String(last.claim_date):"No daily claim recorded yet.")+'</div>'+
+      '<button class="px-btn primary" onclick="claimDailyReward()">Claim today\'s configured QC reward</button>'+
+      '<div class="px-sub" style="margin-top:10px">Redemptions are stored on the server with a receipt. Manager-controlled prize entries are also shown below.</div>'+
+      '<div style="margin-top:10px">'+Object.keys(catalog).map(function(k){return '<div class="px-item"><span>'+String(catalog[k].title)+'</span><button class="px-btn" onclick="redeemReward(\''+k+'\')">'+Number(catalog[k].qc).toLocaleString()+' QC</button></div>'}).join("")+'</div>';
+    root.querySelector(".px4")?.appendChild(panel);
+  };
+
+  setTimeout(syncRealCollections,800);
+  setInterval(syncRealCollections,10000);
+})();
+</script>
 </body>
 </html>
