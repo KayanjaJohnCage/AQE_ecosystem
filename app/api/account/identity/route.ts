@@ -61,6 +61,22 @@ export async function PATCH(request: Request) {
       if (error) return NextResponse.json({ ok:false, reason:error.message }, { status:400 });
     }
 
+    if (phone) {
+      const existing = await client
+        .from("profiles")
+        .select("user_id,phone")
+        .neq("user_id", userId)
+        .not("phone", "is", null)
+        .neq("phone", "")
+        .limit(1000);
+      if (existing.error) return NextResponse.json({ ok:false, reason:existing.error.message }, { status:500 });
+      const normalizedPhone = phone.replace(/[^0-9]/g, "");
+      const duplicate = (existing.data ?? []).some(
+        (row) => normalizedPhone && normalizedPhone === String(row.phone ?? "").replace(/[^0-9]/g, ""),
+      );
+      if (duplicate) return NextResponse.json({ ok:false, reason:"That phone number is already registered. Use a different phone number." }, { status:409 });
+    }
+
     if (displayName || phone || Object.keys(authUpdates).length) {
       const { error } = await client.from("profiles").update({
         ...(displayName ? { display_name:displayName } : {}),
@@ -68,7 +84,12 @@ export async function PATCH(request: Request) {
         ...(managerOverride || !next || Date.now() >= next ? { identity_last_changed_at:new Date().toISOString() } : {}),
         updated_at:new Date().toISOString(),
       }).eq("user_id",userId);
-      if (error) return NextResponse.json({ ok:false, reason:error.message }, { status:500 });
+      if (error) {
+        if (error.code === "23505" && /phone/i.test(error.message || "")) {
+          return NextResponse.json({ ok:false, reason:"That phone number is already registered. Use a different phone number." }, { status:409 });
+        }
+        return NextResponse.json({ ok:false, reason:error.message }, { status:500 });
+      }
     }
 
     return NextResponse.json({ ok:true, saved:true, managerOverride });
