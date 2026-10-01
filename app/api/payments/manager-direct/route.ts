@@ -216,9 +216,13 @@ export async function GET(request: Request) {
       source: "supabase",
       payments: rows.map((row) => {
         const profile = profileByUser.get(row.user_id);
+        const metadata =
+          row.metadata && typeof row.metadata === "object" && !Array.isArray(row.metadata)
+            ? (row.metadata as Record<string, unknown>)
+            : {};
         const sender =
-          row.metadata?.senderDetails && typeof row.metadata.senderDetails === "object"
-            ? row.metadata.senderDetails
+          metadata.senderDetails && typeof metadata.senderDetails === "object" && !Array.isArray(metadata.senderDetails)
+            ? (metadata.senderDetails as Record<string, unknown>)
             : {};
         const terminal = ["confirmed", "rejected", "cancelled"].includes(row.status);
         return {
@@ -345,12 +349,6 @@ export async function PATCH(request: Request) {
       .in("status", ["initiated", "pending"])
       .select("id, user_id, amount, currency, reference, metadata, status, updated_at")
       .single();
-    if (updated.error)
-      return NextResponse.json(
-        { ok: false, reason: updated.error.message },
-        { status: 500 },
-      );
-
     if (updated.error)
       return NextResponse.json(
         { ok: false, reason: updated.error.message },
