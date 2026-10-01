@@ -27,7 +27,7 @@ export type AqePlatformSettings = {
     withdrawalBefore20th: boolean;
   };
   mediaLimits: {
-    basic: { imagesPerMonth: number; videosPerMonth: number; maxImageSizeMB: number; maxVideoSizeMB: number };
+    basic: { imagesPerMonth: number | null; videosPerMonth: number | null; maxImageSizeMB: number; maxVideoSizeMB: number };
     premium: { imagesPerMonth: number; videosPerMonth: number; maxImageSizeMB: number; maxVideoSizeMB: number };
     vip: { imagesPerMonth: number; videosPerMonth: number; maxImageSizeMB: number; maxVideoSizeMB: number };
   };
@@ -87,8 +87,8 @@ const defaults: AqePlatformSettings = {
   },
   mediaLimits: {
     basic: { imagesPerMonth: 10, videosPerMonth: 2, maxImageSizeMB: 5, maxVideoSizeMB: 75 },
-    premium: { imagesPerMonth: 30, videosPerMonth: 10, maxImageSizeMB: 8, maxVideoSizeMB: 100 },
-    vip: { imagesPerMonth: 100, videosPerMonth: 30, maxImageSizeMB: 12, maxVideoSizeMB: 150 },
+    premium: { imagesPerMonth: 20, videosPerMonth: 20, maxImageSizeMB: 8, maxVideoSizeMB: 100 },
+    vip: { imagesPerMonth: null, videosPerMonth: null, maxImageSizeMB: 12, maxVideoSizeMB: 150 },
   },
   commercial: {
     profileBoostPrices: { daily: 0, weekly: 0, monthly: 0 },
@@ -209,65 +209,21 @@ function normalizeSettings(value: Partial<AqePlatformSettings> = {}): AqePlatfor
         ? Number(value.referralRates?.indirect) : defaults.referralRates.indirect,
     },
     referralRatesByTier: {
-      basic: { direct: 0.10, indirect: 0 },
-      premium: { direct: 0.10, indirect: 0 },
-      vip: { direct: 0.12, indirect: 0.12 },
-    },
-    about: String(value.about || defaults.about),
-    contact: String(value.contact || defaults.contact),
-    withdrawal: {
-      // The CEO policy fixes withdrawals at a 10% service charge.
-      // Do not allow manager/API settings to silently change the financial rule.
-      serviceChargeRate: 0.10,
-      serviceChargeLabel: "10% withdrawal service charge",
-    },
-    pricing: {
-      originalTierPrices: {
-        basic: positive(originalTierPrices.basic, defaults.pricing.originalTierPrices.basic),
-        premium: positive(originalTierPrices.premium, defaults.pricing.originalTierPrices.premium),
-        vip: positive(originalTierPrices.vip, defaults.pricing.originalTierPrices.vip),
-      },
-      currentTierPrices: normalizedCurrentPrices,
-      promotionalLabels: {
-        basic: String(promotionalLabels.basic || defaults.pricing.promotionalLabels.basic),
-        premium: String(promotionalLabels.premium || defaults.pricing.promotionalLabels.premium),
-        vip: String(promotionalLabels.vip || defaults.pricing.promotionalLabels.vip),
-      },
-      welcomeBonus: positive(pricing.welcomeBonus, defaults.pricing.welcomeBonus),
-      deduction: {
-        basic: positive(deduction.basic, defaults.pricing.deduction.basic),
-        premium: positive(deduction.premium, defaults.pricing.deduction.premium),
-        vip: positive(deduction.vip, defaults.pricing.deduction.vip),
-      },
-      teamLeaderRenewalCommission: {
-        basic: positive(teamLeaderRenewalCommission.basic, defaults.pricing.teamLeaderRenewalCommission.basic),
-        premium: positive(teamLeaderRenewalCommission.premium, defaults.pricing.teamLeaderRenewalCommission.premium),
-        ...(teamLeaderRenewalCommission.vip !== undefined
-          ? { vip: positive(teamLeaderRenewalCommission.vip, 0) }
-          : {}),
-      },
-      vipSalary: positive(pricing.vipSalary, defaults.pricing.vipSalary),
-      vipSalaryDay: Math.min(31, Math.max(1, Math.round(positive(pricing.vipSalaryDay, defaults.pricing.vipSalaryDay)))),
-      withdrawalBefore20th: Boolean(
-        pricing.withdrawalBefore20th ?? defaults.pricing.withdrawalBefore20th,
-      ),
-    },
-    mediaLimits: {
       basic: {
-        imagesPerMonth: Math.max(0, Math.round(positive(value.mediaLimits?.basic?.imagesPerMonth, defaults.mediaLimits.basic.imagesPerMonth))),
-        videosPerMonth: Math.max(0, Math.round(positive(value.mediaLimits?.basic?.videosPerMonth, defaults.mediaLimits.basic.videosPerMonth))),
+        imagesPerMonth: (() => { const v = value.mediaLimits?.basic?.imagesPerMonth; return v === null ? null : Math.max(0, Math.round(positive(v, defaults.mediaLimits.basic.imagesPerMonth ?? 0))); })(),
+        videosPerMonth: (() => { const v = value.mediaLimits?.basic?.videosPerMonth; return v === null ? null : Math.max(0, Math.round(positive(v, defaults.mediaLimits.basic.videosPerMonth ?? 0))); })(),
         maxImageSizeMB: positive(value.mediaLimits?.basic?.maxImageSizeMB, defaults.mediaLimits.basic.maxImageSizeMB),
         maxVideoSizeMB: positive(value.mediaLimits?.basic?.maxVideoSizeMB, defaults.mediaLimits.basic.maxVideoSizeMB),
       },
       premium: {
-        imagesPerMonth: Math.max(0, Math.round(positive(value.mediaLimits?.premium?.imagesPerMonth, defaults.mediaLimits.premium.imagesPerMonth))),
-        videosPerMonth: Math.max(0, Math.round(positive(value.mediaLimits?.premium?.videosPerMonth, defaults.mediaLimits.premium.videosPerMonth))),
+        imagesPerMonth: (() => { const v = value.mediaLimits?.premium?.imagesPerMonth; return v === null ? null : Math.max(0, Math.round(positive(v, defaults.mediaLimits.premium.imagesPerMonth ?? 0))); })(),
+        videosPerMonth: (() => { const v = value.mediaLimits?.premium?.videosPerMonth; return v === null ? null : Math.max(0, Math.round(positive(v, defaults.mediaLimits.premium.videosPerMonth ?? 0))); })(),
         maxImageSizeMB: positive(value.mediaLimits?.premium?.maxImageSizeMB, defaults.mediaLimits.premium.maxImageSizeMB),
         maxVideoSizeMB: positive(value.mediaLimits?.premium?.maxVideoSizeMB, defaults.mediaLimits.premium.maxVideoSizeMB),
       },
       vip: {
-        imagesPerMonth: Math.max(0, Math.round(positive(value.mediaLimits?.vip?.imagesPerMonth, defaults.mediaLimits.vip.imagesPerMonth))),
-        videosPerMonth: Math.max(0, Math.round(positive(value.mediaLimits?.vip?.videosPerMonth, defaults.mediaLimits.vip.videosPerMonth))),
+        imagesPerMonth: (() => { const v = value.mediaLimits?.vip?.imagesPerMonth; return v === null ? null : Math.max(0, Math.round(positive(v, defaults.mediaLimits.vip.imagesPerMonth ?? 0))); })(),
+        videosPerMonth: (() => { const v = value.mediaLimits?.vip?.videosPerMonth; return v === null ? null : Math.max(0, Math.round(positive(v, defaults.mediaLimits.vip.videosPerMonth ?? 0))); })(),
         maxImageSizeMB: positive(value.mediaLimits?.vip?.maxImageSizeMB, defaults.mediaLimits.vip.maxImageSizeMB),
         maxVideoSizeMB: positive(value.mediaLimits?.vip?.maxVideoSizeMB, defaults.mediaLimits.vip.maxVideoSizeMB),
       },
