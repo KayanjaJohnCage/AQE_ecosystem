@@ -40,10 +40,21 @@ self.addEventListener("fetch", event => {
   if (isMediaRequest(request)) {
     event.respondWith(
       caches.open(MEDIA_CACHE).then(async cache => {
-        const cached = await cache.match(request);
+        // Supabase signed media URLs contain expiring query parameters.
+        // Normalize the cache key to the stable storage path so a later
+        // signed URL can still reuse an image/video already downloaded.
+        const normalizedUrl = new URL(request.url);
+        normalizedUrl.search = "";
+        const cacheKey = new Request(normalizedUrl.toString(), {
+          method: "GET",
+          headers: request.headers,
+        });
+        const cached = await cache.match(cacheKey);
         try {
           const response = await fetch(request);
-          if (response && response.ok) cache.put(request, response.clone()).catch(() => {});
+          if (response && response.ok) {
+            cache.put(cacheKey, response.clone()).catch(() => {});
+          }
           return response;
         } catch (_) {
           if (cached) return cached;
