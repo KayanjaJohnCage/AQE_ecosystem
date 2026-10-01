@@ -10065,7 +10065,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
       var paymentKind=serverPaymentContext&&serverPaymentContext.kind||'wallet_deposit';
       var requestedTier=(serverPaymentContext&&serverPaymentContext.tier)||'basic';
       var provider=(window.pay&&window.pay.method==='AQE_MANAGER')?'AQE_MANAGER':'MukuruPay';
-      var payload=await api(provider==='AQE_MANAGER'?'/api/payments/manager-direct':'/api/payments/initialize',{method:'POST',body:JSON.stringify({amount:amount,currency:'UGX',qcPackageId:paymentKind==='membership_upgrade'?'membership_upgrade':'wallet_deposit',tier:requestedTier,kind:paymentKind,paymentKind:paymentKind,provider:provider,reference:(window.pay&&window.pay.reference)||('AQE-'+Date.now()),senderDetails:{name:name,number:num,network:(window.pay&&window.pay.network)||'MTN'}})});
+      var payload=await api(provider==='AQE_MANAGER'?'/api/payments/manager-direct':'/api/payments/initialize',{method:'POST',body:JSON.stringify({amount:amount,currency:'UGX',qcPackageId:paymentKind==='membership_upgrade'?'membership_upgrade':'wallet_deposit',tier:requestedTier,kind:paymentKind,paymentKind:paymentKind,provider:provider,reference:(window.pay&&window.pay.reference)||('AQE-'+Date.now()),senderDetails:{name:name,number:num,phone:num,network:(window.pay&&window.pay.network)||'MTN'}})});
       var order=payload.order||payload;
       var ref=order.reference||payload.reference||('AQE-'+Date.now());
       var tx=order.id||payload.id||('PAY-'+Date.now());
@@ -10242,7 +10242,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
         var isContent=ctx.kind==='vip_content_subscription';
         var tier=isMembership?(ctx.tier||'premium'):'basic';
         var kind=isContent?'vip_content_subscription':isMembership?'membership_upgrade':'wallet_deposit';
-        var body={amount:amount,currency:currency,qcPackageId:isContent?'vip-content-monthly':isMembership?'membership-'+tier:'wallet_deposit',tier:tier,kind:kind,paymentKind:kind,provider:provider,reference:(window.pay&&window.pay.reference)||('AQE-'+Date.now()),senderDetails:{name:name,number:num,network:(window.pay&&window.pay.network)||'MTN'}};
+        var body={amount:amount,currency:currency,qcPackageId:isContent?'vip-content-monthly':isMembership?'membership-'+tier:'wallet_deposit',tier:tier,kind:kind,paymentKind:kind,provider:provider,reference:(window.pay&&window.pay.reference)||('AQE-'+Date.now()),senderDetails:{name:name,number:num,phone:num,network:(window.pay&&window.pay.network)||'MTN'}};
         if(isContent)body.metadata={profileId:ctx.profileId||null,monthlyDays:30};
         var payload=await serverPost(provider==='AQE_MANAGER'?'/api/payments/manager-direct':'/api/payments/initialize',body);
         var order=payload.order||payload,ref=order.reference||payload.reference||'—',tx=order.id||payload.id||'—';
@@ -10680,7 +10680,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
     var s=jget('aqe_next_session');if(!s||!s.access_token){notify('Please sign in before subscribing','error');return}
     try{
       var provider=(window.pay&&window.pay.method==='AQE_MANAGER')?'AQE_MANAGER':'MukuruPay';
-      var payload=await postApi(provider==='AQE_MANAGER'?'/api/payments/manager-direct':'/api/payments/initialize',{amount:amount,currency:paymentCurrency(),qcPackageId:'vip-content-monthly',tier:'basic',kind:'vip_content_subscription',paymentKind:'vip_content_subscription',provider:provider,reference:(window.pay&&window.pay.reference)||('AQE-VIPCONTENT-'+Date.now()),senderDetails:{name:name,number:num,network:(window.pay&&window.pay.network)||'MTN'},metadata:{profileId:content.profileId,monthlyDays:30}});
+      var payload=await postApi(provider==='AQE_MANAGER'?'/api/payments/manager-direct':'/api/payments/initialize',{amount:amount,currency:paymentCurrency(),qcPackageId:'vip-content-monthly',tier:'basic',kind:'vip_content_subscription',paymentKind:'vip_content_subscription',provider:provider,reference:(window.pay&&window.pay.reference)||('AQE-VIPCONTENT-'+Date.now()),senderDetails:{name:name,number:num,phone:num,network:(window.pay&&window.pay.network)||'MTN'},metadata:{profileId:content.profileId,monthlyDays:30}});
       var order=payload.order||payload,ref=order.reference||payload.reference||'—',tx=order.id||payload.id||'—';
       if(E('aqeExactTxn'))E('aqeExactTxn').textContent='Payment #'+tx;
       if(E('aqeExactAmount2'))E('aqeExactAmount2').textContent=moneyCurrent(amount,paymentCurrency());
@@ -12485,7 +12485,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
         var payload=await api(provider==='AQE_MANAGER'?'/api/payments/manager-direct':'/api/payments/initialize',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
           amount:amount,currency:'UGX',qcPackageId:'membership_upgrade',tier:ctx.tier,kind:'membership_upgrade',paymentKind:'membership_upgrade',
           provider:provider,reference:(window.pay&&window.pay.reference)||('AQE-UPGRADE-'+Date.now()),
-          senderDetails:{name:name,number:num,network:(window.pay&&window.pay.network)||'MTN'}
+          senderDetails:{name:name,number:num,phone:num,network:(window.pay&&window.pay.network)||'MTN'}
         })});
         var order=payload.order||payload;
         if(document.getElementById('aqeExactTxn'))document.getElementById('aqeExactTxn').textContent='Payment #'+(order.id||'—');
