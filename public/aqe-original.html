@@ -10643,7 +10643,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
   window.aqeSubscribeProfile=function(profileId){
     var u=user();if(!u){openAuth();return;}
     var p=findProfile(profileId);if(!p)return;
-    if(String(u.tier||'').toLowerCase()==='vip'){notify('VIP members already have VIP content access.');return;}
+    if(String(profileId)===String(u.id)){notify('You cannot subscribe to your own VIP content.');return;}
     if(vipContentAccess(profileId)){notify('You already have active VIP content access for this profile.');return;}
     window.__aqeContentSubscriptionContext={profileId:String(profileId),currency:currentPaymentCurrency(),baseUgx:vipContentPrice()};window.__aqePaymentContext={kind:'vip_content_subscription',profileId:String(profileId),baseUgx:vipContentPrice()};
     window.aqeExactOpen();
