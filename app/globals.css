@@ -2536,3 +2536,6 @@ body {
     grid-template-columns:1.5fr 1fr 1fr;
   }
 }
+
+
+.manager-danger-button{border:1px solid rgba(239,68,68,.55);background:rgba(239,68,68,.10);color:#fecaca;border-radius:10px;padding:7px 10px;font-size:12px;font-weight:700;cursor:pointer}.manager-danger-button:hover{background:rgba(239,68,68,.18)}
