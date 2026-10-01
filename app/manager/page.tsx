@@ -479,7 +479,7 @@ export default function ManagerPage() {
             setRecentActivity(nextRows["Transactions & QC"].slice(0, 8));
           }
 
-          const alerts: string[] = [];
+          const alerts: Array<{text:string;target:string}> = [];
           const pendingPayments = (payments.payments || []).filter((p: { status?: string }) => ["initiated","pending"].includes(String(p.status)));
           if (pendingPayments.length) alerts.push({text:`${pendingPayments.length} payment request${pendingPayments.length === 1 ? "" : "s"} awaiting action.`,target:"Payments & Approvals"});
           const pendingWithdrawals = (withdrawals.withdrawals || []).filter((w: { status?: string }) => ["PENDING","APPROVED"].includes(String(w.status)));
@@ -549,9 +549,9 @@ export default function ManagerPage() {
         const pendingWithdrawals = (withdrawals.withdrawals || []).filter((w: { status?: string }) => ["PENDING", "APPROVED"].includes(String(w.status))).length;
         const openSupport = (support.tickets || []).filter((t: { status?: string }) => String(t.status).toUpperCase() === "OPEN").length;
         const alerts: string[] = [];
-        if (pendingPayments) alerts.push(`${pendingPayments} payment request${pendingPayments === 1 ? "" : "s"} awaiting action.`);
-        if (pendingWithdrawals) alerts.push(`${pendingWithdrawals} withdrawal request${pendingWithdrawals === 1 ? "" : "s"} need attention.`);
-        if (openSupport) alerts.push(`${openSupport} open customer support ticket${openSupport === 1 ? "" : "s"} need attention.`);
+        if (pendingPayments) alerts.push({text:`${pendingPayments} payment request${pendingPayments === 1 ? "" : "s"} awaiting action.`,target:"Payments & Approvals"});
+        if (pendingWithdrawals) alerts.push({text:`${pendingWithdrawals} withdrawal request${pendingWithdrawals === 1 ? "" : "s"} need attention.`,target:"Withdrawals"});
+        if (openSupport) alerts.push({text:`${openSupport} open customer support ticket${openSupport === 1 ? "" : "s"} need attention.`,target:"Customer Support"});
         setUrgentAlerts(alerts);
 
         if (lastPending >= 0 && pendingPayments > lastPending && browserAlertsEnabled && "Notification" in window && Notification.permission === "granted") {
