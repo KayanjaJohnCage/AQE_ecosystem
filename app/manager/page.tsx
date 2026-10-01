@@ -674,6 +674,9 @@ export default function ManagerPage() {
   };
 
   const managerDelete = async (row: ManagerRow) => {
+    if (active === "Users & Profiles" && ["manager","admin"].includes(String((row as ManagerRow & { role?: string }).role || "").toLowerCase())) {
+      setReviewMessage("Manager/admin accounts cannot be deleted."); return;
+    }
     const resource = managerResourceForActive(active);
     if (!resource || !row.id) return;
     if (resource === "profile_media") {
@@ -686,8 +689,8 @@ export default function ManagerPage() {
       } catch (error) { setReviewMessage(error instanceof Error ? error.message : "Media deletion failed."); }
       return;
     }
-    if (resource === "transaction_receipts" || resource === "payment_orders" || resource === "referral_earnings") {
-      setReviewMessage("Financial records are immutable and cannot be deleted.");
+    if (resource === "payment_orders" || resource === "referral_earnings") {
+      setReviewMessage("Payment orders and referral earnings are protected financial records and cannot be deleted from Manager Control.");
       return;
     }
     if (!window.confirm(`Delete this ${active} record? This action cannot be undone.`)) return;
@@ -699,6 +702,9 @@ export default function ManagerPage() {
 
   const managerBlock = async (row: ManagerRow) => {
     if (!row.id || active !== "Users & Profiles") return;
+    if (String((row as ManagerRow & { role?: string }).role || "").toLowerCase() === "manager" || String((row as ManagerRow & { role?: string }).role || "").toLowerCase() === "admin") {
+      setReviewMessage("Manager/admin accounts cannot be blocked."); return;
+    }
     const currentlyBlocked = /blocked/i.test(row.value);
     try {
       await controlRequest(currentlyBlocked ? "unblock" : "block", "profiles", { userId: row.id });
@@ -708,8 +714,8 @@ export default function ManagerPage() {
 
   const managerClear = async () => {
     const resource = managerResourceForActive(active);
-    if (!resource || ["transaction_receipts","payment_orders","referral_earnings","cash_wallet","cash_wallet_ledger","qc_ledger","creator_earnings","audit_log"].includes(resource)) {
-      setReviewMessage("Clear-all is disabled for financial and audit data. Those records are retained for traceability.");
+    if (!resource || ["payment_orders","referral_earnings","cash_wallet","cash_wallet_ledger","qc_ledger","creator_earnings","audit_log"].includes(resource)) {
+      setReviewMessage("Clear-all is disabled for live financial ledgers and audit data. Transaction history/receipts can be cleared separately.");
       return;
     }
     if (!window.confirm(`Clear ALL records in ${active}? This cannot be undone.`)) return;
