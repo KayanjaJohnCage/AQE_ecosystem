@@ -195,7 +195,7 @@ export async function POST(request: Request) {
         return NextResponse.json({ ok:false, reason:"Manager and admin accounts cannot be updated from Manager Control." }, { status:403 });
       }
     }
-    const current = await client.from(resource).select("*").eq("id", id).maybeSingle();
+    const current = await client.from(resource).select("*").eq(resource === "profiles" ? "user_id" : "id", id).maybeSingle();
       if (current.error || !current.data) return NextResponse.json({ ok: false, reason: current.error?.message ?? "Record not found." }, { status: 404 });
 
       const allowedByResource: Record<string,string[]> = {
@@ -217,7 +217,7 @@ export async function POST(request: Request) {
       if (!Object.keys(update).length) return NextResponse.json({ ok: false, reason: "No editable fields supplied." }, { status: 400 });
       if ("updated_at" in current.data || ["profiles","bookings","marketplace_products","campaigns","aqe_prizes","support_ticket"].includes(resource)) update.updated_at = new Date().toISOString();
 
-      const updated = await client.from(resource).update(update).eq("id", id).select("*").single();
+      const updated = await client.from(resource).update(update).eq(resource === "profiles" ? "user_id" : "id", id).select("*").single();
       if (updated.error) return NextResponse.json({ ok: false, reason: updated.error.message }, { status: 400 });
       await audit(client, access.session.userId!, "UPDATE", resource, id, current.data, updated.data);
       return NextResponse.json({ ok: true, row: updated.data });
