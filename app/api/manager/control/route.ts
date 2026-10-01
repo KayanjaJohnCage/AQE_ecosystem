@@ -22,6 +22,8 @@ const DELETE_RESOURCES = new Set([
   "support_ticket",
   "profile_comments",
   "account_troubleshoot_requests",
+  "transaction_receipts",
+  "transactions",
 ]);
 
 const CLEAR_RESOURCES = new Set([
@@ -34,6 +36,8 @@ const CLEAR_RESOURCES = new Set([
   "support_ticket",
   "profile_comments",
   "account_troubleshoot_requests",
+  "transaction_receipts",
+  "transactions",
 ]);
 
 const PROTECTED_RESOURCES = new Set([
@@ -106,13 +110,15 @@ export async function POST(request: Request) {
       const result = await client.from(resource).delete().not("id", "is", null);
       if (result.error) return NextResponse.json({ ok: false, reason: result.error.message }, { status: 500 });
       await audit(client, access.session.userId!, "CLEAR_ALL", resource, undefined, undefined, undefined, "Manager requested clear-all.");
-      return NextResponse.json({ ok: true, affected: 1, message: resource + " cleared." });
+      return NextResponse.json({ ok: true, affected: null, message: resource + " cleared." });
     }
 
     if (action === "block" || action === "unblock") {
       if (resource !== "profiles") return NextResponse.json({ ok: false, reason: "Block is available for customer profiles." }, { status: 400 });
       const userId = String(body.userId ?? body.id ?? "").trim();
       if (!userId || userId === access.session.userId) return NextResponse.json({ ok: false, reason: "A different customer user ID is required." }, { status: 400 });
+      const targetRoles = await client.from("user_roles").select("role_name").eq("user_id", userId);
+      if ((targetRoles.data ?? []).some((row) => ["manager","admin"].includes(String(row.role_name).toLowerCase()))) return NextResponse.json({ ok:false, reason:"Manager and admin accounts cannot be blocked from Manager Control." }, { status:403 });
       const current = await client.from("profiles").select("user_id,account_status,display_name").eq("user_id", userId).maybeSingle();
       if (current.error || !current.data) return NextResponse.json({ ok: false, reason: current.error?.message ?? "Profile not found." }, { status: 404 });
       const next = action === "block" ? "blocked" : "active";
@@ -184,7 +190,13 @@ export async function POST(request: Request) {
       if (!id) return NextResponse.json({ ok: false, reason: "Record ID is required." }, { status: 400 });
       if (PROTECTED_RESOURCES.has(resource)) return NextResponse.json({ ok: false, reason: "Financial and audit records must be changed through their dedicated workflows." }, { status: 409 });
 
-      const current = await client.from(resource).select("*").eq("id", id).maybeSingle();
+      if (resource === "profiles" && id) {
+      const roleRows = await client.from("user_roles").select("role_name").eq("user_id", id);
+      if ((roleRows.data ?? []).some((row) => ["manager","admin"].includes(String(row.role_name).toLowerCase()))) {
+        return NextResponse.json({ ok:false, reason:"Manager and admin accounts cannot be updated from Manager Control." }, { status:403 });
+      }
+    }
+    const current = await client.from(resource).select("*").eq("id", id).maybeSingle();
       if (current.error || !current.data) return NextResponse.json({ ok: false, reason: current.error?.message ?? "Record not found." }, { status: 404 });
 
       const allowedByResource: Record<string,string[]> = {
@@ -232,6 +244,10 @@ export async function DELETE(request: Request) {
     if (PROTECTED_RESOURCES.has(resource)) return NextResponse.json({ ok: false, reason: "Financial and audit records are immutable." }, { status: 409 });
     if (!DELETE_RESOURCES.has(resource)) return NextResponse.json({ ok: false, reason: "Delete is not enabled for this resource." }, { status: 400 });
 
+    if (resource === "profiles") {
+      const roleRows = await client.from("user_roles").select("role_name").eq("user_id", id);
+      if ((roleRows.data ?? []).some((row) => ["manager","admin"].includes(String(row.role_name).toLowerCase()))) return NextResponse.json({ ok:false, reason:"Manager and admin accounts cannot be deleted from Manager Control." }, { status:403 });
+    }
     const current = await client.from(resource).select("*").eq("id", id).maybeSingle();
     if (current.error || !current.data) return NextResponse.json({ ok: false, reason: current.error?.message ?? "Record not found." }, { status: 404 });
     const deleted = await client.from(resource).delete().eq("id", id);
