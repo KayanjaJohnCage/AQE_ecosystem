@@ -20,6 +20,7 @@ type ManagerData = {
 
 type ManagerProfile = {
   id?: string;
+  userId?: string;
   name: string;
   city: string;
   tag: string;
@@ -577,6 +578,7 @@ export default function ManagerPage() {
       .includes(query);
   });
   const profileRows: ManagerRow[] = filteredProfiles.map((profile) => ({
+    id: profile.userId || profile.id,
     title: profile.name,
     meta: `${profile.city} • ${profile.tag}`,
     value: `${profile.status} • ${(profile.tier || "basic").toUpperCase()}`,
@@ -588,6 +590,35 @@ export default function ManagerPage() {
         ? liveRows[active]
         : (tableSeeds[active] ?? []);
   const paymentRows: ManagerRow[] = liveRows["Payments & Approvals"] ?? [];
+
+  async function deleteCustomer(userId: string, name: string) {
+    if (!userId) {
+      setReviewMessage("This customer has no user ID and cannot be deleted.");
+      return;
+    }
+    const confirmed = window.confirm(
+      `Delete customer account "${name}"? This removes the customer profile/auth identity and customer-facing content. Financial and audit records are retained for traceability. This action cannot be undone.`,
+    );
+    if (!confirmed) return;
+
+    const { session, user } = readStoredSession();
+    const headers: HeadersInit = { "Content-Type": "application/json" };
+    if (session.access_token) headers.authorization = `Bearer ${session.access_token}`;
+    if (user.id) headers["x-user-id"] = user.id;
+
+    const response = await fetch("/api/manager/users", {
+      method: "DELETE",
+      headers,
+      body: JSON.stringify({ userId }),
+    });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok || !payload.ok) {
+      setReviewMessage(payload.reason || "Customer deletion failed.");
+      return;
+    }
+    setProfiles((items) => items.filter((item) => (item.userId || item.id) !== userId));
+    setReviewMessage(payload.message || `Customer ${name} deleted.`);
+  }
 
   async function reviewBooking(
     bookingId: string,
@@ -1606,6 +1637,15 @@ export default function ManagerPage() {
                             Reject
                           </button>
                         </>
+                      ) : null}
+                      {active === "Users & Profiles" && row.id ? (
+                        <button
+                          type="button"
+                          className="manager-danger-button"
+                          onClick={() => deleteCustomer(row.id!, row.title)}
+                        >
+                          Delete account
+                        </button>
                       ) : null}
                     </div>
                   </div>
