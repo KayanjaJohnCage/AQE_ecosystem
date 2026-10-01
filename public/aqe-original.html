@@ -12863,5 +12863,216 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
   setInterval(syncRealCollections,10000);
 })();
 </script>
-</body>
+<script id="aqe-final-system-navigation-media-filters">
+(function(){
+  "use strict";
+  function E(id){return document.getElementById(id)}
+  function sess(){try{return JSON.parse(localStorage.getItem("aqe_next_session")||"null")||null}catch(_){return null}}
+  function authHeaders(){var s=sess(),h={"Content-Type":"application/json"};if(s&&s.access_token)h.Authorization="Bearer "+s.access_token;return h}
+  function toastMsg(msg,type){if(typeof window.showToast==="function")window.showToast(msg,type||"success");else if(typeof window.toast==="function")window.toast(msg)}
+  function current(){return window.state&&state.currentUser?state.currentUser:null}
+  function profileFor(id){return (window.state&&Array.isArray(state.profiles)?state.profiles:[]).find(function(p){return String(p.id)===String(id)})}
+
+  /* One final navigation authority. It bypasses the accumulated legacy showScreen wrappers. */
+  window.aqeNavigate=function(id){
+    if(!id)return;
+    if(id==="screen-manager"){
+      try{window.top.location.href="/manager"}catch(_){location.href="/manager"}
+      return;
+    }
+    var el=E(id);if(!el){toastMsg("That AQE page is not available yet.","error");return}
+    document.querySelectorAll(".screen").forEach(function(x){x.classList.add("hidden")});
+    el.classList.remove("hidden");
+    el.classList.add("fi");
+    window.scrollTo(0,0);
+    try{
+      if(id==="screen-home"&&typeof renderProfiles==="function")renderProfiles();
+      if(id==="screen-explore"&&typeof renderExplore==="function")renderExplore();
+      if(id==="screen-shop"&&typeof renderMarket==="function")renderMarket();
+      if(id==="screen-messages"&&typeof mxRenderInbox==="function")mxRenderInbox();
+      if(id==="screen-me"&&typeof renderMyProfileMedia==="function")renderMyProfileMedia();
+      if(id==="screen-bill"&&typeof renderBill==="function")renderBill();
+      if(id==="screen-notifications"&&typeof renderAqeNotificationPage==="function")renderAqeNotificationPage();
+      if(id==="screen-receipts"&&typeof renderAqeReceiptPage==="function")renderAqeReceiptPage();
+      if(id==="screen-aqe-payments"&&typeof renderPaymentHistory==="function")renderPaymentHistory();
+      if(id.indexOf("screen-aqe-")===0&&typeof pxRenderAll==="function")pxRenderAll();
+      if(id==="screen-manager"&&typeof managerSupport==="function")managerSupport();
+    }catch(_){}
+    document.dispatchEvent(new CustomEvent("aqe-screen-change",{detail:{id:id}}));
+    return el;
+  };
+
+  /* Intercept legacy inline showScreen() buttons before their old wrappers can cancel navigation. */
+  document.addEventListener("click",function(ev){
+    var target=ev.target&&ev.target.closest?ev.target.closest("[onclick]"):null;
+    if(!target)return;
+    var code=target.getAttribute("onclick")||"";
+    var match=code.match(/showScreen\s*\(\s*['"]([^'"]+)['"]\s*\)/);
+    if(!match)return;
+    var id=match[1];
+    ev.preventDefault();
+    ev.stopImmediatePropagation();
+    if(id==="screen-manager"){
+      try{window.top.location.href="/manager"}catch(_){location.href="/manager"}
+      return;
+    }
+    window.aqeNavigate(id);
+    if(/toggleDrawer\s*\(/.test(code)&&typeof window.toggleDrawer==="function")try{window.toggleDrawer()}catch(_){}
+  },true);
+
+  /* Drawer and bottom-nav buttons that use data-screen are also routed through the same authority. */
+  document.addEventListener("click",function(ev){
+    var target=ev.target&&ev.target.closest?ev.target.closest("[data-screen]"):null;
+    if(!target)return;
+    var id=target.getAttribute("data-screen");if(!id)return;
+    ev.preventDefault();ev.stopImmediatePropagation();window.aqeNavigate(id);
+  },true);
+
+  /* Manager-editable discovery filters. */
+  var homeFilter="All",exploreFilter="All";
+  function filterMatch(p,label){
+    var q=String(label||"All").trim().toLowerCase();
+    if(!q||q==="all")return true;
+    if(q.indexOf("available")>=0)return String(p.availability||p.avail||"").toLowerCase().indexOf("available")>=0;
+    if(q.indexOf("vip")>=0)return String(p.tier||"").toLowerCase()==="vip";
+    if(q.indexOf("premium")>=0)return String(p.tier||"").toLowerCase()==="premium";
+    if(q.indexOf("basic")>=0)return String(p.tier||"").toLowerCase()==="basic";
+    if(q.indexOf("female")>=0||q.indexOf("woman")>=0)return String(p.gender||"").toLowerCase().indexOf("female")>=0;
+    if(q.indexOf("male")>=0||q.indexOf("man")>=0)return String(p.gender||"").toLowerCase().indexOf("male")>=0;
+    var hay=[p.location,p.city,p.area,p.country,p.category,p.headline].concat(p.services||[],p.contentCategories||[],p.languages||[]).join(" ").toLowerCase();
+    return hay.indexOf(q)>=0;
+  }
+  function applyFilter(screen,label){
+    var cards=document.querySelectorAll(screen==="home"?"#homeProfileGrid [data-aqe-profile-id]":"#exploreResults [data-aqe-profile-id]");
+    Array.prototype.forEach.call(cards,function(card){
+      var p=profileFor(card.getAttribute("data-aqe-profile-id"));
+      card.style.display=!p||filterMatch(p,label)?"":"none";
+    });
+  }
+  function bindFilterButtons(){
+    var home=E("screen-home"),explore=E("screen-explore");
+    if(home){
+      var buttons=home.querySelectorAll(".pill");
+      Array.prototype.forEach.call(buttons,function(btn){
+        btn.onclick=function(ev){
+          ev.preventDefault();ev.stopPropagation();
+          homeFilter=btn.textContent.trim()||"All";
+          buttons.forEach(function(x){x.classList.remove("on")});btn.classList.add("on");
+          applyFilter("home",homeFilter);
+        };
+      });
+    }
+    if(explore){
+      var buttons2=explore.querySelectorAll(".pill");
+      Array.prototype.forEach.call(buttons2,function(btn){
+        btn.onclick=function(ev){
+          ev.preventDefault();ev.stopPropagation();
+          exploreFilter=btn.textContent.trim()||"All";
+          buttons2.forEach(function(x){x.classList.remove("on")});btn.classList.add("on");
+          applyFilter("explore",exploreFilter);
+        };
+      });
+    }
+  }
+  function applySavedFilters(settings){
+    var cc=settings&&settings.customerContent||{};
+    var homeFilters=Array.isArray(cc.home&&cc.home.filters)?cc.home.filters:["All","Available","VIP","Premium","Kampala","Entebbe","Female","Male","Lesbian"];
+    var exploreFilters=Array.isArray(cc.explore&&cc.explore.filters)?cc.explore.filters:["All","Photography","Video","Art","Styling","Audio"];
+    var home=E("screen-home"),explore=E("screen-explore");
+    if(home){
+      var wrap=home.querySelector(".pill")&&home.querySelector(".pill").parentElement;
+      if(wrap){wrap.innerHTML=homeFilters.map(function(x){return '<button class="pill'+(String(x).toLowerCase()==="all"?' on':'')+'">'+String(x).replace(/[<>&"]/g,"")+"</button>"}).join("")}
+    }
+    if(explore){
+      var wrap2=explore.querySelector(".pill")&&explore.querySelector(".pill").parentElement;
+      if(wrap2){wrap2.innerHTML=exploreFilters.map(function(x){return '<button class="pill'+(String(x).toLowerCase()==="all"?' on':'')+'">'+String(x).replace(/[<>&"]/g,"")+"</button>"}).join("")}
+    }
+    bindFilterButtons();
+    applyFilter("home",homeFilter);
+    applyFilter("explore",exploreFilter);
+  }
+  async function loadCustomerFilters(){
+    try{
+      var r=await fetch("/api/settings",{cache:"no-store"}),p=await r.json();
+      if(r.ok&&p.settings)applySavedFilters(p.settings);
+    }catch(_){bindFilterButtons()}
+  }
+
+  /* Real customer media: server storage/database is authoritative; local data URLs are no longer treated as the upload result. */
+  function mediaUrl(item){return item&&item.url?String(item.url):""}
+  function renderServerMedia(media){
+    var p=typeof currentOwnProfile==="function"?currentOwnProfile():null;
+    if(!p)return;
+    p.media=media.map(function(m){return {
+      id:m.id,type:m.media_type||m.type,url:mediaUrl(m),name:m.name||m.storage_path||"AQE media",
+      profilePhoto:Boolean(m.is_profile_photo),profilePhotoId:m.is_profile_photo?m.id:null,
+      contentAccess:m.content_access||"public",moderationStatus:m.moderation_status||"pending"
+    }});
+    var grid=E("myProfileMediaGrid");if(grid){
+      grid.innerHTML=p.media.length?p.media.map(function(m){
+        var visual=m.type==="video"
+          ? '<video src="'+String(m.url).replace(/"/g,"&quot;")+'" controls playsinline preload="metadata" style="width:100%;height:140px;object-fit:cover;border-radius:10px;background:#09090d"></video>'
+          : '<img src="'+String(m.url).replace(/"/g,"&quot;")+'" alt="'+String(m.name).replace(/"/g,"&quot;")+'" style="width:100%;height:140px;object-fit:cover;border-radius:10px;display:block" onerror="this.style.opacity=.25">';
+        return '<div class="bga9/50 rxl p2 b1 ba7 aqe-media-card"><div style="position:relative">'+visual+(m.profilePhoto?'<span class="px-pill ok" style="position:absolute;left:6px;top:6px">PROFILE</span>':'')+'<span class="px-pill" style="position:absolute;right:6px;top:6px">'+String(m.moderationStatus||"pending").toUpperCase()+'</span></div><div class="flex g1 mt2"><button class="px-btn" onclick="aqeSetProfilePhotoServer(\''+m.id+'\')">'+(m.profilePhoto?"Profile Photo":"Set Profile")+'</button><button class="px-btn" onclick="aqeDeleteMediaServer(\''+m.id+'\')">Remove</button></div></div>';
+      }).join(""):'<div class="c2 tc ca5 xs py4">No photos or videos uploaded yet.</div>';
+    }
+    var actions=E("myMediaActions"),note=E("myMediaNote"),badge=E("myMediaTier");
+    var t=String((current()||{}).tier||"basic").toLowerCase();
+    var cap=t==="vip"?"Unlimited":t==="premium"?"20":"10";
+    if(badge)badge.textContent=t.toUpperCase();
+    if(actions)actions.innerHTML='<button class="px-btn primary" onclick="document.getElementById(\'profilePhotoInput\').click()"><i class="fas fa-plus"></i> Add Photos</button><button class="px-btn" onclick="document.getElementById(\'profileVideoInput\').click()"><i class="fas fa-video"></i> Upload Video</button>';
+    if(note)note.textContent="Media capacity: "+cap+" uploads. Every upload is stored in AQE and remains pending until Manager moderation.";
+  }
+  async function aqeRefreshServerMedia(){
+    var s=sess();if(!s||!s.access_token)return;
+    try{
+      var r=await fetch("/api/media/me",{headers:{Authorization:"Bearer "+s.access_token},cache:"no-store"});
+      var p=await r.json();if(r.ok&&Array.isArray(p.media))renderServerMedia(p.media);
+    }catch(_){}
+  }
+  window.aqeRefreshMediaDisplay=aqeRefreshServerMedia;
+
+  function uploadWithProgress(file){
+    return new Promise(function(resolve,reject){
+      var s=sess();if(!s||!s.access_token){reject(new Error("Please sign in first."));return}
+      var xhr=new XMLHttpRequest();xhr.open("POST","/api/media/upload-file",true);xhr.setRequestHeader("Authorization","Bearer "+s.access_token);
+      var card=document.createElement("div");card.className="bga9/50 rxl p3 b1 ba7";card.id="aqe-upload-progress-"+Date.now()+Math.random().toString(16).slice(2);
+      card.innerHTML='<div class="fw7">'+String(file.name).replace(/[<>&"]/g,"")+'</div><div class="xs ca5 mt1">Uploading…</div><div style="height:7px;background:var(--a7);border-radius:99px;margin-top:10px;overflow:hidden"><div class="aqe-upload-bar" style="height:100%;width:0;background:var(--g)"></div></div><div class="xs ca5 mt1 aqe-upload-percent">0%</div>';
+      var host=E("myProfileMediaGrid");if(host)host.prepend(card);
+      xhr.upload.onprogress=function(e){if(!e.lengthComputable)return;var pct=Math.round(e.loaded/e.total*100);var bar=card.querySelector(".aqe-upload-bar"),txt=card.querySelector(".aqe-upload-percent");if(bar)bar.style.width=pct+"%";if(txt)txt.textContent=pct+"%";};
+      xhr.onreadystatechange=function(){if(xhr.readyState!==4)return;var payload={};try{payload=JSON.parse(xhr.responseText||"{}")}catch(_){}
+        if(xhr.status>=200&&xhr.status<300&&payload.ok){card.querySelector(".xs.ca5.mt1").textContent="Uploaded · awaiting Manager moderation";resolve(payload.media)}else{card.remove();reject(new Error(payload.reason||"Upload failed."))}
+      };
+      xhr.onerror=function(){card.remove();reject(new Error("Upload interrupted. Check your connection and try again."))};
+      var fd=new FormData();fd.append("file",file);xhr.send(fd);
+    });
+  }
+  window.aqeUploadMedia=async function(){
+    var input=E("aqeMediaInput")||E("profilePhotoInput");var files=input&&input.files?Array.prototype.slice.call(input.files):[];
+    if(!files.length){toastMsg("Choose media first.","error");return}
+    var u=current();if(!u){toastMsg("Please sign in first.","error");return}
+    try{
+      for(var i=0;i<files.length;i++)await uploadWithProgress(files[i]);
+      if(input)input.value="";
+      await aqeRefreshServerMedia();
+      toastMsg(files.length+" media item(s) uploaded and queued for moderation.","success");
+    }catch(e){toastMsg(e.message||"Media upload failed.","error")}
+  };
+  window.handleProfileFiles=function(files,type){
+    var arr=Array.prototype.slice.call(files||[]);if(!arr.length)return;
+    var filtered=arr.filter(function(f){return type==="video"?/^video\//i.test(f.type):/^image\//i.test(f.type)});
+    if(!filtered.length){toastMsg("Choose a valid "+type+" file.","error");return}
+    (async function(){try{for(var i=0;i<filtered.length;i++)await uploadWithProgress(filtered[i]);await aqeRefreshServerMedia();toastMsg(filtered.length+" "+type+" upload(s) submitted.","success")}catch(e){toastMsg(e.message||"Upload failed.","error")}})();
+  };
+  window.aqeSetProfilePhotoServer=async function(id){try{var s=sess();var r=await fetch("/api/media/profile-photo",{method:"POST",headers:{"Content-Type":"application/json",Authorization:"Bearer "+s.access_token},body:JSON.stringify({mediaId:id})});var p=await r.json();if(!r.ok||!p.ok)throw new Error(p.reason||"Profile photo update failed.");await aqeRefreshServerMedia();toastMsg("Profile photo updated.","success")}catch(e){toastMsg(e.message||"Profile photo update failed.","error")}};
+  window.aqeDeleteMediaServer=async function(id){try{var s=sess();var r=await fetch("/api/media/item",{method:"DELETE",headers:{"Content-Type":"application/json",Authorization:"Bearer "+s.access_token},body:JSON.stringify({mediaId:id})});var p=await r.json();if(!r.ok||!p.ok)throw new Error(p.reason||"Media deletion failed.");await aqeRefreshServerMedia();toastMsg("Media removed.","success")}catch(e){toastMsg(e.message||"Media removal failed.","error")}};
+  var oldUpdate=window.updateUIForUser;
+  window.updateUIForUser=function(){try{if(oldUpdate)oldUpdate.apply(this,arguments)}catch(_){};aqeRefreshServerMedia();return undefined};
+
+  loadCustomerFilters();
+  aqeRefreshServerMedia();
+  window.addEventListener("aqe-screen-change",function(ev){if(ev.detail&&ev.detail.id==="screen-me")aqeRefreshServerMedia();if(ev.detail&&ev.detail.id==="screen-home")applyFilter("home",homeFilter);if(ev.detail&&ev.detail.id==="screen-explore")applyFilter("explore",exploreFilter)});
+  if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",function(){setTimeout(function(){loadCustomerFilters();aqeRefreshServerMedia()},200)});
+})();
+</script></body>
 </html>
