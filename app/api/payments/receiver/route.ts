@@ -24,6 +24,11 @@ function envReceiver(): ReceiverDetails {
   };
 }
 
+function isConfigured(receiver: ReceiverDetails) {
+  const values = [receiver.receiverName, receiver.receiverPhone, receiver.receiverCard];
+  return values.every((value) => value && !String(value).toLowerCase().includes("configure receiver"));
+}
+
 function mapRow(row: any): ReceiverDetails {
   return {
     id: row.id,
@@ -51,9 +56,10 @@ export async function GET() {
       .order("created_at", { ascending:false });
 
     if (!error && data?.length) {
-      const receivers = data.map(mapRow);
+      const receivers = data.map(mapRow).filter(isConfigured);
       const receiver = receivers.find(x => x.status === "available") || receivers[0];
-      return NextResponse.json({ok:true,source:"supabase",receiver,receivers});
+      if (receiver) return NextResponse.json({ok:true,source:"supabase",receiver,receivers});
+      return NextResponse.json({ok:true,source:"supabase",configured:false,receiver:null,receivers:[]});
     }
 
     const legacy = await client.from("payment_receiver_settings")
@@ -70,7 +76,7 @@ export async function GET() {
         status:"available",
         updatedAt:legacy.data.updated_at,
       };
-      return NextResponse.json({ok:true,source:"legacy",receiver,receivers:[receiver]});
+      if (isConfigured(receiver)) return NextResponse.json({ok:true,source:"legacy",receiver,receivers:[receiver]});
     }
 
     const receiver=envReceiver();
