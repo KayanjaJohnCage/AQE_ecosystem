@@ -69,7 +69,7 @@ export function createPaymentStateTransition({
   nextState: PaymentState;
 }) {
   const allowed: Record<PaymentState, PaymentState[]> = {
-    initiated: ["pending", "cancelled"],
+    initiated: ["pending", "confirmed", "rejected", "cancelled"],
     pending: ["confirmed", "rejected", "cancelled"],
     confirmed: [],
     rejected: [],

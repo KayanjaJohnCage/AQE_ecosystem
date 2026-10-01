@@ -46,39 +46,29 @@ export async function POST(request: Request) {
       return NextResponse.json({ ok: false, reason: "Unsupported wallet payment." }, { status: 400 });
     }
 
-    const reference = "AQE-WALLET-" + Date.now();
-    const inserted = await client.from("payment_orders").insert({
-      user_id: identity.userId,
-      amount,
-      currency,
-      qc_package_id: paymentKind === "qc_recharge" ? "wallet-qc" : paymentKind,
-      reference,
-      provider: "AQE_WALLET",
-      mode: "live",
-      status: "initiated",
-      metadata,
-    }).select("id,user_id,amount,currency,reference,status,metadata").single();
+    if (paymentKind !== "membership_upgrade") {
+      return NextResponse.json(
+        { ok: false, reason: "Wallet payments currently support membership upgrades only." },
+        { status: 400 },
+      );
+    }
 
-    if (inserted.error || !inserted.data) return NextResponse.json({ ok: false, reason: inserted.error?.message || "Wallet payment order could not be created." }, { status: 500 });
-
-    const confirmed = await client.rpc("confirm_wallet_payment_atomic", {
-      p_order_id: inserted.data.id,
+    const confirmed = await client.rpc("pay_with_wallet_atomic", {
       p_user_id: identity.userId,
+      p_tier: tier,
+      p_kind: paymentKind,
     });
 
     if (confirmed.error) {
-      await client.from("payment_orders").update({ status: "cancelled", updated_at: new Date().toISOString() }).eq("id", inserted.data.id).eq("status", "initiated");
       return NextResponse.json({ ok: false, reason: confirmed.error.message }, { status: 400 });
     }
 
     return NextResponse.json({
       ok: true,
-      status: "confirmed",
-      order: inserted.data,
+      status: String(confirmed.data?.status ?? "pending"),
+      order: confirmed.data?.order ?? null,
       payment: confirmed.data,
-      message: paymentKind === "membership_upgrade"
-        ? "Wallet payment confirmed and membership upgraded."
-        : "Wallet payment confirmed successfully.",
+      message: "Wallet funds have been reserved. Your upgrade request is waiting for AQE Manager confirmation.",
     });
   } catch (error) {
     return NextResponse.json({ ok: false, reason: error instanceof Error ? error.message : "Wallet payment failed." }, { status: 400 });

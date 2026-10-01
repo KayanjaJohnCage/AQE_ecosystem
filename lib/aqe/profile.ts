@@ -10,6 +10,7 @@ export type ProfileRecord = {
   bio?: string;
   phone?: string;
   country?: string;
+  nationality?: string;
   location?: string;
   category?: string;
   services?: string[];
@@ -21,6 +22,7 @@ export type ProfileRecord = {
   languages?: string[];
   area?: string;
   availability?: string;
+  timezone?: string;
   visibility?: string;
   socialPlatforms?: Record<string, string>;
   contactMethods?: Record<string, string>;
@@ -44,6 +46,7 @@ export function createProfileRecord({
   bio,
   phone,
   country,
+  nationality,
   location,
   category,
   services,
@@ -55,6 +58,7 @@ export function createProfileRecord({
   languages,
   area,
   availability,
+  timezone,
   visibility,
   socialPlatforms,
   contactMethods,
@@ -66,6 +70,7 @@ export function createProfileRecord({
   bio?: string;
   phone?: string;
   country?: string;
+  nationality?: string;
   location?: string;
   category?: string;
   services?: string[];
@@ -77,6 +82,7 @@ export function createProfileRecord({
   languages?: string[];
   area?: string;
   availability?: string;
+  timezone?: string;
   visibility?: string;
   socialPlatforms?: Record<string, string>;
   contactMethods?: Record<string, string>;
@@ -96,6 +102,7 @@ export function createProfileRecord({
       bio,
       phone,
       country,
+      nationality,
       location,
       category,
       services,
@@ -107,6 +114,7 @@ export function createProfileRecord({
       languages,
       area,
       availability,
+      timezone,
       visibility,
       socialPlatforms,
       contactMethods,
@@ -132,6 +140,7 @@ export async function persistProfileRecord(profile: ProfileRecord) {
       bio: profile.bio ?? null,
       phone: profile.phone ?? null,
       country: profile.country ?? null,
+      nationality: profile.nationality ?? null,
       location: profile.location ?? null,
       category: profile.category ?? null,
       services: profile.services ?? [],
@@ -143,12 +152,13 @@ export async function persistProfileRecord(profile: ProfileRecord) {
       languages: profile.languages ?? [],
       area: profile.area ?? null,
       availability: profile.availability ?? null,
+      timezone: profile.timezone ?? null,
       visibility: profile.visibility ?? "public",
       social_platforms: profile.socialPlatforms ?? {},
       contact_methods: profile.contactMethods ?? {},
       tier: profile.tier,
       verification_status: profile.verificationStatus,
-      avatar_url: profile.profilePhotoId ?? null,
+      profile_photo_id: profile.profilePhotoId ?? null,
       created_at: profile.createdAt,
       updated_at: profile.updatedAt,
     };
@@ -160,10 +170,18 @@ export async function persistProfileRecord(profile: ProfileRecord) {
       .maybeSingle();
 
     if (error) {
+      console.error("[AQE profile] Supabase persistence failed", {
+        userId: profile.userId,
+        error: error.message,
+        code: error.code ?? null,
+        details: error.details ?? null,
+        hint: error.hint ?? null,
+      });
+
       return {
-        ok: true,
+        ok: false,
         saved: false,
-        source: "memory",
+        source: "supabase",
         profile,
         reason: error.message,
       };
@@ -180,9 +198,9 @@ export async function persistProfileRecord(profile: ProfileRecord) {
     };
   } catch (error) {
     return {
-      ok: true,
+      ok: false,
       saved: false,
-      source: "memory",
+      source: "supabase",
       profile,
       reason:
         error instanceof Error ? error.message : "Profile persistence failed",
@@ -229,6 +247,7 @@ export async function getProfileByUserId(userId: string) {
         bio: data.bio ?? undefined,
         phone: data.phone ?? undefined,
         country: data.country ?? undefined,
+        nationality: data.nationality ?? undefined,
         location: data.location ?? undefined,
         category: data.category ?? undefined,
         services: Array.isArray(data.services) ? data.services : undefined,
@@ -240,6 +259,7 @@ export async function getProfileByUserId(userId: string) {
         languages: Array.isArray(data.languages) ? data.languages : undefined,
         area: data.area ?? undefined,
         availability: data.availability ?? undefined,
+        timezone: data.timezone ?? undefined,
         visibility: data.visibility ?? undefined,
         socialPlatforms: data.social_platforms ?? undefined,
         contactMethods: data.contact_methods ?? undefined,
@@ -247,7 +267,7 @@ export async function getProfileByUserId(userId: string) {
         verificationStatus:
           (data.verification_status as ProfileRecord["verificationStatus"]) ??
           "pending",
-        profilePhotoId: data.avatar_url ?? undefined,
+        profilePhotoId: data.profile_photo_id ?? undefined,
         createdAt: data.created_at ?? new Date().toISOString(),
         updatedAt: data.updated_at ?? new Date().toISOString(),
       },
@@ -271,6 +291,8 @@ export function sanitizeProfilePayload(input: Record<string, unknown>) {
     phone: typeof input.phone === "string" ? input.phone.trim() : undefined,
     country:
       typeof input.country === "string" ? input.country.trim() : undefined,
+    nationality:
+      typeof input.nationality === "string" ? input.nationality.trim().slice(0, 100) : undefined,
     location:
       typeof input.location === "string" ? input.location.trim() : undefined,
     area:
@@ -293,6 +315,7 @@ export function sanitizeProfilePayload(input: Record<string, unknown>) {
       ? input.languages.filter((item) => typeof item === "string").slice(0, 20)
       : undefined,
     availability: typeof input.availability === "string" ? input.availability.trim().slice(0, 500) : undefined,
+    timezone: typeof input.timezone === "string" ? input.timezone.trim().slice(0, 80) : undefined,
     visibility: typeof input.visibility === "string" ? input.visibility.trim().toLowerCase() : undefined,
     socialPlatforms: input.socialPlatforms && typeof input.socialPlatforms === "object" && !Array.isArray(input.socialPlatforms)
       ? Object.fromEntries(Object.entries(input.socialPlatforms as Record<string, unknown>).filter(([, value]) => typeof value === "string").slice(0, 10))

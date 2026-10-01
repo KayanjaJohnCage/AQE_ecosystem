@@ -19,9 +19,13 @@ export async function GET(request: Request) {
     const ageMin = Number(url.searchParams.get("ageMin") || 0);
     const ageMax = Number(url.searchParams.get("ageMax") || 0);
 
+    const isManager = session.authenticated && (session.role === "manager" || session.role === "admin");
+
     let profileQuery = client.from("profiles").select(
-      "id,user_id,display_name,bio,country,location,area,category,content_categories,services,age,gender,headline,languages,pronouns,availability,visibility,social_platforms,contact_methods,tier,verification_status,avatar_url,updated_at"
-    ).eq("visibility", "public").order("updated_at", { ascending: false }).limit(100);
+      "id,user_id,display_name,bio,phone,country,nationality,location,area,category,content_categories,services,age,gender,headline,languages,pronouns,availability,timezone,visibility,social_platforms,contact_methods,tier,verification_status,profile_photo_id,updated_at"
+    ).order("updated_at", { ascending: false }).limit(100);
+
+    if (!isManager) profileQuery = profileQuery.eq("visibility", "public");
 
     if (query) profileQuery = profileQuery.or(
       "display_name.ilike.%" + query + "%,category.ilike.%" + query + "%,headline.ilike.%" + query + "%,bio.ilike.%" + query + "%,location.ilike.%" + query + "%"
@@ -150,9 +154,13 @@ export async function GET(request: Request) {
         id: profile.id,
         userId: profile.user_id,
         name: profile.display_name || "AQE Member",
-        city: profile.location || profile.country || "East Africa",
-        location: profile.location || profile.country || "",
+        city: profile.location || profile.area || profile.country || "East Africa",
+        location: profile.location || "",
         area: profile.area || "",
+        country: profile.country || "",
+        nationality: profile.nationality || "",
+        phone: profile.phone || "",
+        timezone: profile.timezone || "Africa/Kampala",
         tag: profile.category || "Community member",
         contentCategories: Array.isArray(profile.content_categories) ? profile.content_categories : [],
         services: Array.isArray(profile.services) ? profile.services : [],
@@ -165,16 +173,19 @@ export async function GET(request: Request) {
         visibility: profile.visibility || "public",
         socialPlatforms: profile.social_platforms || {},
         contactMethods: profile.contact_methods || {},
-        status: profile.verification_status === "approved" ? "Verified member" : "Profile pending",
+        status: profile.verification_status === "approved" ? "Verified member" : "Payment required",
         tier: profile.tier || "basic",
+        tierVerified: profile.verification_status === "approved",
+        membershipStatus: profile.verification_status === "approved" ? "active" : "pending_payment",
         boosted: boostByOwner.has(profile.user_id),
         boostExpiresAt: boostByOwner.get(profile.user_id)?.expiresAt || null,
         boostLabel: boostByOwner.get(profile.user_id)?.label || "",
         bio: profile.bio || "",
+        profilePhotoId: profile.profile_photo_id || null,
         avatarUrl:
           (mediaByOwner.get(profile.user_id) ?? []).find(
             (media) => media.isProfilePhoto,
-          )?.url || profile.avatar_url || "",
+          )?.url || "",
         media: mediaByOwner.get(profile.user_id) ?? [],
         vipContent: profile.tier === "vip"
           ? {

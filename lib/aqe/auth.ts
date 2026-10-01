@@ -282,13 +282,21 @@ export async function resolveAuthenticatedSession(
   const serverClient = createServerSupabaseClient();
 
   if (serverClient) {
-    const { data: profile } = await serverClient
-      .from("profiles")
-      .select("role")
+    const { data: roles } = await serverClient
+      .from("user_roles")
+      .select("role_name")
       .eq("user_id", data.user.id)
-      .maybeSingle();
+      .in("role_name", ["admin", "manager"]);
 
-    role = normalizeRole(profile?.role) ?? "customer";
+    const roleNames = (roles ?? [])
+      .map((item) => normalizeRole(item.role_name))
+      .filter((item): item is AqeRole => Boolean(item));
+
+    role = roleNames.includes("admin")
+      ? "admin"
+      : roleNames.includes("manager")
+        ? "manager"
+        : "customer";
   }
 
   return {
@@ -307,7 +315,7 @@ export async function resolveMutationUserId(
   const session = await resolveAuthenticatedSession(request);
   const supabaseConfigured = Boolean(
     process.env.NEXT_PUBLIC_SUPABASE_URL &&
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+    (process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY),
   );
 
   if (supabaseConfigured) {

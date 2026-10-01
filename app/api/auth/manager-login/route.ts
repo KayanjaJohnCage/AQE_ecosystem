@@ -1,108 +1,120 @@
 import { NextResponse } from "next/server";
+import { timingSafeEqual } from "node:crypto";
 import { createAnonSupabaseClient, createServerSupabaseClient } from "../../../../lib/supabaseServer";
 import { createManagerGateToken } from "../../../../lib/aqe/auth";
 
-function readCookie(request: Request, name: string) {
-  const cookies = request.headers.get("cookie") ?? "";
-  const match = cookies.match(new RegExp("(?:^|; )" + name + "=([^;]+)"));
-  return match ? decodeURIComponent(match[1]) : "";
+function phoneVariants(value: string) {
+  const cleaned = value.trim().replace(/[\\s().-]/g, "");
+  const variants = new Set<string>([cleaned]);
+  if (cleaned.startsWith("+256") && cleaned.length >= 12) {
+    variants.add("0" + cleaned.slice(4));
+    variants.add(cleaned.slice(1));
+  } else if (cleaned.startsWith("256") && cleaned.length >= 11) {
+    variants.add("+" + cleaned);
+    variants.add("0" + cleaned.slice(3));
+  } else if (cleaned.startsWith("0") && cleaned.length >= 10) {
+    variants.add("+256" + cleaned.slice(1));
+    variants.add("256" + cleaned.slice(1));
+  }
+  return Array.from(variants);
+}
+
+async function resolveLoginEmail(identifier: string, server: any) {
+  if (identifier.includes("@")) return identifier.toLowerCase();
+  if (!server) return null;
+  const { data, error } = await server.from("profiles").select("user_id, phone").in("phone", phoneVariants(identifier)).limit(2);
+  if (error || !data || data.length !== 1) return null;
+  const user = await server.auth.admin.getUserById(data[0].user_id);
+  if (user.error || !user.data.user?.email) return null;
+  return user.data.user.email.toLowerCase();
+}
+
+function sameSecret(left: string, right: string) {
+  const a = Buffer.from(left);
+  const b = Buffer.from(right);
+  return a.length === b.length && timingSafeEqual(a, b);
+}
+
+async function recoverConfiguredManagerPassword(server: any, email: string, password: string) {
+  const configuredPassword = String(process.env.AQE_MANAGER_PASSWORD ?? "");
+  if (!configuredPassword || !email.includes("@") || !sameSecret(password, configuredPassword)) return null;
+
+  const usersResult = await server.auth.admin.listUsers({ page: 1, perPage: 1000 });
+  if (usersResult.error) return null;
+  const target = (usersResult.data?.users ?? []).find(
+    (item: any) => String(item.email ?? "").trim().toLowerCase() === email,
+  );
+  if (!target?.id) return null;
+
+  const { data: roles } = await server
+    .from("user_roles")
+    .select("role_name")
+    .eq("user_id", target.id)
+    .in("role_name", ["admin", "manager"]);
+  const roleNames = (roles ?? [])
+    .map((item: any) => String(item.role_name ?? "").toLowerCase())
+    .filter((value: string) => value === "admin" || value === "manager");
+  if (!roleNames.length) return null;
+
+  // The configured manager password is a server-only bootstrap/administrative
+  // credential. If the Supabase email identity has no known password yet,
+  // synchronize it server-side, then use the normal Supabase password flow.
+  const updated = await server.auth.admin.updateUserById(target.id, {
+    password: configuredPassword,
+  });
+  if (updated.error) return null;
+  return configuredPassword;
 }
 
 export async function POST(request: Request) {
   try {
     const body = await request.json().catch(() => ({}));
+    const identifier = String(body.identifier ?? body.email ?? body.phone ?? "").trim();
     const password = String(body.password ?? "");
-    if (!password) {
-      return NextResponse.json({ ok: false, reason: "Manager password is required." }, { status: 400 });
-    }
-
-    const googleToken = readCookie(request, "aqe-google-verified");
-    if (!googleToken) {
-      return NextResponse.json({ ok: false, reason: "Verify the authorized AQE Google account first." }, { status: 403 });
+    if (!identifier || !password) {
+      return NextResponse.json({ ok: false, reason: "Manager email/phone and password are required." }, { status: 400 });
     }
 
     const anon = createAnonSupabaseClient();
-    if (!anon) {
-      return NextResponse.json({ ok: false, reason: "Manager authentication is not configured." }, { status: 503 });
-    }
-
-    const googleUser = await anon.auth.getUser(googleToken);
-    if (googleUser.error || !googleUser.data.user) {
-      return NextResponse.json({ ok: false, reason: "Google verification expired. Sign in with Google again." }, { status: 401 });
-    }
-
-    const expectedEmail = String(process.env.AQE_MANAGER_GOOGLE_EMAIL ?? "").trim().toLowerCase();
-    const expectedSub = String(process.env.AQE_MANAGER_GOOGLE_SUB ?? "").trim();
-    const identity = (googleUser.data.user.identities ?? []).find((item) => item.provider === "google");
-    if (
-      !expectedEmail ||
-      !expectedSub ||
-      String(googleUser.data.user.email ?? "").trim().toLowerCase() !== expectedEmail ||
-      String(identity?.identity_data?.sub ?? "").trim() !== expectedSub
-    ) {
-      return NextResponse.json({ ok: false, reason: "This Google account is not authorized for AQE Manager Control." }, { status: 403 });
-    }
-
-    const email = String(googleUser.data.user.email ?? expectedEmail).trim().toLowerCase();
-    const passwordLogin = await anon.auth.signInWithPassword({ email, password });
-    if (passwordLogin.error || !passwordLogin.data.user || !passwordLogin.data.session) {
-      return NextResponse.json({ ok: false, reason: "Invalid manager password." }, { status: 401 });
-    }
-
-    if (passwordLogin.data.user.id !== googleUser.data.user.id) {
-      return NextResponse.json({ ok: false, reason: "Google identity and password account do not match." }, { status: 403 });
-    }
-
     const server = createServerSupabaseClient();
-    if (!server) {
+    if (!anon || !server) {
       return NextResponse.json({ ok: false, reason: "Manager authentication is not configured." }, { status: 503 });
     }
 
-    const { data: profile } = await server
-      .from("profiles")
-      .select("role,email")
-      .eq("user_id", passwordLogin.data.user.id)
-      .maybeSingle();
+    const email = await resolveLoginEmail(identifier, server);
+    if (!email) {
+      return NextResponse.json({ ok: false, reason: "Invalid manager email/phone or password." }, { status: 401 });
+    }
 
-    const role = String(profile?.role ?? "").toLowerCase();
-    if (!["manager", "admin"].includes(role)) {
+    let passwordLogin = await anon.auth.signInWithPassword({ email, password });
+
+    if (passwordLogin.error || !passwordLogin.data.user || !passwordLogin.data.session) {
+      const configuredPassword = await recoverConfiguredManagerPassword(server, email, password);
+      if (configuredPassword) {
+        passwordLogin = await anon.auth.signInWithPassword({ email, password: configuredPassword });
+      }
+    }
+
+    if (passwordLogin.error || !passwordLogin.data.user || !passwordLogin.data.session) {
+      return NextResponse.json({ ok: false, reason: "Invalid manager email/phone or password." }, { status: 401 });
+    }
+
+    const { data: roles } = await server.from("user_roles").select("role_name").eq("user_id", passwordLogin.data.user.id).in("role_name", ["admin", "manager"]);
+    const roleNames = (roles ?? []).map((item) => String(item.role_name ?? "").toLowerCase()).filter((value) => value === "admin" || value === "manager");
+    if (!roleNames.length) {
       return NextResponse.json({ ok: false, reason: "This account is not authorized for the AQE management console." }, { status: 403 });
     }
 
-    const response = NextResponse.json({
-      ok: true,
-      role,
-      user: { id: passwordLogin.data.user.id, email },
-    });
-
+    const role = roleNames.includes("admin") ? "admin" : "manager";
+    const response = NextResponse.json({ ok: true, role, user: { id: passwordLogin.data.user.id, email: passwordLogin.data.user.email ?? email } });
     response.cookies.set("aqe-access-token", passwordLogin.data.session.access_token, {
-      httpOnly: true,
-      sameSite: "lax",
-      secure: process.env.NODE_ENV === "production",
-      path: "/",
-      maxAge: passwordLogin.data.session.expires_in ?? 3600,
+      httpOnly: true, sameSite: "lax", secure: process.env.NODE_ENV === "production", path: "/", maxAge: passwordLogin.data.session.expires_in ?? 3600,
     });
-
     response.cookies.set("aqe-manager-session", createManagerGateToken(passwordLogin.data.user.id), {
-      httpOnly: true,
-      sameSite: "strict",
-      secure: process.env.NODE_ENV === "production",
-      path: "/",
-      maxAge: 1800,
+      httpOnly: true, sameSite: "strict", secure: process.env.NODE_ENV === "production", path: "/", maxAge: 1800,
     });
-
-    response.cookies.set("aqe-google-verified", "", {
-      httpOnly: true,
-      expires: new Date(0),
-      sameSite: "lax",
-      path: "/",
-    });
-
     return response;
   } catch (error) {
-    return NextResponse.json(
-      { ok: false, reason: error instanceof Error ? error.message : "Manager authentication failed." },
-      { status: 400 },
-    );
+    return NextResponse.json({ ok: false, reason: error instanceof Error ? error.message : "Manager authentication failed." }, { status: 400 });
   }
 }

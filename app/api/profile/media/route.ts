@@ -20,7 +20,7 @@ export async function GET(request: Request) {
     const { data, error } = await client
       .from("profile_media")
       .select(
-        "id,storage_path,media_type,mime_type,file_size,visibility,moderation_status,is_profile_photo,created_at",
+        "id,storage_path,media_type,mime_type,file_size,visibility,moderation_status,is_profile_photo,content_access,created_at",
       )
       .eq("owner_user_id", session.userId)
       .order("created_at", { ascending: false });
@@ -49,6 +49,7 @@ export async function GET(request: Request) {
         visibility: item.visibility,
         moderationStatus: item.moderation_status,
         isProfilePhoto: item.is_profile_photo,
+        contentAccess: item.content_access,
         createdAt: item.created_at,
       });
     }

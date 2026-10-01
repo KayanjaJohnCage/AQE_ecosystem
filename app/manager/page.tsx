@@ -35,6 +35,15 @@ type ReceiverDetails = {
   instructions: string;
 };
 
+type TroubleshootRequest = { id: string; user_id: string; requested_change: string; details: string; qc_charge: number; status: string; created_at: string };
+type ManagerPaymentNumber = {
+  id: string;
+  number: string;
+  name: string;
+  network: "Airtel" | "MTN";
+  status: "available" | "busy";
+};
+
 type PlatformSettings = {
   tierPrices: { basic: number; premium: number; vip: number };
   renewalPrices: { basic: number; premium: number; vip: number };
@@ -125,50 +134,7 @@ const navGroups = [
   },
 ];
 
-const tableSeeds: Record<string, ManagerRow[]> = {
-  "Users & Profiles": [
-    { title: "Nia A.", meta: "Verified", value: "Tier: VIP" },
-    { title: "Ayo D.", meta: "Active", value: "Tier: Premium" },
-    { title: "Tariq M.", meta: "Pending review", value: "Tier: Basic" },
-  ],
-  "Bookings & Requests": [
-    { title: "Brand discovery session", meta: "Kampala", value: "Confirmed" },
-    { title: "Media kit planning", meta: "Nairobi", value: "Pending" },
-    {
-      title: "Community room access",
-      meta: "Kigali",
-      value: "Awaiting approval",
-    },
-  ],
-  "Messages & DM": [
-    { title: "Support check-in", meta: "2 new replies", value: "Unresolved" },
-    { title: "Collab thread", meta: "Moderator reviewed", value: "Active" },
-    { title: "VIP concierge", meta: "Priority queue", value: "Responding" },
-  ],
-  "Marketplace & Stores": [
-    {
-      title: "Premium spotlight bundle",
-      meta: "Vendor: Atelier",
-      value: "Live",
-    },
-    { title: "Travel pass", meta: "Vendor: NEO", value: "50 sold" },
-    {
-      title: "Community event ticket",
-      meta: "Vendor: AQE",
-      value: "Needs restock",
-    },
-  ],
-  "Customer Support": [
-    { title: "Payment dispute", meta: "High priority", value: "Open" },
-    { title: "Verification appeal", meta: "Escalated", value: "In review" },
-    { title: "Account issue", meta: "Low priority", value: "Resolved" },
-  ],
-  "Audit Logs": [
-    { title: "Tier rule update", meta: "Owner action", value: "Approved" },
-    { title: "QC ledger sync", meta: "System", value: "Success" },
-    { title: "Risk review", meta: "Analyst", value: "No issues" },
-  ],
-};
+const tableSeeds: Record<string, ManagerRow[]> = {};
 
 export default function ManagerPage() {
   const [data, setData] = useState<ManagerData>({
@@ -188,6 +154,11 @@ export default function ManagerPage() {
   const [liveRows, setLiveRows] = useState<Record<string, ManagerRow[]>>({});
   const [profileQuery, setProfileQuery] = useState("");
   const [reviewMessage, setReviewMessage] = useState("");
+  const [managerNumbers, setManagerNumbers] = useState<ManagerPaymentNumber[]>([]);
+  const [troubleshootRequests, setTroubleshootRequests] = useState<TroubleshootRequest[]>([]);
+  const [urgentAlerts, setUrgentAlerts] = useState<string[]>([]);
+  const [recentActivity, setRecentActivity] = useState<ManagerRow[]>([]);
+  const [browserAlertsEnabled, setBrowserAlertsEnabled] = useState(false);
   const [receiver, setReceiver] = useState<ReceiverDetails>({
     receiverName: "",
     receiverPhone: "",
@@ -255,7 +226,7 @@ export default function ManagerPage() {
       })
       .catch(() => undefined);
 
-    fetch("/api/profiles")
+    fetch("/api/profiles", { headers })
       .then(async (response) => {
         if (!response.ok) return;
         const payload = await response.json();
@@ -284,7 +255,7 @@ export default function ManagerPage() {
           mediaResponse,
           receiptsResponse,
         ]) => {
-          const [bookings, messages, products, support, withdrawals, payments, media] =
+          const [bookings, messages, products, support, withdrawals, payments, media, receipts] =
             await Promise.all([
               bookingsResponse.ok
                 ? bookingsResponse.json()
@@ -425,10 +396,7 @@ export default function ManagerPage() {
               }),
             );
           }
-          if (
-            Array.isArray(payments.payments) &&
-            payments.payments.length > 0
-          ) {
+          if (Array.isArray(payments.payments)) {
             nextRows["Payments & Approvals"] = payments.payments.map(
               (payment: {
                 id?: string;
@@ -436,19 +404,88 @@ export default function ManagerPage() {
                 amount?: number;
                 currency?: string;
                 reference?: string;
+                created_at?: string;
+                displayStatus?: string;
+                locked?: boolean;
+                senderName?: string;
+                senderPhone?: string;
+                senderNetwork?: string;
+                receiverName?: string;
+                receiverPhone?: string;
+                receiverCard?: string;
                 metadata?: { requestedTier?: string; paymentKind?: string; fundingSource?: string };
                 status?: string;
-              }) => ({
-                id: payment.id,
-                title: `${payment.currency || "UGX"} ${payment.amount ?? 0} • ${payment.user_id || "member"}`,
-                meta: `${payment.reference || "No reference"} • ${payment.metadata?.paymentKind === "wallet_deposit" ? "Reference: WALLET" : `Reference: UPGRADE • ${(payment.metadata?.requestedTier || "premium").toUpperCase()}`}`,
-                value: payment.status || "pending",
-              }),
+              }) => {
+                const kind = payment.metadata?.paymentKind || "wallet_deposit";
+                const referenceLabel =
+                  kind === "wallet_deposit"
+                    ? "WALLET"
+                    : kind === "membership_upgrade"
+                      ? `UPGRADE • ${(payment.metadata?.requestedTier || "basic").toUpperCase()}`
+                      : kind.toUpperCase();
+                const sender = payment.senderName || "Sender not supplied";
+                const senderPhone = payment.senderPhone || "Number not supplied";
+                const receiver = payment.receiverName || "Receiver not configured";
+                const receiverPhone = payment.receiverPhone || "—";
+                const sent = payment.created_at ? new Date(payment.created_at).toLocaleString() : "Time unavailable";
+                return {
+                  id: payment.id,
+                  title: `${payment.currency || "UGX"} ${Number(payment.amount ?? 0).toLocaleString()} • ${sender}`,
+                  meta: `${referenceLabel} • Sent ${sent} • From ${senderPhone} → ${receiver} ${receiverPhone}`,
+                  value: `${payment.displayStatus || payment.status || "pending"} • ${payment.locked ? "LOCKED" : "ACTION REQUIRED"}`,
+                };
+              },
             );
           }
+
+          if (Array.isArray(receipts.receipts)) {
+            nextRows["Transactions & QC"] = receipts.receipts.slice(0, 100).map(
+              (receipt: {
+                id?: string;
+                transaction_type?: string;
+                description?: string;
+                amount?: number;
+                currency?: string;
+                status?: string;
+                created_at?: string;
+                receipt_number?: string;
+              }) => ({
+                id: receipt.id,
+                title: receipt.description || receipt.transaction_type || "Transaction",
+                meta: `${receipt.receipt_number || "Receipt"} • ${receipt.created_at ? new Date(receipt.created_at).toLocaleString() : "Time unavailable"}`,
+                value: `${receipt.status || "COMPLETED"} • ${receipt.currency || "UGX"} ${Number(receipt.amount || 0).toLocaleString()}`,
+              }),
+            );
+            setRecentActivity(nextRows["Transactions & QC"].slice(0, 8));
+          }
+
+          const alerts: string[] = [];
+          const pendingPayments = (payments.payments || []).filter((p: { status?: string }) => ["initiated","pending"].includes(String(p.status)));
+          if (pendingPayments.length) alerts.push(`${pendingPayments.length} payment request${pendingPayments.length === 1 ? "" : "s"} awaiting action.`);
+          const pendingWithdrawals = (withdrawals.withdrawals || []).filter((w: { status?: string }) => ["PENDING","APPROVED"].includes(String(w.status)));
+          if (pendingWithdrawals.length) alerts.push(`${pendingWithdrawals.length} withdrawal request${pendingWithdrawals.length === 1 ? "" : "s"} need attention.`);
+          const openSupport = (support.tickets || []).filter((t: { status?: string }) => String(t.status).toUpperCase() === "OPEN");
+          if (openSupport.length) alerts.push(`${openSupport.length} open customer support ticket${openSupport.length === 1 ? "" : "s"} need attention.`);
+          setUrgentAlerts(alerts);
           setLiveRows(nextRows);
         },
       )
+      .catch(() => undefined);
+
+    fetch("/api/support/troubleshoot")
+      .then(async (response) => {
+        if (!response.ok) return;
+        const payload = await response.json();
+        if (Array.isArray(payload.requests)) setTroubleshootRequests(payload.requests);
+      })
+      .catch(() => undefined);
+
+    fetch("/api/payments/manager-numbers")
+      .then(async (response) => {
+        if (!response.ok) return;
+        const payload = await response.json();
+        if (Array.isArray(payload.numbers)) setManagerNumbers(payload.numbers);
+      })
       .catch(() => undefined);
 
     fetch("/api/payments/receiver")
@@ -468,6 +505,70 @@ export default function ManagerPage() {
       .catch(() => undefined);
   }, []);
 
+  useEffect(() => {
+    let timer: ReturnType<typeof setInterval> | undefined;
+    let lastPending = -1;
+
+    const pollUrgentQueues = async () => {
+      const { session, user } = readStoredSession();
+      const headers: HeadersInit = {};
+      if (session.access_token) headers.authorization = `Bearer ${session.access_token}`;
+      if (user.id) headers["x-user-id"] = user.id;
+
+      try {
+        const [paymentsResponse, withdrawalsResponse, supportResponse] = await Promise.all([
+          fetch("/api/payments/manager-direct", { headers, cache: "no-store" }),
+          fetch("/api/vip/withdrawals", { headers, cache: "no-store" }),
+          fetch("/api/support/tickets", { headers, cache: "no-store" }),
+        ]);
+        const payments = paymentsResponse.ok ? await paymentsResponse.json() : {};
+        const withdrawals = withdrawalsResponse.ok ? await withdrawalsResponse.json() : {};
+        const support = supportResponse.ok ? await supportResponse.json() : {};
+        const pendingPayments = (payments.payments || []).filter((p: { status?: string }) => ["initiated", "pending"].includes(String(p.status))).length;
+        const pendingWithdrawals = (withdrawals.withdrawals || []).filter((w: { status?: string }) => ["PENDING", "APPROVED"].includes(String(w.status))).length;
+        const openSupport = (support.tickets || []).filter((t: { status?: string }) => String(t.status).toUpperCase() === "OPEN").length;
+        const alerts: string[] = [];
+        if (pendingPayments) alerts.push(`${pendingPayments} payment request${pendingPayments === 1 ? "" : "s"} awaiting action.`);
+        if (pendingWithdrawals) alerts.push(`${pendingWithdrawals} withdrawal request${pendingWithdrawals === 1 ? "" : "s"} need attention.`);
+        if (openSupport) alerts.push(`${openSupport} open customer support ticket${openSupport === 1 ? "" : "s"} need attention.`);
+        setUrgentAlerts(alerts);
+
+        if (lastPending >= 0 && pendingPayments > lastPending && browserAlertsEnabled && "Notification" in window && Notification.permission === "granted") {
+          try {
+            new Notification("AQE Manager: new payment request", {
+              body: `${pendingPayments - lastPending} new payment request${pendingPayments - lastPending === 1 ? "" : "s"} need confirmation.`,
+            });
+          } catch (_) {}
+        }
+        lastPending = pendingPayments;
+      } catch (_) {}
+    };
+
+    pollUrgentQueues();
+    timer = setInterval(pollUrgentQueues, 15000);
+    return () => { if (timer) clearInterval(timer); };
+  }, [browserAlertsEnabled]);
+
+  const enableManagerNotifications = async () => {
+    if (!("Notification" in window)) {
+      setReviewMessage("This browser does not support system notifications. The in-console urgent alert will still work.");
+      return;
+    }
+    if (Notification.permission === "granted") {
+      setBrowserAlertsEnabled(true);
+      return;
+    }
+    if (Notification.permission === "denied") {
+      setReviewMessage("Browser notifications are blocked. Enable them in the browser site settings.");
+      return;
+    }
+    const permission = await Notification.requestPermission();
+    if (permission === "granted") {
+      setBrowserAlertsEnabled(true);
+      setReviewMessage("Manager browser alerts enabled.");
+    }
+  };
+
   const filteredProfiles = profiles.filter((profile) => {
     const query = profileQuery.trim().toLowerCase();
     if (!query) return true;
@@ -485,13 +586,7 @@ export default function ManagerPage() {
       ? profileRows
       : liveRows[active]?.length
         ? liveRows[active]
-        : (tableSeeds[active] ?? [
-            {
-              title: "Operational queue",
-              meta: "Awaiting sync",
-              value: "Ready",
-            },
-          ]);
+        : (tableSeeds[active] ?? []);
   const paymentRows: ManagerRow[] = liveRows["Payments & Approvals"] ?? [];
 
   async function reviewBooking(
@@ -576,11 +671,83 @@ export default function ManagerPage() {
       payload.ok
         ? status === "confirmed"
           ? payload.payment?.paymentKind === "wallet_deposit"
-            ? "Wallet deposit confirmed. Cash was credited to the member wallet."
-            : `Payment confirmed. User upgraded to ${(payload.upgradedTier || payload.payment?.upgradedTier || "paid").toUpperCase()}.`
-          : "Payment rejected."
+            ? "Wallet deposit completed. Cash was credited to the member wallet."
+            : `Payment completed. User upgraded to ${(payload.upgradedTier || payload.payment?.upgradedTier || "paid").toUpperCase()}.`
+          : "Payment request rejected and locked."
         : payload.reason || "Payment review failed.",
     );
+    if (payload.ok) {
+      const refreshed = await fetch("/api/payments/manager-direct", { headers });
+      if (refreshed.ok) {
+        const body = await refreshed.json().catch(() => ({}));
+        if (Array.isArray(body.payments)) {
+          setLiveRows((current) => ({
+            ...current,
+            "Payments & Approvals": body.payments.map((payment: {
+              id?: string; amount?: number; currency?: string; user_id?: string; reference?: string;
+              created_at?: string; displayStatus?: string; locked?: boolean; senderName?: string;
+              senderPhone?: string; receiverName?: string; receiverPhone?: string;
+              metadata?: { requestedTier?: string; paymentKind?: string }; status?: string;
+            }) => ({
+              id: payment.id,
+              title: `${payment.currency || "UGX"} ${Number(payment.amount || 0).toLocaleString()} • ${payment.senderName || payment.user_id || "member"}`,
+              meta: `${payment.metadata?.paymentKind === "wallet_deposit" ? "WALLET" : "UPGRADE"} • Sent ${payment.created_at ? new Date(payment.created_at).toLocaleString() : "Time unavailable"} • From ${payment.senderPhone || "—"} → ${payment.receiverName || "—"} ${payment.receiverPhone || ""}`,
+              value: `${payment.displayStatus || payment.status || "pending"} • ${payment.locked ? "LOCKED" : "ACTION REQUIRED"}`,
+            })),
+          }));
+        }
+      }
+    }
+  }
+
+  async function managerIdentityUpdate(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    const userId = String(form.get("userId") || "").trim();
+    const field = String(form.get("field") || "");
+    const value = String(form.get("value") || "");
+    const body: Record<string, string> = { userId };
+    if (field === "displayName") body.displayName = value;
+    if (field === "phone") body.phone = value;
+    if (field === "email") body.email = value;
+    if (field === "password") body.password = value;
+    if (!userId || !value) { setReviewMessage("User ID and new value are required."); return; }
+    const response = await fetch("/api/account/identity", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    const payload = await response.json().catch(() => ({}));
+    setReviewMessage(payload.ok ? "Account identity updated for " + userId + "." : payload.reason || "Manager identity update failed.");
+    if (payload.ok) event.currentTarget.reset();
+  }
+
+  async function updateTroubleshoot(requestId: string, status: string) {
+    const response = await fetch("/api/support/troubleshoot", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ requestId, status }),
+    });
+    const payload = await response.json().catch(() => ({}));
+    setReviewMessage(payload.ok ? "Troubleshoot request " + status.toLowerCase() + "." : payload.reason || "Troubleshoot update failed.");
+    if (payload.ok) setTroubleshootRequests((items) => items.map((item) => item.id === requestId ? { ...item, status } : item));
+  }
+
+  function updateManagerNumber(id: string, patch: Partial<ManagerPaymentNumber>) {
+    setManagerNumbers((items) =>
+      items.map((item) => (item.id === id ? { ...item, ...patch } : item)),
+    );
+  }
+
+  async function saveManagerNumbers() {
+    const response = await fetch("/api/payments/manager-numbers", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ numbers: managerNumbers }),
+    });
+    const payload = await response.json().catch(() => ({}));
+    setReviewMessage(payload.ok ? "Manager payment numbers saved." : payload.reason || "Payment number update failed.");
+    if (Array.isArray(payload.numbers)) setManagerNumbers(payload.numbers);
   }
 
   async function saveReceiver(event: React.FormEvent<HTMLFormElement>) {
@@ -626,8 +793,8 @@ export default function ManagerPage() {
   }
 
   return (
-    <div className="manager-prototype">
-      <aside className="manager-prototype-sidebar">
+    <div className="manager-shell">
+      <aside className="manager-shell-sidebar">
         <div className="manager-brand">AQE ADMIN</div>
         {navGroups.map((group) => (
           <div key={group.title}>
@@ -653,8 +820,8 @@ export default function ManagerPage() {
         ))}
       </aside>
 
-      <main className="manager-prototype-main">
-        <header className="manager-prototype-top">
+      <main className="manager-shell-main">
+        <header className="manager-shell-top">
           <div>
             <strong>AQE Ecosystem Manager</strong>
             <span>Live ecosystem oversight & operational control</span>
@@ -664,11 +831,14 @@ export default function ManagerPage() {
               {managerLabel.slice(0, 2).toUpperCase()}
             </div>
             <span>{managerLabel}</span>
+            <button type="button" onClick={enableManagerNotifications} title="Enable urgent browser alerts">
+              {browserAlertsEnabled ? "🔔" : "🔕"}
+            </button>
             <button type="button">⌄</button>
           </div>
         </header>
 
-        <div className="manager-prototype-content">
+        <div className="manager-shell-content">
           <div className="manager-title">
             {active === "Dashboard" ? "Command Center" : active}
           </div>
@@ -677,6 +847,13 @@ export default function ManagerPage() {
               ? "Activity overview sourced from the AQE ecosystem state."
               : `${active} operational view`}
           </p>
+
+          {urgentAlerts.length ? (
+            <div className="manager-urgent-alert" role="alert">
+              <strong>Urgent attention required</strong>
+              {urgentAlerts.map((alert) => <span key={alert}>{alert}</span>)}
+            </div>
+          ) : null}
 
           {active === "Dashboard" ? (
             <>
@@ -691,18 +868,14 @@ export default function ManagerPage() {
                 <section className="manager-card">
                   <h3>Live activity</h3>
                   <div className="manager-activity">
-                    <div className="manager-activity-row">
-                      <span>New membership</span>
-                      <strong>+24</strong>
-                    </div>
-                    <div className="manager-activity-row">
-                      <span>Verified profiles</span>
-                      <strong>+8</strong>
-                    </div>
-                    <div className="manager-activity-row">
-                      <span>Wallet settlements</span>
-                      <strong>+13</strong>
-                    </div>
+                    {recentActivity.length ? recentActivity.map((item) => (
+                      <div className="manager-activity-row" key={item.id || item.title}>
+                        <span>{item.title}<small>{item.meta}</small></span>
+                        <strong>{item.value}</strong>
+                      </div>
+                    )) : (
+                      <div className="manager-review-message">No recent transactions or receipts yet.</div>
+                    )}
                   </div>
                 </section>
 
@@ -1199,6 +1372,34 @@ export default function ManagerPage() {
               </section>
               <section className="manager-card manager-detail">
                 <div className="manager-table-header">
+                  <h3>Manager payment numbers</h3>
+                  <span className="status-pill">Customer selectable</span>
+                </div>
+                <p className="manager-subtitle">
+                  Only numbers marked Available are shown to customers. Switching a number to Busy immediately removes it from the customer selection list.
+                </p>
+                <div className="manager-list-table">
+                  {managerNumbers.map((item) => (
+                    <div key={item.id} className="manager-row">
+                      <div>
+                        <strong>{item.number}</strong>
+                        <span>{item.name} · {item.network}</span>
+                      </div>
+                      <div className="manager-row-actions">
+                        <em>{item.status}</em>
+                        <button type="button" onClick={() => updateManagerNumber(item.id, { status: item.status === "available" ? "busy" : "available" })}>
+                          Set {item.status === "available" ? "Busy" : "Available"}
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <button type="button" className="manager-action-button" onClick={saveManagerNumbers}>
+                  Save payment-number statuses
+                </button>
+              </section>
+              <section className="manager-card manager-detail">
+                <div className="manager-table-header">
                   <h3>Payment approvals</h3>
                 </div>
                 {reviewMessage ? (
@@ -1216,25 +1417,62 @@ export default function ManagerPage() {
                       </div>
                       <div className="manager-row-actions">
                         <em>{row.value}</em>
-                        {row.id ? (
+                        {row.id && !row.value.includes("LOCKED") && row.value.includes("ACTION REQUIRED") ? (
                           <>
-                            <button
-                              type="button"
-                              onClick={() =>
-                                reviewPayment(row.id!, "confirmed")
-                              }
-                            >
-                              Confirm & upgrade
+                            <button type="button" onClick={() => reviewPayment(row.id!, "confirmed")}>
+                              Confirm / Complete
                             </button>
-                            <button
-                              type="button"
-                              onClick={() => reviewPayment(row.id!, "rejected")}
-                            >
-                              Reject
+                            <button type="button" onClick={() => reviewPayment(row.id!, "rejected")}>
+                              Reject & Lock
                             </button>
                           </>
-                        ) : null}
+                        ) : row.id ? <span className="manager-locked-label">Locked</span> : null}
                       </div>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            </>
+          ) : active === "Customer Support" ? (
+            <>
+              <section className="manager-card manager-detail">
+                <div className="manager-table-header">
+                  <h3>Manager Troubleshoot Requests</h3>
+                  <span className="status-pill">5 QC per request</span>
+                </div>
+                <p className="manager-subtitle">Customers can request help changing account name, email or password before the seven-day window. Review the requested issue and update the account through the manager controls.</p>
+                <div className="manager-list-table">
+                  {troubleshootRequests.length ? troubleshootRequests.map((item) => (
+                    <div key={item.id} className="manager-row">
+                      <div>
+                        <strong>{item.requested_change.replaceAll("_"," ")}</strong>
+                        <span>{item.user_id} · {item.details}</span>
+                      </div>
+                      <div className="manager-row-actions">
+                        <em>{item.status}</em>
+                        {item.status === "OPEN" ? <button type="button" onClick={() => updateTroubleshoot(item.id, "IN_PROGRESS")}>Take request</button> : null}
+                        {item.status === "IN_PROGRESS" ? <button type="button" onClick={() => updateTroubleshoot(item.id, "RESOLVED")}>Mark resolved</button> : null}
+                      </div>
+                    </div>
+                  )) : <div className="manager-review-message">No manager troubleshoot requests.</div>}
+                </div>
+              </section>
+              <section className="manager-card manager-detail">
+                <div className="manager-table-header"><h3>Manager identity update</h3><span className="status-pill">Authorized manager only</span></div>
+                <p className="manager-subtitle">Use the request's user ID to update the customer's account name, email or password on their behalf.</p>
+                <form className="manager-settings-form" onSubmit={managerIdentityUpdate}>
+                  <label>User ID<input name="userId" placeholder="Customer user ID" required /></label>
+                  <label>Field<select name="field" defaultValue="displayName"><option value="displayName">Account name</option><option value="phone">Phone number</option><option value="email">Email</option><option value="password">Password</option></select></label>
+                  <label>New value<input name="value" type="text" placeholder="New value" required /></label>
+                  <button type="submit" className="manager-action-button">Update account</button>
+                </form>
+              </section>
+              <section className="manager-card manager-detail">
+                <div className="manager-table-header"><h3>Customer Support</h3></div>
+                <div className="manager-list-table">
+                  {(liveRows["Customer Support"] || tableSeeds["Customer Support"] || []).map((row: ManagerRow) => (
+                    <div key={"support-" + (row.id || row.title)} className="manager-row">
+                      <div><strong>{row.title}</strong><span>{row.meta}</span></div><div className="manager-row-actions"><em>{row.value}</em></div>
                     </div>
                   ))}
                 </div>

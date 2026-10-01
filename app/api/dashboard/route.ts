@@ -11,6 +11,18 @@ async function countRows(
   let query = client.from(table).select("*", { count: "exact", head: true });
   if (column && value) query = query.eq(column, value);
   const result = await query;
+  if (result.error) {
+    console.error("[AQE dashboard] countRows failed", {
+      table,
+      column,
+      value,
+      code: result.error.code,
+      message: result.error.message,
+      details: result.error.details,
+      hint: result.error.hint,
+    });
+    return 0;
+  }
   return result.count ?? 0;
 }
 
@@ -78,13 +90,15 @@ export async function GET(request: Request) {
       .neq("reference_type", "WITHDRAWAL_REFUND");
 
     if (earningLedger.error) {
-      return NextResponse.json(
-        { ok: false, reason: earningLedger.error.message },
-        { status: 500 },
-      );
+      console.error("[AQE dashboard] earnings query failed", {
+        code: earningLedger.error.code,
+        message: earningLedger.error.message,
+        details: earningLedger.error.details,
+        hint: earningLedger.error.hint,
+      });
     }
 
-    const earningRows = earningLedger.data ?? [];
+    const earningRows = earningLedger.error ? [] : earningLedger.data ?? [];
     const earningSources = earningRows.reduce<Record<string, number>>(
       (totals, row) => {
         const type = String(row.reference_type || "").toUpperCase();

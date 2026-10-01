@@ -16,7 +16,7 @@ export function createPaymentProvider(env: Record<string, string | undefined>) {
       metadata?: Record<string, unknown>;
     }) => {
       const mode =
-        env.NEXT_PUBLIC_SUPABASE_URL && env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+        env.NEXT_PUBLIC_SUPABASE_URL && (env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || env.NEXT_PUBLIC_SUPABASE_ANON_KEY)
           ? "live"
           : "mock";
 
@@ -64,6 +64,15 @@ export async function persistPaymentOrder(order: {
     return { ok: true, saved: false, source: "memory", order };
   }
 
+  const paymentKind = String(order.metadata?.paymentKind ?? "wallet_deposit").trim().toLowerCase();
+  const rawReference = String(order.reference || "").trim();
+  const reference =
+    paymentKind === "membership_upgrade"
+      ? (rawReference.startsWith("AQE-UPGRADE-") ? rawReference : "AQE-UPGRADE-" + Date.now())
+      : paymentKind === "wallet_deposit"
+        ? (rawReference.startsWith("AQE-WALLET-") ? rawReference : "AQE-WALLET-" + Date.now())
+        : rawReference || "AQE-" + Date.now();
+
   const { data, error } = await client
     .from("payment_orders")
     .insert({
@@ -71,7 +80,7 @@ export async function persistPaymentOrder(order: {
       amount: order.amount,
       currency: order.currency,
       qc_package_id: order.qcPackageId,
-      reference: order.reference,
+      reference,
       provider: order.provider,
       mode: order.mode,
       status: "initiated",

@@ -24,7 +24,7 @@ export async function GET(request: Request) {
     const { data, error } = await client
       .from("profiles")
       .select(
-        "id, user_id, display_name, bio, phone, country, location, area, category, services, content_categories, age, gender, pronouns, headline, languages, availability, visibility, social_platforms, contact_methods, tier, verification_status, avatar_url, created_at, updated_at",
+        "id, user_id, display_name, bio, phone, country, nationality, location, area, category, services, content_categories, age, gender, pronouns, headline, languages, availability, timezone, visibility, social_platforms, contact_methods, tier, verification_status, profile_photo_id, created_at, updated_at",
       )
       .eq("user_id", identity.userId)
       .maybeSingle();
@@ -40,6 +40,20 @@ export async function GET(request: Request) {
       return NextResponse.json({ ok: true, source: "supabase", profile: null });
     }
 
+    let avatarUrl = "";
+    if (data.profile_photo_id) {
+      const media = await client
+        .from("profile_media")
+        .select("storage_path,is_profile_photo,moderation_status")
+        .eq("id", data.profile_photo_id)
+        .maybeSingle();
+      if (!media.error && media.data?.storage_path && media.data.is_profile_photo) {
+        const signed = await client.storage
+          .from("profile-media")
+          .createSignedUrl(media.data.storage_path, 3600);
+        avatarUrl = signed.data?.signedUrl || "";
+      }
+    }
     return NextResponse.json({
       ok: true,
       source: "supabase",
@@ -50,6 +64,7 @@ export async function GET(request: Request) {
         bio: data.bio,
         phone: data.phone,
         country: data.country,
+        nationality: data.nationality,
         location: data.location,
         category: data.category,
         services: Array.isArray(data.services) ? data.services : [],
@@ -61,12 +76,16 @@ export async function GET(request: Request) {
         languages: Array.isArray(data.languages) ? data.languages : [],
         area: data.area,
         availability: data.availability,
+        timezone: data.timezone,
         visibility: data.visibility,
         socialPlatforms: data.social_platforms ?? {},
         contactMethods: data.contact_methods ?? {},
         tier: data.tier,
         verificationStatus: data.verification_status,
-        profilePhotoId: data.avatar_url,
+        profilePhotoId: data.profile_photo_id,
+        avatarUrl,
+        tierVerified: data.verification_status === "approved",
+        membershipStatus: data.verification_status === "approved" ? "active" : "pending_payment",
         createdAt: data.created_at,
         updatedAt: data.updated_at,
       },
@@ -106,6 +125,7 @@ export async function POST(request: Request) {
       bio: sanitized.bio,
       phone: sanitized.phone,
       country: sanitized.country,
+      nationality: sanitized.nationality,
       location: sanitized.location,
       category: sanitized.category,
     });
@@ -127,6 +147,7 @@ export async function POST(request: Request) {
       languages: sanitized.languages,
       area: sanitized.area,
       availability: sanitized.availability,
+      timezone: sanitized.timezone,
       visibility: sanitized.visibility,
       socialPlatforms: sanitized.socialPlatforms,
       contactMethods: sanitized.contactMethods,
@@ -180,6 +201,7 @@ export async function PATCH(request: Request) {
       bio: sanitized.bio ?? null,
       phone: sanitized.phone ?? null,
       country: sanitized.country ?? null,
+      nationality: sanitized.nationality ?? null,
       location: sanitized.location ?? null,
       area: sanitized.area ?? null,
       category: sanitized.category ?? null,
@@ -191,6 +213,7 @@ export async function PATCH(request: Request) {
       headline: sanitized.headline ?? null,
       languages: sanitized.languages ?? [],
       availability: sanitized.availability ?? null,
+      timezone: sanitized.timezone ?? "Africa/Kampala",
       visibility: sanitized.visibility ?? "public",
       social_platforms: sanitized.socialPlatforms ?? {},
       contact_methods: sanitized.contactMethods ?? {},
@@ -201,10 +224,15 @@ export async function PATCH(request: Request) {
       .from("profiles")
       .update(update)
       .eq("user_id", identity.userId)
-      .select("id,user_id,display_name,bio,phone,country,location,area,category,services,content_categories,age,gender,pronouns,headline,languages,availability,visibility,social_platforms,contact_methods,tier,verification_status,avatar_url,created_at,updated_at")
+      .select("id,user_id,display_name,bio,phone,country,nationality,location,area,category,services,content_categories,age,gender,pronouns,headline,languages,availability,timezone,visibility,social_platforms,contact_methods,tier,verification_status,profile_photo_id,created_at,updated_at")
       .maybeSingle();
 
-    if (error) return NextResponse.json({ ok: false, reason: error.message }, { status: 500 });
+    if (error) {
+      if (error.code === "23505" && /profiles_phone_normalized_unique_idx|phone/i.test(error.message || "")) {
+        return NextResponse.json({ ok: false, reason: "That phone number is already registered. Use a different phone number." }, { status: 409 });
+      }
+      return NextResponse.json({ ok: false, reason: error.message }, { status: 500 });
+    }
     if (!data) return NextResponse.json({ ok: false, reason: "Profile not found." }, { status: 404 });
 
     return NextResponse.json({ ok: true, saved: true, source: "supabase", profile: data });
