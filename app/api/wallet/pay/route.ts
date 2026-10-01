@@ -65,12 +65,10 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       ok: true,
-      status: "confirmed",
+      status: String(confirmed.data?.status ?? "pending"),
       order: confirmed.data?.order ?? null,
       payment: confirmed.data,
-      message: paymentKind === "membership_upgrade"
-        ? "Wallet payment confirmed and membership upgraded."
-        : "Wallet payment confirmed successfully.",
+      message: "Wallet funds have been reserved. Your upgrade request is waiting for AQE Manager confirmation.",
     });
   } catch (error) {
     return NextResponse.json({ ok: false, reason: error instanceof Error ? error.message : "Wallet payment failed." }, { status: 400 });
