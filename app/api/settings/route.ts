@@ -28,8 +28,8 @@ export type AqePlatformSettings = {
   };
   mediaLimits: {
     basic: { imagesPerMonth: number | null; videosPerMonth: number | null; maxImageSizeMB: number; maxVideoSizeMB: number };
-    premium: { imagesPerMonth: number; videosPerMonth: number; maxImageSizeMB: number; maxVideoSizeMB: number };
-    vip: { imagesPerMonth: number; videosPerMonth: number; maxImageSizeMB: number; maxVideoSizeMB: number };
+    premium: { imagesPerMonth: number | null; videosPerMonth: number | null; maxImageSizeMB: number; maxVideoSizeMB: number };
+    vip: { imagesPerMonth: number | null; videosPerMonth: number | null; maxImageSizeMB: number; maxVideoSizeMB: number };
   };
   commercial: {
     profileBoostPrices: { daily: number; weekly: number; monthly: number };
@@ -86,7 +86,7 @@ const defaults: AqePlatformSettings = {
     withdrawalBefore20th: false,
   },
   mediaLimits: {
-    basic: { imagesPerMonth: 10, videosPerMonth: 2, maxImageSizeMB: 5, maxVideoSizeMB: 75 },
+    basic: { imagesPerMonth: 10, videosPerMonth: 10, maxImageSizeMB: 5, maxVideoSizeMB: 75 },
     premium: { imagesPerMonth: 20, videosPerMonth: 20, maxImageSizeMB: 8, maxVideoSizeMB: 100 },
     vip: { imagesPerMonth: null, videosPerMonth: null, maxImageSizeMB: 12, maxVideoSizeMB: 150 },
   },
