@@ -11754,6 +11754,23 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 
   function U(){return window.state&&state.currentUser?state.currentUser:null}
   function E(id){return document.getElementById(id)}
+  function resetLegacyDemoBalances(){
+    try{
+      if(!window.state||!state.px)return;
+      state.px.wallet=0;
+      state.px.qc=0;
+      state.px.bookings=[];
+      state.px.comments=[];
+      state.px.ledger=[];
+      state.px.dmQueue=[];
+      state.px.contentQueue=[];
+      state.px.completed=0;
+      state.px.vault=[];
+      state.px.store=[];
+      state.px.groups=[];
+      if(typeof saveState==="function")saveState();
+    }catch(_){}
+  }
   function safe(v){return String(v==null?"":v)}
   function toast(m,t){if(typeof showToast==="function")showToast(m,t||"success");else if(typeof notify==="function")notify(m,t||"success")}
   function authHeaders(){
@@ -12125,6 +12142,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
   }
 
   function installLive(){
+    resetLegacyDemoBalances();
     setTimeout(function(){routeFromTopUrl();syncOwnProfileServer().then(function(){renderMyProfileMedia();loadVipContentSettings();});loadReceiptsAndNotifications();},250);
     setInterval(liveRefresh,20000);
   }
