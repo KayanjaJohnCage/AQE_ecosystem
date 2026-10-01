@@ -233,6 +233,15 @@ export async function POST(request: Request) {
     const persisted = await persistProfileRecord(profileRecord.profile!);
 
     if (!persisted.ok || !persisted.saved) {
+      // A unique phone constraint is the final race-safe duplicate check.
+      if (/profiles_phone_normalized_unique_idx|duplicate key.*phone/i.test(persisted.reason ?? "")) {
+        if (data.user?.id) await client.auth.admin.deleteUser(data.user.id);
+        return NextResponse.json(
+          { ok:false, reason:"That phone number is already registered. Use a different phone number." },
+          { status:409 },
+        );
+      }
+
       // Do not leave an Auth account behind when its application profile
       // could not be persisted. This keeps Auth and public.profiles in sync.
       if (data.user?.id) {
