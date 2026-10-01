@@ -11972,7 +11972,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
     var u=U();if(!u)return;
     try{await syncOwnProfileServer();}catch(_){}
     var p=(U()&&U().profile)||{};
-    var map={Headline:"headline",Phone:"phone",Nationality:"nationality",Country:"country",City:"location",Gender:"gender",Pronouns:"pronouns",Social:"socialPlatforms",Contacts:"contactMethods",Content:"contentCategories",Services:"services"};
+    var map={Headline:"headline",Phone:"phone",Nationality:"nationality",Country:"country",City:"location",Gender:"gender",Pronouns:"pronouns",Languages:"languages",Social:"socialPlatforms",Contacts:"contactMethods",Content:"contentCategories",Services:"services"};
     Object.keys(map).forEach(function(k){
       var el=E("aqeEdit"+k);if(!el)return;
       var v=p[map[k]];
