@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { createClient } from "@supabase/supabase-js";
 import { readStoredSession } from "../../lib/clientSession";
 import ProfileBoostManager from "./components/ProfileBoostManager";
 import CampaignManager from "./components/CampaignManager";
@@ -722,9 +723,45 @@ export default function ManagerPage() {
       } catch (_) {}
     };
     refresh();
+    const liveEvent = () => { void refresh(); };
+    window.addEventListener("aqe-manager-live-event", liveEvent);
     timer = setInterval(refresh, 3000);
-    return () => { if (timer) clearInterval(timer); };
+    return () => {
+      if (timer) clearInterval(timer);
+      window.removeEventListener("aqe-manager-live-event", liveEvent);
+    };
   }, [active]);
+
+  /* Supabase Realtime wakes the manager immediately when a subscribed public table changes.
+     The 3-second sync remains as a resilience fallback for missed websocket events. */
+  useEffect(() => {
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    const { session } = readStoredSession();
+    if (!url || !key || !session.access_token || !session.refresh_token) return;
+    const client = createClient(url, key);
+    let channel: ReturnType<typeof client.channel> | undefined;
+    let cancelled = false;
+    (async () => {
+      try {
+        const result = await client.auth.setSession({
+          access_token: session.access_token,
+          refresh_token: session.refresh_token,
+        });
+        if (cancelled || result.error) return;
+        channel = client
+          .channel("aqe-manager-live-db")
+          .on("postgres_changes", { event: "*", schema: "public" }, () => {
+            window.dispatchEvent(new Event("aqe-manager-live-event"));
+          })
+          .subscribe();
+      } catch (_) {}
+    })();
+    return () => {
+      cancelled = true;
+      if (channel) void client.removeChannel(channel);
+    };
+  }, []);
 
   const enableManagerNotifications = async () => {
     if (!("Notification" in window)) {
