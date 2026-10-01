@@ -54,27 +54,6 @@ export async function POST(request: Request) {
 
     const client = createServerSupabaseClient();
 
-    const cleanupFailedRegistration = async (userId: string, storagePath?: string) => {
-      if (storagePath) {
-        const storageCleanup = await client.storage.from("profile-media").remove([storagePath]);
-        if (storageCleanup.error) {
-          console.error("[AQE registration] failed to remove profile-media object", { userId, storagePath, error: storageCleanup.error.message });
-        }
-      }
-      const mediaCleanup = await client.from("profile_media").delete().eq("owner_user_id", userId);
-      if (mediaCleanup.error) {
-        console.error("[AQE registration] failed to remove profile_media rows", { userId, error: mediaCleanup.error.message });
-      }
-      const profileCleanup = await client.from("profiles").delete().eq("user_id", userId);
-      if (profileCleanup.error) {
-        console.error("[AQE registration] failed to remove profile row", { userId, error: profileCleanup.error.message });
-      }
-      const authCleanup = await client.auth.admin.deleteUser(userId);
-      if (authCleanup.error) {
-        console.error("[AQE registration] failed to remove Auth user after registration rollback", { userId, error: authCleanup.error.message });
-      }
-    };
-
     if (!client) {
       const profileRecord = createProfileRecord({
         userId: `demo-${Date.now()}`,
@@ -113,6 +92,28 @@ export async function POST(request: Request) {
         upgradeRequired: requestedTier !== "basic",
       });
     }
+
+    const cleanupFailedRegistration = async (userId: string, storagePath?: string) => {
+      if (storagePath) {
+        const storageCleanup = await client.storage.from("profile-media").remove([storagePath]);
+        if (storageCleanup.error) {
+          console.error("[AQE registration] failed to remove profile-media object", { userId, storagePath, error: storageCleanup.error.message });
+        }
+      }
+      const mediaCleanup = await client.from("profile_media").delete().eq("owner_user_id", userId);
+      if (mediaCleanup.error) {
+        console.error("[AQE registration] failed to remove profile_media rows", { userId, error: mediaCleanup.error.message });
+      }
+      const profileCleanup = await client.from("profiles").delete().eq("user_id", userId);
+      if (profileCleanup.error) {
+        console.error("[AQE registration] failed to remove profile row", { userId, error: profileCleanup.error.message });
+      }
+      const authCleanup = await client.auth.admin.deleteUser(userId);
+      if (authCleanup.error) {
+        console.error("[AQE registration] failed to remove Auth user after registration rollback", { userId, error: authCleanup.error.message });
+      }
+    };
+
 
     const normalizedPhone = phone.replace(/[^0-9]/g, "");
     if (normalizedPhone) {
