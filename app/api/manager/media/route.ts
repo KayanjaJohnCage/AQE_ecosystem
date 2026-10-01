@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { requireAuthenticatedRoleAccess } from "../../../lib/aqe/auth";
-import { createServerSupabaseClient } from "../../../lib/supabaseServer";
+import { requireAuthenticatedRoleAccess } from "../../../../lib/aqe/auth";
+import { createServerSupabaseClient } from "../../../../lib/supabaseServer";
 
 export async function POST(request: Request) {
   try {
