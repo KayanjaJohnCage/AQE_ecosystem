@@ -1954,7 +1954,7 @@ export default function ManagerPage() {
                           </button>
                         </>
                       ) : null}
-                      {active !== "Users & Profiles" && row.id && !["Payments & Approvals","Transactions & QC","Withdrawals"].includes(active) ? (
+                      {active !== "Users & Profiles" && row.id && !["Payments & Approvals","Withdrawals"].includes(active) ? (
                         <>
                           <button type="button" onClick={() => managerEdit(row)}>Update</button>
                           <button type="button" onClick={() => managerDelete(row)}>Delete</button>
