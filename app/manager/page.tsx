@@ -156,6 +156,8 @@ export default function ManagerPage() {
   const [reviewMessage, setReviewMessage] = useState("");
   const [managerNumbers, setManagerNumbers] = useState<ManagerPaymentNumber[]>([]);
   const [troubleshootRequests, setTroubleshootRequests] = useState<TroubleshootRequest[]>([]);
+  const [urgentAlerts, setUrgentAlerts] = useState<string[]>([]);
+  const [recentActivity, setRecentActivity] = useState<ManagerRow[]>([]);
   const [receiver, setReceiver] = useState<ReceiverDetails>({
     receiverName: "",
     receiverPhone: "",
@@ -252,7 +254,7 @@ export default function ManagerPage() {
           mediaResponse,
           receiptsResponse,
         ]) => {
-          const [bookings, messages, products, support, withdrawals, payments, media] =
+          const [bookings, messages, products, support, withdrawals, payments, media, receipts] =
             await Promise.all([
               bookingsResponse.ok
                 ? bookingsResponse.json()
@@ -393,10 +395,7 @@ export default function ManagerPage() {
               }),
             );
           }
-          if (
-            Array.isArray(payments.payments) &&
-            payments.payments.length > 0
-          ) {
+          if (Array.isArray(payments.payments)) {
             nextRows["Payments & Approvals"] = payments.payments.map(
               (payment: {
                 id?: string;
@@ -404,16 +403,69 @@ export default function ManagerPage() {
                 amount?: number;
                 currency?: string;
                 reference?: string;
+                created_at?: string;
+                displayStatus?: string;
+                locked?: boolean;
+                senderName?: string;
+                senderPhone?: string;
+                senderNetwork?: string;
+                receiverName?: string;
+                receiverPhone?: string;
+                receiverCard?: string;
                 metadata?: { requestedTier?: string; paymentKind?: string; fundingSource?: string };
                 status?: string;
-              }) => ({
-                id: payment.id,
-                title: `${payment.currency || "UGX"} ${payment.amount ?? 0} • ${payment.user_id || "member"}`,
-                meta: `${payment.reference || "No reference"} • ${payment.metadata?.paymentKind === "wallet_deposit" ? "Reference: WALLET" : `Reference: UPGRADE • ${(payment.metadata?.requestedTier || "premium").toUpperCase()}`}`,
-                value: payment.status || "pending",
-              }),
+              }) => {
+                const kind = payment.metadata?.paymentKind || "wallet_deposit";
+                const referenceLabel =
+                  kind === "wallet_deposit"
+                    ? "WALLET"
+                    : kind === "membership_upgrade"
+                      ? `UPGRADE • ${(payment.metadata?.requestedTier || "basic").toUpperCase()}`
+                      : kind.toUpperCase();
+                const sender = payment.senderName || "Sender not supplied";
+                const senderPhone = payment.senderPhone || "Number not supplied";
+                const receiver = payment.receiverName || "Receiver not configured";
+                const receiverPhone = payment.receiverPhone || "—";
+                const sent = payment.created_at ? new Date(payment.created_at).toLocaleString() : "Time unavailable";
+                return {
+                  id: payment.id,
+                  title: `${payment.currency || "UGX"} ${Number(payment.amount ?? 0).toLocaleString()} • ${sender}`,
+                  meta: `${referenceLabel} • Sent ${sent} • From ${senderPhone} → ${receiver} ${receiverPhone}`,
+                  value: `${payment.displayStatus || payment.status || "pending"} • ${payment.locked ? "LOCKED" : "ACTION REQUIRED"}`,
+                };
+              },
             );
           }
+
+          if (Array.isArray(receipts.receipts)) {
+            nextRows["Transactions & QC"] = receipts.receipts.slice(0, 100).map(
+              (receipt: {
+                id?: string;
+                transaction_type?: string;
+                description?: string;
+                amount?: number;
+                currency?: string;
+                status?: string;
+                created_at?: string;
+                receipt_number?: string;
+              }) => ({
+                id: receipt.id,
+                title: receipt.description || receipt.transaction_type || "Transaction",
+                meta: `${receipt.receipt_number || "Receipt"} • ${receipt.created_at ? new Date(receipt.created_at).toLocaleString() : "Time unavailable"}`,
+                value: `${receipt.status || "COMPLETED"} • ${receipt.currency || "UGX"} ${Number(receipt.amount || 0).toLocaleString()}`,
+              }),
+            );
+            setRecentActivity(nextRows["Transactions & QC"].slice(0, 8));
+          }
+
+          const alerts: string[] = [];
+          const pendingPayments = (payments.payments || []).filter((p: { status?: string }) => ["initiated","pending"].includes(String(p.status)));
+          if (pendingPayments.length) alerts.push(`${pendingPayments.length} payment request${pendingPayments.length === 1 ? "" : "s"} awaiting action.`);
+          const pendingWithdrawals = (withdrawals.withdrawals || []).filter((w: { status?: string }) => ["PENDING","APPROVED"].includes(String(w.status)));
+          if (pendingWithdrawals.length) alerts.push(`${pendingWithdrawals.length} withdrawal request${pendingWithdrawals.length === 1 ? "" : "s"} need attention.`);
+          const openSupport = (support.tickets || []).filter((t: { status?: string }) => String(t.status).toUpperCase() === "OPEN");
+          if (openSupport.length) alerts.push(`${openSupport.length} open customer support ticket${openSupport.length === 1 ? "" : "s"} need attention.`);
+          setUrgentAlerts(alerts);
           setLiveRows(nextRows);
         },
       )
@@ -554,11 +606,33 @@ export default function ManagerPage() {
       payload.ok
         ? status === "confirmed"
           ? payload.payment?.paymentKind === "wallet_deposit"
-            ? "Wallet deposit confirmed. Cash was credited to the member wallet."
-            : `Payment confirmed. User upgraded to ${(payload.upgradedTier || payload.payment?.upgradedTier || "paid").toUpperCase()}.`
-          : "Payment rejected."
+            ? "Wallet deposit completed. Cash was credited to the member wallet."
+            : `Payment completed. User upgraded to ${(payload.upgradedTier || payload.payment?.upgradedTier || "paid").toUpperCase()}.`
+          : "Payment request rejected and locked."
         : payload.reason || "Payment review failed.",
     );
+    if (payload.ok) {
+      const refreshed = await fetch("/api/payments/manager-direct", { headers });
+      if (refreshed.ok) {
+        const body = await refreshed.json().catch(() => ({}));
+        if (Array.isArray(body.payments)) {
+          setLiveRows((current) => ({
+            ...current,
+            "Payments & Approvals": body.payments.map((payment: {
+              id?: string; amount?: number; currency?: string; user_id?: string; reference?: string;
+              created_at?: string; displayStatus?: string; locked?: boolean; senderName?: string;
+              senderPhone?: string; receiverName?: string; receiverPhone?: string;
+              metadata?: { requestedTier?: string; paymentKind?: string }; status?: string;
+            }) => ({
+              id: payment.id,
+              title: `${payment.currency || "UGX"} ${Number(payment.amount || 0).toLocaleString()} • ${payment.senderName || payment.user_id || "member"}`,
+              meta: `${payment.metadata?.paymentKind === "wallet_deposit" ? "WALLET" : "UPGRADE"} • Sent ${payment.created_at ? new Date(payment.created_at).toLocaleString() : "Time unavailable"} • From ${payment.senderPhone || "—"} → ${payment.receiverName || "—"} ${payment.receiverPhone || ""}`,
+              value: `${payment.displayStatus || payment.status || "pending"} • ${payment.locked ? "LOCKED" : "ACTION REQUIRED"}`,
+            })),
+          }));
+        }
+      }
+    }
   }
 
   async function managerIdentityUpdate(event: React.FormEvent<HTMLFormElement>) {
@@ -706,6 +780,13 @@ export default function ManagerPage() {
               : `${active} operational view`}
           </p>
 
+          {urgentAlerts.length ? (
+            <div className="manager-urgent-alert" role="alert">
+              <strong>Urgent attention required</strong>
+              {urgentAlerts.map((alert) => <span key={alert}>{alert}</span>)}
+            </div>
+          ) : null}
+
           {active === "Dashboard" ? (
             <>
               <div className="manager-metrics">
@@ -719,18 +800,14 @@ export default function ManagerPage() {
                 <section className="manager-card">
                   <h3>Live activity</h3>
                   <div className="manager-activity">
-                    <div className="manager-activity-row">
-                      <span>New membership</span>
-                      <strong>+24</strong>
-                    </div>
-                    <div className="manager-activity-row">
-                      <span>Verified profiles</span>
-                      <strong>+8</strong>
-                    </div>
-                    <div className="manager-activity-row">
-                      <span>Wallet settlements</span>
-                      <strong>+13</strong>
-                    </div>
+                    {recentActivity.length ? recentActivity.map((item) => (
+                      <div className="manager-activity-row" key={item.id || item.title}>
+                        <span>{item.title}<small>{item.meta}</small></span>
+                        <strong>{item.value}</strong>
+                      </div>
+                    )) : (
+                      <div className="manager-review-message">No recent transactions or receipts yet.</div>
+                    )}
                   </div>
                 </section>
 
@@ -1272,24 +1349,16 @@ export default function ManagerPage() {
                       </div>
                       <div className="manager-row-actions">
                         <em>{row.value}</em>
-                        {row.id ? (
+                        {row.id && !row.value.includes("LOCKED") && row.value.includes("ACTION REQUIRED") ? (
                           <>
-                            <button
-                              type="button"
-                              onClick={() =>
-                                reviewPayment(row.id!, "confirmed")
-                              }
-                            >
-                              Confirm & upgrade
+                            <button type="button" onClick={() => reviewPayment(row.id!, "confirmed")}>
+                              Confirm / Complete
                             </button>
-                            <button
-                              type="button"
-                              onClick={() => reviewPayment(row.id!, "rejected")}
-                            >
-                              Reject
+                            <button type="button" onClick={() => reviewPayment(row.id!, "rejected")}>
+                              Reject & Lock
                             </button>
                           </>
-                        ) : null}
+                        ) : row.id ? <span className="manager-locked-label">Locked</span> : null}
                       </div>
                     </div>
                   ))}
