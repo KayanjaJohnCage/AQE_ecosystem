@@ -106,7 +106,7 @@ export async function POST(request: Request) {
       const result = await client.from(resource).delete().not("id", "is", null);
       if (result.error) return NextResponse.json({ ok: false, reason: result.error.message }, { status: 500 });
       await audit(client, access.session.userId!, "CLEAR_ALL", resource, undefined, undefined, undefined, "Manager requested clear-all.");
-      return NextResponse.json({ ok: true, affected: result.data?.length ?? 0, message: resource + " cleared." });
+      return NextResponse.json({ ok: true, affected: 1, message: resource + " cleared." });
     }
 
     if (action === "block" || action === "unblock") {
