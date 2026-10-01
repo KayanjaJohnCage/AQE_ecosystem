@@ -760,15 +760,17 @@ export default function ManagerPage() {
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
     const { session } = readStoredSession();
-    if (!url || !key || !session.access_token || !session.refresh_token) return;
+    const accessToken = session.access_token;
+    const refreshToken = session.refresh_token;
+    if (!url || !key || !accessToken || !refreshToken) return;
     const client = createClient(url, key);
     let channel: ReturnType<typeof client.channel> | undefined;
     let cancelled = false;
     (async () => {
       try {
         const result = await client.auth.setSession({
-          access_token: session.access_token,
-          refresh_token: session.refresh_token,
+          access_token: accessToken,
+          refresh_token: refreshToken,
         });
         if (cancelled || result.error) return;
         channel = client
