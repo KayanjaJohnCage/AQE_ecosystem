@@ -57,6 +57,7 @@ type PlatformSettings = {
   walletCurrency: string;
   qcExchangeRate: number;
   referralRates: { direct: number; indirect: number };
+  referralRatesByTier: { basic: { direct: number; indirect: number }; premium: { direct: number; indirect: number }; vip: { direct: number; indirect: number } };
   about: string;
   contact: string;
   commercial: {
@@ -82,6 +83,7 @@ type PlatformSettings = {
   };
   customerContent: {
     home: Record<string, unknown>;
+    explore: Record<string, unknown>;
     rewards: Record<string, unknown>;
     campaign: Record<string, unknown>;
     raffle: Record<string, unknown>;
@@ -1036,21 +1038,41 @@ export default function ManagerPage() {
     event.preventDefault();
     const { session, user } = readStoredSession();
     const headers: HeadersInit = { "Content-Type": "application/json" };
-    if (session.access_token)
-      headers.authorization = `Bearer ${session.access_token}`;
+    if (session.access_token) headers.authorization = "Bearer " + session.access_token;
     if (user.id) headers["x-user-id"] = user.id;
+    const method = receiver.id ? "PATCH" : "POST";
     const response = await fetch("/api/payments/receiver", {
-      method: "PATCH",
+      method,
       headers,
       body: JSON.stringify(receiver),
     });
     const payload = await response.json().catch(() => ({}));
-    setReviewMessage(
-      payload.ok
-        ? "Mukuru receiver details saved."
-        : payload.reason || "Receiver details could not be saved.",
-    );
-    if (payload.receiver) setReceiver(payload.receiver);
+    setReviewMessage(payload.ok ? (receiver.id ? "Receiver details updated." : "Receiver details added.") : payload.reason || "Receiver details could not be saved.");
+    if (payload.ok) {
+      setReceiver({ receiverName:"", receiverPhone:"", receiverCard:"", network:"Mukuru", instructions:"", status:"available" });
+      const refreshed = await fetch("/api/payments/receiver", { cache:"no-store" });
+      const body = await refreshed.json().catch(() => ({}));
+      if (Array.isArray(body.receivers)) setReceivers(body.receivers);
+      if (body.receiver) setReceiver(body.receiver);
+    }
+  }
+
+  async function deleteReceiver(id: string) {
+    if (!window.confirm("Delete this payment receiver? Customers will no longer be able to select it.")) return;
+    const response = await fetch("/api/payments/receiver", {
+      method:"DELETE", headers:managerHeaders(), body:JSON.stringify({ id }),
+    });
+    const payload=await response.json().catch(()=>({}));
+    setReviewMessage(payload.ok ? "Receiver deleted." : payload.reason || "Receiver deletion failed.");
+    if(payload.ok) {
+      setReceivers((items)=>items.filter((item)=>item.id!==id));
+      if(receiver.id===id) setReceiver({receiverName:"",receiverPhone:"",receiverCard:"",network:"Mukuru",instructions:"",status:"available"});
+    }
+  }
+
+  function editReceiver(item: ReceiverDetails) {
+    setReceiver({...item});
+    window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
   async function saveSettings(event: React.FormEvent<HTMLFormElement>) {
@@ -1594,69 +1616,37 @@ export default function ManagerPage() {
             <>
               <section className="manager-card manager-detail">
                 <div className="manager-table-header">
-                  <h3>Mukuru receiver details</h3>
-                  <span className="status-pill">Manager controlled</span>
+                  <h3>Mukuru receivers</h3>
+                  <span className="status-pill">Add · Edit · Delete</span>
                 </div>
-                <p className="manager-subtitle">
-                  Customers see these details and use them on Mukuru to send
-                  payment. They never edit the receiver account.
-                </p>
+                <p className="manager-subtitle">Manager-controlled receiver accounts. Customers only see receivers marked Available. Adding a receiver does not change or complete a customer payment; payment remains pending until Manager confirmation.</p>
+                <div className="manager-list-table">
+                  {receivers.length ? receivers.map((item) => (
+                    <div key={item.id} className="manager-row">
+                      <div>
+                        <strong>{item.receiverName} · {item.network || "Mukuru"}</strong>
+                        <span>{item.receiverPhone} · {item.receiverCard} · {item.status || "available"}</span>
+                        <small>{item.instructions}</small>
+                      </div>
+                      <div className="manager-row-actions">
+                        <button type="button" onClick={() => editReceiver(item)}>Edit</button>
+                        <button type="button" onClick={() => deleteReceiver(item.id || "")}>Delete</button>
+                      </div>
+                    </div>
+                  )) : <div className="manager-review-message">No receiver records yet. Add the first receiver below.</div>}
+                </div>
                 <form className="manager-settings-form" onSubmit={saveReceiver}>
-                  <label>
-                    Receiver name
-                    <input
-                      value={receiver.receiverName}
-                      onChange={(event) =>
-                        setReceiver({
-                          ...receiver,
-                          receiverName: event.target.value,
-                        })
-                      }
-                      required
-                    />
-                  </label>
-                  <label>
-                    Receiver phone number
-                    <input
-                      value={receiver.receiverPhone}
-                      onChange={(event) =>
-                        setReceiver({
-                          ...receiver,
-                          receiverPhone: event.target.value,
-                        })
-                      }
-                      required
-                    />
-                  </label>
-                  <label>
-                    Receiver card / account
-                    <input
-                      value={receiver.receiverCard}
-                      onChange={(event) =>
-                        setReceiver({
-                          ...receiver,
-                          receiverCard: event.target.value,
-                        })
-                      }
-                      required
-                    />
-                  </label>
-                  <label>
-                    Customer instructions
-                    <textarea
-                      value={receiver.instructions}
-                      onChange={(event) =>
-                        setReceiver({
-                          ...receiver,
-                          instructions: event.target.value,
-                        })
-                      }
-                      rows={3}
-                    />
-                  </label>
-                  <button type="submit" className="manager-action-button">
-                    Save receiver details
-                  </button>
+                  <h4>{receiver.id ? "Edit receiver" : "Add receiver"}</h4>
+                  <label>Receiver name<input value={receiver.receiverName} onChange={(event)=>setReceiver({...receiver,receiverName:event.target.value})} required /></label>
+                  <label>Receiver phone number<input value={receiver.receiverPhone} onChange={(event)=>setReceiver({...receiver,receiverPhone:event.target.value})} required /></label>
+                  <label>Receiver card / account<input value={receiver.receiverCard} onChange={(event)=>setReceiver({...receiver,receiverCard:event.target.value})} required /></label>
+                  <label>Network / channel<input value={receiver.network || "Mukuru"} onChange={(event)=>setReceiver({...receiver,network:event.target.value})} /></label>
+                  <label>Status<select value={receiver.status || "available"} onChange={(event)=>setReceiver({...receiver,status:event.target.value as ReceiverDetails["status"]})}><option value="available">Available</option><option value="busy">Busy</option><option value="inactive">Inactive</option></select></label>
+                  <label>Customer instructions<textarea value={receiver.instructions} onChange={(event)=>setReceiver({...receiver,instructions:event.target.value})} rows={3} /></label>
+                  <div className="manager-row-actions">
+                    <button type="submit" className="manager-action-button">{receiver.id ? "Update receiver" : "Add receiver"}</button>
+                    {receiver.id ? <button type="button" onClick={()=>setReceiver({receiverName:"",receiverPhone:"",receiverCard:"",network:"Mukuru",instructions:"",status:"available"})}>Cancel edit</button> : null}
+                  </div>
                 </form>
               </section>
               <section className="manager-card manager-detail">
