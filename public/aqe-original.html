@@ -10428,8 +10428,11 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
       try{
         var topWin=window.top;
         if(topWin&&topWin!==window&&SCREEN_ROUTES[id]){
-          var next=SCREEN_ROUTES[id],current=topWin.location.pathname;
-          if(current!==next)topWin.history.pushState({aqeScreen:id},'',next);
+          /* Keep the parent route on /customer so Next.js does not remount the iframe.
+       Screen changes are handled entirely by the customer SPA. */
+          var next=SCREEN_ROUTES[id];
+          var current=topWin.location.pathname;
+          if(current!=='/customer')topWin.history.replaceState({aqeScreen:id},'', '/customer');
         }
       }catch(_){ }
       return result;
@@ -11800,15 +11803,19 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
       var body=await p.json().catch(function(){return {}});
       if(!p.ok||!body.profile)throw new Error(body.reason||"Profile unavailable");
       var profile=body.profile;
-      var mediaResponse=await fetch("/api/profile/media",{headers:authHeaders(),cache:"no-store"});
-      var mediaBody=await mediaResponse.json().catch(function(){return {}});
-      var media=Array.isArray(mediaBody.media)?mediaBody.media:[];
+      /* Profile identity/tier is authoritative even if the optional media endpoint is temporarily unavailable. */
       u.tier=String(profile.tier||u.tier||"basic").toLowerCase();
       u.profileTier=u.tier;
       u.verified=profile.verificationStatus==="approved";
       u.tierVerified=Boolean(profile.tierVerified || profile.verificationStatus==="approved" || profile.membershipStatus==="active");
       u.membershipStatus=profile.membershipStatus||u.membershipStatus;
       u.profile=Object.assign({},u.profile||{},profile);
+      var media=[];
+      try{
+        var mediaResponse=await fetch("/api/profile/media",{headers:authHeaders(),cache:"no-store"});
+        var mediaBody=await mediaResponse.json().catch(function(){return {}});
+        media=Array.isArray(mediaBody.media)?mediaBody.media:[];
+      }catch(_){ media=Array.isArray(u.profile.media)?u.profile.media:[]; }
       u.profile.media=media;
       u.__serverOwnProfile=Object.assign({},profile,{
         id:profile.id||u.id,
@@ -12016,7 +12023,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
      mobile-money settlement remains the configured UGX amount. */
   var baseExactSave=window.aqeExactSaveAndContinue;
   window.aqeExactSaveAndContinue=async function(){
-    var ctx=window.serverPaymentContext||window.__aqePaymentContext||{};
+    var ctx=window.__aqePaymentContext||{};
     if(String(ctx.kind||"")!=="membership_upgrade")return baseExactSave.apply(this,arguments);
     var currency=(typeof prefCurrency==="function"?prefCurrency():"UGX");
     try{
@@ -12027,7 +12034,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
       var baseUgx=Number(prices[tier]||0);
       if(!baseUgx)throw new Error("The selected membership price is not configured.");
       var displayAmount=fromUgx(baseUgx,currency);
-      var input=E("aqeExactAmount");if(input)input.value=displayAmount.toFixed(currency==="UGX"?0:2);
+      var input=E("aqeExactAmount");if(input){input.value=displayAmount.toFixed(currency==="UGX"?0:2);input.readOnly=true;}
       var name=safe(E("aqeExactSenderName")&&E("aqeExactSenderName").value).trim();
       var num=safe(E("aqeExactSenderNumber")&&E("aqeExactSenderNumber").value).trim();
       if(!name){toast("Enter sender registered name.","error");return}
@@ -12097,6 +12104,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
         }
       }catch(e){toast(e.message||"Wallet upgrade could not be completed.","error");return}
     }
+    window.__aqePaymentContext={kind:"membership_upgrade",tier:tier};
     serverPaymentContext={kind:"membership_upgrade",tier:tier};
     return typeof basePxSetTier==="function"?basePxSetTier.apply(this,arguments):undefined;
   };
@@ -12150,5 +12158,144 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 })();
 </script>
 <!-- Live server data is authoritative; do not clear notifications or transactions. -->
+<script id="aqe-final-authoritative-runtime-fix">
+(function(){
+  "use strict";
+  function E(id){return document.getElementById(id)}
+  function U(){return window.state&&state.currentUser?state.currentUser:null}
+  function session(){try{return JSON.parse(localStorage.getItem("aqe_next_session")||"null")||null}catch(_){return null}}
+  function authHeaders(){var s=session(),h={};if(s&&s.access_token)h.Authorization="Bearer "+s.access_token;return h}
+  function toast(m,t){if(typeof showToast==="function")showToast(m,t||"success")}
+
+  /* Never let an optional media request downgrade an already verified member. */
+  window.aqeRefreshAuthoritativeProfile=async function(){
+    var u=U(); if(!u)return null;
+    try{
+      var r=await fetch("/api/profile",{headers:authHeaders(),cache:"no-store"});
+      var b=await r.json().catch(function(){return {}});
+      if(!r.ok||!b.profile)return null;
+      var p=b.profile;
+      u.tier=String(p.tier||u.tier||"basic").toLowerCase();
+      u.tierVerified=Boolean(p.tierVerified||p.verificationStatus==="approved"||p.membershipStatus==="active");
+      u.verified=u.tierVerified;
+      u.membershipStatus=p.membershipStatus||u.membershipStatus;
+      u.profile=Object.assign({},u.profile||{},p);
+      try{
+        var mr=await fetch("/api/profile/media",{headers:authHeaders(),cache:"no-store"});
+        var mb=await mr.json().catch(function(){return {}});
+        if(Array.isArray(mb.media))u.profile.media=mb.media;
+      }catch(_){}
+      u.__serverOwnProfile=Object.assign({},p,{
+        id:p.id||u.id,userId:u.id,ownerUserId:u.id,name:p.displayName||u.name,
+        tier:u.tier,verified:u.tierVerified,tierVerified:u.tierVerified,
+        media:Array.isArray(u.profile.media)?u.profile.media:[],image:p.avatarUrl||""
+      });
+      if(typeof saveState==="function")saveState();
+      if(typeof renderMyProfileMedia==="function")renderMyProfileMedia();
+      if(typeof updateUIForUser==="function")updateUIForUser();
+      return u.__serverOwnProfile;
+    }catch(_){return null}
+  };
+
+  /* Persist payment context globally so later wrappers cannot accidentally
+     convert an upgrade request into a WALLET deposit. */
+  var oldPxSetTier=window.pxSetTier;
+  if(oldPxSetTier&&!oldPxSetTier.__aqeContextFix){
+    window.pxSetTier=function(t){
+      var tier=String(t||"basic").toLowerCase();
+      window.__aqePaymentContext={kind:"membership_upgrade",tier:tier};
+      return oldPxSetTier.apply(this,arguments);
+    };
+    window.pxSetTier.__aqeContextFix=true;
+  }
+
+  var oldRegister=window.handleRegister;
+  if(oldRegister&&!oldRegister.__aqeContextFix){
+    window.handleRegister=async function(){
+      try{
+        var category=String((E("regProfileCategory")||{}).value||"client").toLowerCase();
+        if(category!=="client"){
+          var tier=String((E("regCategory")||{}).value||"basic").toLowerCase();
+          window.__aqePaymentContext={kind:"membership_upgrade",tier:tier};
+        }
+      }catch(_){}
+      return oldRegister.apply(this,arguments);
+    };
+    window.handleRegister.__aqeContextFix=true;
+  }
+
+  /* If an upgrade is already open, display the authoritative configured price
+     in the selected display currency and keep the submitted settlement amount UGX. */
+  var oldExactOpen=window.aqeExactOpen;
+  if(oldExactOpen&&!oldExactOpen.__aqeCurrencyFix){
+    window.aqeExactOpen=function(){
+      var result=oldExactOpen.apply(this,arguments);
+      try{
+        var ctx=window.__aqePaymentContext||{};
+        if(String(ctx.kind)==="membership_upgrade"){
+          fetch("/api/settings",{cache:"no-store"}).then(function(r){return r.json()}).then(function(b){
+            var prices=b.settings&&b.settings.tierPrices||{basic:65000,premium:150000,vip:250000};
+            var base=Number(prices[String(ctx.tier||"basic").toLowerCase()]||0);
+            if(base&&typeof fromUgx==="function"){
+              var c=(typeof prefCurrency==="function"?prefCurrency():"UGX");
+              var input=E("aqeExactAmount");
+              if(input){input.value=Number(fromUgx(base,c)).toFixed(c==="UGX"?0:2);input.readOnly=true;}
+              var label=E("aqeExactAmountDisplay");
+              if(label&&typeof moneyCurrent==="function")label.textContent=moneyCurrent(Number(fromUgx(base,c)),c);
+            }
+          }).catch(function(){});
+        }
+      }catch(_){}
+      return result;
+    };
+    window.aqeExactOpen.__aqeCurrencyFix=true;
+  }
+
+  /* SPA navigation: keep /customer mounted. */
+  document.addEventListener("click",function(ev){
+    var a=ev.target&&ev.target.closest?a=ev.target.closest("a[href]"):null;
+    if(!a)return;
+    var href=a.getAttribute("href")||"";
+    if(href.indexOf("/customer/")===0){
+      ev.preventDefault();ev.stopPropagation();
+      var route=href.split("?")[0].split("#")[0];
+      var found=null;
+      if(typeof SCREEN_ROUTES!=="undefined")for(var k in SCREEN_ROUTES){if(SCREEN_ROUTES[k]===route){found=k;break;}}
+      if(found&&typeof showScreen==="function")showScreen(found);
+    }
+  },true);
+
+  /* Kill the stray literal "\n" node even when a legacy renderer inserts it. */
+  function scrubLiteralNewline(){
+    try{
+      var w=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT),n;
+      var nodes=[];
+      while(n=w.nextNode())nodes.push(n);
+      nodes.forEach(function(x){if((x.nodeValue||"").trim()==="\\n" || (x.nodeValue||"").trim()==="\\\\n")x.nodeValue="";});
+    }catch(_){}
+  }
+  scrubLiteralNewline();
+
+  /* Customer notifications: poll and surface every new unread event immediately. */
+  var seen={};
+  async function pollCustomerAlerts(){
+    var s=session();if(!s||!s.access_token)return;
+    try{
+      var r=await fetch("/api/notifications?limit=50",{headers:authHeaders(),cache:"no-store"});
+      var b=await r.json().catch(function(){return {}});
+      if(!Array.isArray(b.notifications))return;
+      b.notifications.forEach(function(n){
+        if(!n.read_at && !seen[String(n.id)]){
+          seen[String(n.id)]=true;
+          toast((n.title?n.title+": ":"")+String(n.body||"Notification"),"info");
+        }
+      });
+      if(typeof loadReceiptsAndNotifications==="function")loadReceiptsAndNotifications();
+    }catch(_){}
+  }
+  setTimeout(function(){window.aqeRefreshAuthoritativeProfile();pollCustomerAlerts();},500);
+  setInterval(function(){window.aqeRefreshAuthoritativeProfile();pollCustomerAlerts();},15000);
+})();
+</script>
 </body>
 </html>
