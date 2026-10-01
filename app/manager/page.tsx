@@ -598,11 +598,23 @@ export default function ManagerPage() {
 
   const managerCreate = async () => {
     const resource = managerResourceForActive(active);
-    if (!resource || !["notifications","bookings","direct_messages","marketplace_products","campaigns","aqe_prizes","support_ticket"].includes(resource)) {
+    if (!resource || (!["notifications","bookings","direct_messages","marketplace_products","campaigns","aqe_prizes","support_ticket","profiles"].includes(resource))) {
       setReviewMessage("Create-new is not available for this financial/audit queue. Use its dedicated workflow.");
       return;
     }
     try {
+      if (resource === "profiles") {
+        const email = window.prompt("Customer email") || "";
+        const password = window.prompt("Temporary password (8+ characters)") || "";
+        const displayName = window.prompt("Customer display name") || "";
+        const phone = window.prompt("Customer phone number") || "";
+        if (!email || !password || !displayName || !phone) return;
+        const response = await fetch("/api/manager/users", { method: "POST", headers: managerHeaders(), body: JSON.stringify({ email, password, displayName, phone }) });
+        const body = await response.json().catch(() => ({}));
+        if (!response.ok || !body.ok) throw new Error(body.reason || "Customer creation failed.");
+        setReviewMessage("Customer account created successfully.");
+        return;
+      }
       const payload: Record<string, unknown> = {};
       if (resource === "notifications") {
         payload.userId = window.prompt("Customer user ID"); if (!payload.userId) return;
