@@ -6854,7 +6854,27 @@ window.addEventListener('DOMContentLoaded', init);
 
   window.aqeGift=function(){if(!user()){toast('Please sign in first.');return;} const amount=prompt('Gift QC (0.5–100):','0.5'); const n=Number(amount); if(!Number.isFinite(n)||n<0.5||n>100){toast('Enter a gift between 0.5 and 100 QC.');return;} toast(n+' QC gift prepared. Production server will validate balance and recipient.');};
 
-  window.aqeSendMoney=function(){if(!user()){toast('Please sign in first.');return;} const amount=prompt('Amount in UGX:','5000'); if(Number(amount)>0)toast('Transfer prepared. Production server will validate the recipient and wallet balance.');};
+  window.aqeSendMoney=async function(){
+    if(!user()){toast('Please sign in first.');return;}
+    const recipientPhone=prompt('Recipient registered phone number:','');
+    if(!recipientPhone)return;
+    const amount=Number(prompt('Amount in UGX:','5000')||0);
+    if(!Number.isFinite(amount)||amount<=0){toast('Enter a valid transfer amount.','error');return;}
+    const note=prompt('Optional transfer note:','')||'';
+    try{
+      const response=await fetch('/api/wallet/transfer',{
+        method:'POST',
+        headers:Object.assign({'Content-Type':'application/json'},typeof authHeaders==='function'?authHeaders():{}),
+        body:JSON.stringify({recipientPhone,amount,note})
+      });
+      const body=await response.json().catch(function(){return {}});
+      if(!response.ok||!body.ok)throw new Error(body.reason||'Wallet transfer failed.');
+      toast('Transfer completed successfully.');
+      if(typeof syncOwnProfileServer==='function')await syncOwnProfileServer();
+      if(typeof loadReceiptsAndNotifications==='function')await loadReceiptsAndNotifications();
+      if(typeof updateUIForUser==='function')updateUIForUser();
+    }catch(e){toast(e.message||'Wallet transfer failed.','error');}
+  };
 
   window.aqeWithdraw=function(){if(typeof showScreen==='function')showScreen('screen-aqe-withdraw');};
 
