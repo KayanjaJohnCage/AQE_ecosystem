@@ -6864,7 +6864,7 @@ window.addEventListener('DOMContentLoaded', init);
     try{
       const response=await fetch('/api/wallet/transfer',{
         method:'POST',
-        headers:Object.assign({'Content-Type':'application/json'},typeof authHeaders==='function'?authHeaders():{}),
+        headers:(function(){var h={'Content-Type':'application/json'};try{var s=jget('aqe_next_session');if(s&&s.access_token)h.Authorization='Bearer '+s.access_token;}catch(_){}return h;})(),
         body:JSON.stringify({recipientPhone,amount,note})
       });
       const body=await response.json().catch(function(){return {}});
