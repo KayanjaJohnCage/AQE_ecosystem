@@ -1670,11 +1670,11 @@ export default function ManagerPage() {
               {reviewMessage ? (
                 <div className="manager-review-message">{reviewMessage}</div>
               ) : null}
-            </section>
-            <section className="manager-card manager-detail">
-              <div className="manager-table-header"><h3>Manager Troubleshoot</h3><span className="status-pill">Support operations</span></div>
-              <p className="manager-subtitle">Open the live troubleshoot queue to take customer account-change requests, move them to In Progress, resolve them, and review the customer details before applying an authorized change.</p>
-              <div className="manager-page-actions"><button type="button" onClick={() => setActive("Customer Support")}>Open troubleshoot queue</button></div>
+              <div className="manager-rule-box">
+                <div className="manager-table-header"><h3>Manager Troubleshoot</h3><span className="status-pill">Support operations</span></div>
+                <p className="manager-subtitle">Open the live troubleshoot queue to take customer account-change requests, move them to In Progress, resolve them, and review the customer details before applying an authorized change.</p>
+                <div className="manager-page-actions"><button type="button" onClick={() => setActive("Customer Support")}>Open troubleshoot queue</button></div>
+              </div>
             </section>
           ) : active === "Payments & Approvals" ? (
             <>
