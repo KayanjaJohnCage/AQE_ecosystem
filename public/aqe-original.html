@@ -5638,7 +5638,7 @@ window.addEventListener('DOMContentLoaded', init);
 
     <button class="px-btn primary" style="width:100%" onclick="pxOpenUpgrade()">Upgrade level</button>
 
-    <button class="px-btn" style="width:100%;margin-top:8px" onclick="pxCycleRole()">Switch test role</button>
+    
 
   </div>
 
@@ -6712,11 +6712,11 @@ window.addEventListener('DOMContentLoaded', init);
 
   <div class="aqe-update-grid" style="margin-top:14px">
 
-    <div class="aqe-update-card"><span class="aqe-update-chip">BASIC</span><div class="aqe-update-price" style="margin-top:10px">UGX 65,000</div><p class="aqe-update-muted">Initial registration/referral amount. Renewal: UGX 2,500/month. Referral net: UGX 104,500.</p><button class="aqe-update-action" onclick="aqeSubscribe('basic')">Choose Basic</button></div>
+    <div class="aqe-update-card"><span class="aqe-update-chip">BASIC</span><div class="aqe-update-price" style="margin-top:10px">UGX 65,000</div><p class="aqe-update-muted">Initial registration/referral amount. Renewal: UGX 2,500/month. Referral reward is calculated from the referred tier price.</p><button class="aqe-update-action" onclick="aqeSubscribe('basic')">Choose Basic</button></div>
 
-    <div class="aqe-update-card"><span class="aqe-update-chip">PREMIUM</span><div class="aqe-update-price" style="margin-top:10px">UGX 150,000</div><p class="aqe-update-muted">Initial registration/referral amount. Renewal: UGX 5,000/month. Referral net: UGX 212,000.</p><button class="aqe-update-action" onclick="aqeSubscribe('premium')">Choose Premium</button></div>
+    <div class="aqe-update-card"><span class="aqe-update-chip">PREMIUM</span><div class="aqe-update-price" style="margin-top:10px">UGX 150,000</div><p class="aqe-update-muted">Initial registration/referral amount. Renewal: UGX 5,000/month. Referral reward is calculated from the referred tier price.</p><button class="aqe-update-action" onclick="aqeSubscribe('premium')">Choose Premium</button></div>
 
-    <div class="aqe-update-card"><span class="aqe-update-chip">VIP</span><div class="aqe-update-price" style="margin-top:10px">UGX 250,000</div><p class="aqe-update-muted">Initial registration/referral amount. Renewal: UGX 8,500/month. Referral net: UGX 428,500. VIP salary: UGX 10,000 on the 20th.</p><button class="aqe-update-action vip" onclick="aqeSubscribe('vip')">Choose VIP</button></div>
+    <div class="aqe-update-card"><span class="aqe-update-chip">VIP</span><div class="aqe-update-price" style="margin-top:10px">UGX 250,000</div><p class="aqe-update-muted">Initial registration/referral amount. Renewal: UGX 8,500/month. VIP referrers earn 12% of the referred tier price. VIP salary: UGX 10,000 on the 20th.</p><button class="aqe-update-action vip" onclick="aqeSubscribe('vip')">Choose VIP</button></div>
 
   </div>
 
@@ -6734,7 +6734,7 @@ window.addEventListener('DOMContentLoaded', init);
 
     <div class="aqe-update-card"><div class="px-label">Wallet</div><div class="aqe-update-price">UGX <span id="aqeWalletValue">0</span></div><div style="margin-top:10px"><button class="aqe-update-action" onclick="openDeposit()">Deposit</button> <button class="aqe-update-action alt" onclick="aqeWithdraw()">Withdraw</button></div></div>
 
-    <div class="aqe-update-card"><div class="px-label">QC</div><div class="aqe-update-price"><span id="aqeQcValue">0</span> QC</div><p class="aqe-update-muted">1 QC = UGX 527.88. QC is the single AQE credit currency.</p><button class="aqe-update-action" onclick="pxRecharge()">Recharge QC</button></div>
+    <div class="aqe-update-card"><div class="px-label">QC</div><div class="aqe-update-price"><span id="aqeQcValue">0</span> QC</div><p class="aqe-update-muted">1 QC = UGX 1,000. QC is the single AQE credit currency.</p><button class="aqe-update-action" onclick="pxRecharge()">Recharge QC</button></div>
 
     <div class="aqe-update-card"><div class="px-label">Transfers</div><p class="aqe-update-muted">Send money directly to another AQE user from your wallet.</p><button class="aqe-update-action" onclick="aqeSendMoney()">Send Money</button></div>
 
@@ -6782,7 +6782,7 @@ window.addEventListener('DOMContentLoaded', init);
 
   <div id="aqeReferralSummary" class="aqe-update-grid" style="margin-top:14px"></div>
 
-  <div class="aqe-update-card" style="margin-top:14px"><div class="px-label">Current referral rules</div><p class="aqe-update-muted">Basic net referral: UGX 104,500 · Premium net referral: UGX 212,000 · VIP net referral: UGX 428,500.</p><p class="aqe-update-muted">VIP salary increases by UGX 1,000 for each successful referral and is paid on the 20th.</p></div>
+  <div class="aqe-update-card" style="margin-top:14px"><div class="px-label">Current referral rules</div><p class="aqe-update-muted">VIP referrers earn 12% of the referred member's confirmed tier price; other referral rates follow the configured manager rules.</p><p class="aqe-update-muted">VIP salary increases by UGX 1,000 for each successful referral and is paid on the 20th.</p></div>
 
 </div></div>
 
@@ -11674,7 +11674,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);else boot();
 })();
 </script>
-\n
+
 
 <script id="aqe-final-navigation-live-fix">
 (function(){
