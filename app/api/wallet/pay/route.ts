@@ -61,9 +61,10 @@ export async function POST(request: Request) {
 
     if (inserted.error || !inserted.data) return NextResponse.json({ ok: false, reason: inserted.error?.message || "Wallet payment order could not be created." }, { status: 500 });
 
-    const confirmed = await client.rpc("confirm_wallet_payment_atomic", {
-      p_order_id: inserted.data.id,
+    const confirmed = await client.rpc("pay_with_wallet_atomic", {
       p_user_id: identity.userId,
+      p_tier: tier,
+      p_kind: paymentKind,
     });
 
     if (confirmed.error) {
