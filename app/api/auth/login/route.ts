@@ -59,24 +59,22 @@ export async function POST(request: Request) {
       return NextResponse.json({ ok: false, reason: "Invalid email/phone or password." }, { status: 401 });
     }
 
-    const server = createServerSupabaseClient();
-    if (server) {
-      const authLookup = await server.auth.admin.getUserByEmail(email);
-      const targetUserId = authLookup.data.user?.id;
-      if (targetUserId) {
-        const profile = await server.from("profiles").select("account_status").eq("user_id", targetUserId).maybeSingle();
-        if (profile.data?.account_status === "blocked") {
-          return NextResponse.json({ ok: false, reason: "Your AQE account has been blocked by the Manager. Contact AQE support for assistance." }, { status: 403 });
-        }
-        if (profile.data?.account_status === "suspended") {
-          return NextResponse.json({ ok: false, reason: "Your AQE account is temporarily suspended. Contact AQE support for assistance." }, { status: 403 });
-        }
-      }
-    }
-
     const { data, error } = await client.auth.signInWithPassword({ email, password });
     if (error || !data.user || !data.session) {
       return NextResponse.json({ ok: false, reason: "Invalid email/phone or password." }, { status: 401 });
+    }
+
+    const server = createServerSupabaseClient();
+    if (server) {
+      const profile = await server.from("profiles").select("account_status").eq("user_id", data.user.id).maybeSingle();
+      if (profile.data?.account_status === "blocked") {
+        await client.auth.signOut();
+        return NextResponse.json({ ok: false, reason: "Your AQE account has been blocked by the Manager. Contact AQE support for assistance." }, { status: 403 });
+      }
+      if (profile.data?.account_status === "suspended") {
+        await client.auth.signOut();
+        return NextResponse.json({ ok: false, reason: "Your AQE account is temporarily suspended. Contact AQE support for assistance." }, { status: 403 });
+      }
     }
 
     const response = NextResponse.json({ ok: true, mode: "supabase", user: data.user, session: data.session });
