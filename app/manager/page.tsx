@@ -651,8 +651,18 @@ export default function ManagerPage() {
   const managerDelete = async (row: ManagerRow) => {
     const resource = managerResourceForActive(active);
     if (!resource || !row.id) return;
-    if (resource === "transaction_receipts" || resource === "payment_orders" || resource === "referral_earnings" || resource === "profile_media") {
-      setReviewMessage(resource === "profile_media" ? "Use media moderation controls to remove media so storage is cleaned safely." : "Financial records are immutable and cannot be deleted.");
+    if (resource === "profile_media") {
+      if (!window.confirm("Delete this media asset from the database and storage?")) return;
+      try {
+        const response = await fetch("/api/media/item", { method: "DELETE", headers: managerHeaders(), body: JSON.stringify({ mediaId: row.id }) });
+        const body = await response.json().catch(() => ({}));
+        if (!response.ok || !body.ok) throw new Error(body.reason || "Media deletion failed.");
+        setReviewMessage("Media asset deleted from storage and database.");
+      } catch (error) { setReviewMessage(error instanceof Error ? error.message : "Media deletion failed."); }
+      return;
+    }
+    if (resource === "transaction_receipts" || resource === "payment_orders" || resource === "referral_earnings") {
+      setReviewMessage("Financial records are immutable and cannot be deleted.");
       return;
     }
     if (!window.confirm(`Delete this ${active} record? This action cannot be undone.`)) return;
@@ -1874,7 +1884,7 @@ export default function ManagerPage() {
                           </button>
                         </>
                       ) : null}
-                      {active !== "Users & Profiles" && row.id && !["Payments & Approvals","Transactions & QC","Withdrawals","Profile Media"].includes(active) ? (
+                      {active !== "Users & Profiles" && row.id && !["Payments & Approvals","Transactions & QC","Withdrawals"].includes(active) ? (
                         <>
                           <button type="button" onClick={() => managerEdit(row)}>Update</button>
                           <button type="button" onClick={() => managerDelete(row)}>Delete</button>
