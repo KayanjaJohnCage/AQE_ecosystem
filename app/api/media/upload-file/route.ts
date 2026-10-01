@@ -48,15 +48,32 @@ export async function POST(request: Request) {
       return NextResponse.json({ ok: false, reason: stored.error.message }, { status: 400 });
     }
 
+    const mediaRow = await client
+      .from("profile_media")
+      .select("id,owner_user_id,storage_path,media_type,mime_type,file_size,visibility,moderation_status,is_profile_photo,content_access,created_at")
+      .eq("owner_user_id", identity.userId)
+      .eq("storage_path", upload.objectPath)
+      .maybeSingle();
+
+    if (mediaRow.error || !mediaRow.data) {
+      await client.storage.from("profile-media").remove([upload.objectPath]);
+      await client.from("profile_media").delete().eq("owner_user_id", identity.userId).eq("storage_path", upload.objectPath);
+      return NextResponse.json({ ok: false, reason: mediaRow.error?.message ?? "Uploaded media could not be registered." }, { status: 500 });
+    }
+
     const signed = await client.storage.from("profile-media").createSignedUrl(upload.objectPath, 3600);
     return NextResponse.json({
       ok: true,
       media: {
+        id: mediaRow.data.id,
         objectPath: upload.objectPath,
         url: signed.data?.signedUrl ?? null,
         type: kind,
         mimeType: file.type,
-        moderationStatus: "pending",
+        moderationStatus: mediaRow.data.moderation_status,
+        isProfilePhoto: mediaRow.data.is_profile_photo,
+        contentAccess: mediaRow.data.content_access,
+        createdAt: mediaRow.data.created_at,
       },
     });
   } catch (error) {
