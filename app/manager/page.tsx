@@ -158,6 +158,7 @@ export default function ManagerPage() {
   const [troubleshootRequests, setTroubleshootRequests] = useState<TroubleshootRequest[]>([]);
   const [urgentAlerts, setUrgentAlerts] = useState<string[]>([]);
   const [recentActivity, setRecentActivity] = useState<ManagerRow[]>([]);
+  const [browserAlertsEnabled, setBrowserAlertsEnabled] = useState(false);
   const [receiver, setReceiver] = useState<ReceiverDetails>({
     receiverName: "",
     receiverPhone: "",
@@ -504,6 +505,70 @@ export default function ManagerPage() {
       .catch(() => undefined);
   }, []);
 
+  useEffect(() => {
+    let timer: ReturnType<typeof setInterval> | undefined;
+    let lastPending = -1;
+
+    const pollUrgentQueues = async () => {
+      const { session, user } = readStoredSession();
+      const headers: HeadersInit = {};
+      if (session.access_token) headers.authorization = `Bearer ${session.access_token}`;
+      if (user.id) headers["x-user-id"] = user.id;
+
+      try {
+        const [paymentsResponse, withdrawalsResponse, supportResponse] = await Promise.all([
+          fetch("/api/payments/manager-direct", { headers, cache: "no-store" }),
+          fetch("/api/vip/withdrawals", { headers, cache: "no-store" }),
+          fetch("/api/support/tickets", { headers, cache: "no-store" }),
+        ]);
+        const payments = paymentsResponse.ok ? await paymentsResponse.json() : {};
+        const withdrawals = withdrawalsResponse.ok ? await withdrawalsResponse.json() : {};
+        const support = supportResponse.ok ? await supportResponse.json() : {};
+        const pendingPayments = (payments.payments || []).filter((p: { status?: string }) => ["initiated", "pending"].includes(String(p.status))).length;
+        const pendingWithdrawals = (withdrawals.withdrawals || []).filter((w: { status?: string }) => ["PENDING", "APPROVED"].includes(String(w.status))).length;
+        const openSupport = (support.tickets || []).filter((t: { status?: string }) => String(t.status).toUpperCase() === "OPEN").length;
+        const alerts: string[] = [];
+        if (pendingPayments) alerts.push(`${pendingPayments} payment request${pendingPayments === 1 ? "" : "s"} awaiting action.`);
+        if (pendingWithdrawals) alerts.push(`${pendingWithdrawals} withdrawal request${pendingWithdrawals === 1 ? "" : "s"} need attention.`);
+        if (openSupport) alerts.push(`${openSupport} open customer support ticket${openSupport === 1 ? "" : "s"} need attention.`);
+        setUrgentAlerts(alerts);
+
+        if (lastPending >= 0 && pendingPayments > lastPending && browserAlertsEnabled && "Notification" in window && Notification.permission === "granted") {
+          try {
+            new Notification("AQE Manager: new payment request", {
+              body: `${pendingPayments - lastPending} new payment request${pendingPayments - lastPending === 1 ? "" : "s"} need confirmation.`,
+            });
+          } catch (_) {}
+        }
+        lastPending = pendingPayments;
+      } catch (_) {}
+    };
+
+    pollUrgentQueues();
+    timer = setInterval(pollUrgentQueues, 15000);
+    return () => { if (timer) clearInterval(timer); };
+  }, [browserAlertsEnabled]);
+
+  const enableManagerNotifications = async () => {
+    if (!("Notification" in window)) {
+      setReviewMessage("This browser does not support system notifications. The in-console urgent alert will still work.");
+      return;
+    }
+    if (Notification.permission === "granted") {
+      setBrowserAlertsEnabled(true);
+      return;
+    }
+    if (Notification.permission === "denied") {
+      setReviewMessage("Browser notifications are blocked. Enable them in the browser site settings.");
+      return;
+    }
+    const permission = await Notification.requestPermission();
+    if (permission === "granted") {
+      setBrowserAlertsEnabled(true);
+      setReviewMessage("Manager browser alerts enabled.");
+    }
+  };
+
   const filteredProfiles = profiles.filter((profile) => {
     const query = profileQuery.trim().toLowerCase();
     if (!query) return true;
@@ -766,6 +831,9 @@ export default function ManagerPage() {
               {managerLabel.slice(0, 2).toUpperCase()}
             </div>
             <span>{managerLabel}</span>
+            <button type="button" onClick={enableManagerNotifications} title="Enable urgent browser alerts">
+              {browserAlertsEnabled ? "🔔" : "🔕"}
+            </button>
             <button type="button">⌄</button>
           </div>
         </header>
