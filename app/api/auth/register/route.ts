@@ -193,12 +193,18 @@ export async function POST(request: Request) {
         status: error?.status ?? null,
         code: error?.code ?? null,
       });
+      const authMessage = String(error?.message ?? "");
+      const confirmationEmailFailure = /error sending confirmation email|confirmation email/i.test(authMessage);
       return NextResponse.json(
         {
           ok: false,
-          reason:
-            error?.message ??
-            "Unable to create the account. Check the Supabase Auth configuration and try again.",
+          reason: confirmationEmailFailure
+            ? "AQE could not send the email confirmation message. The account was not completed. Configure Supabase Auth custom SMTP and verify the AQE Site URL/redirect URL, then try registration again."
+            : (
+              error?.message ??
+              "Unable to create the account. Check the Supabase Auth configuration and try again."
+            ),
+          code: confirmationEmailFailure ? "AUTH_EMAIL_DELIVERY_UNAVAILABLE" : (error?.code ?? null),
         },
         { status: 400 },
       );
