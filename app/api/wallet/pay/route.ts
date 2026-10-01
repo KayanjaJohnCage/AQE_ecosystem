@@ -46,20 +46,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ ok: false, reason: "Unsupported wallet payment." }, { status: 400 });
     }
 
-    const reference = "AQE-WALLET-" + Date.now();
-    const inserted = await client.from("payment_orders").insert({
-      user_id: identity.userId,
-      amount,
-      currency,
-      qc_package_id: paymentKind === "qc_recharge" ? "wallet-qc" : paymentKind,
-      reference,
-      provider: "AQE_WALLET",
-      mode: "live",
-      status: "initiated",
-      metadata,
-    }).select("id,user_id,amount,currency,reference,status,metadata").single();
-
-    if (inserted.error || !inserted.data) return NextResponse.json({ ok: false, reason: inserted.error?.message || "Wallet payment order could not be created." }, { status: 500 });
+    if (paymentKind !== "membership_upgrade") {
+      return NextResponse.json(
+        { ok: false, reason: "Wallet payments currently support membership upgrades only." },
+        { status: 400 },
+      );
+    }
 
     const confirmed = await client.rpc("pay_with_wallet_atomic", {
       p_user_id: identity.userId,
@@ -68,7 +60,6 @@ export async function POST(request: Request) {
     });
 
     if (confirmed.error) {
-      await client.from("payment_orders").update({ status: "cancelled", updated_at: new Date().toISOString() }).eq("id", inserted.data.id).eq("status", "initiated");
       return NextResponse.json({ ok: false, reason: confirmed.error.message }, { status: 400 });
     }
 
