@@ -152,6 +152,23 @@ export async function POST(request: Request) {
       );
     }
 
+    const qcCost = Number(body.qcCost ?? 0);
+    if (!Number.isInteger(qcCost) || qcCost < 0) {
+      return NextResponse.json({ ok: false, reason: "Invalid QC booking cost." }, { status: 400 });
+    }
+    let qcBefore = 0;
+    let qcAfter = 0;
+    if (qcCost > 0) {
+      const wallet = await client.from("qc_wallet").select("balance").eq("user_id", identity.userId).maybeSingle();
+      qcBefore = Number(wallet.data?.balance ?? 0);
+      if (qcBefore < qcCost) {
+        return NextResponse.json({ ok: false, reason: "Not enough QC. Recharge QC and try again." }, { status: 409 });
+      }
+      qcAfter = qcBefore - qcCost;
+      const reserved = await client.from("qc_wallet").update({ balance: qcAfter, updated_at: new Date().toISOString() }).eq("user_id", identity.userId).gte("balance", qcCost);
+      if (reserved.error) return NextResponse.json({ ok: false, reason: reserved.error.message }, { status: 500 });
+    }
+
     const result = createBookingRequest({
       customerId: identity.userId,
       providerId,
@@ -165,6 +182,24 @@ export async function POST(request: Request) {
       return NextResponse.json(result, { status: 400 });
 
     const persisted = await persistBookingRequest(result.booking);
+    if (!persisted.ok && qcCost > 0) {
+      await client.from("qc_wallet").update({ balance: qcBefore, updated_at: new Date().toISOString() }).eq("user_id", identity.userId);
+      return NextResponse.json(persisted, { status: 500 });
+    }
+    if (persisted.ok && qcCost > 0) {
+      const ref = String(result.booking.id);
+      await client.from("qc_ledger").insert({
+        user_id: identity.userId, transaction_type: "booking_request", amount: qcCost, direction: "OUT",
+        balance_after: qcAfter, reference_type: "booking", reference_id: ref,
+        description: "Booking request QC charge", status: "COMPLETED"
+      });
+      await client.from("transaction_receipts").insert({
+        receipt_number: "AQE-" + Date.now(), user_id: identity.userId,
+        transaction_type: "booking_request", source: "booking", reference_id: ref,
+        amount: 0, currency: "UGX", qc_amount: qcCost, balance_before: qcBefore,
+        balance_after: qcAfter, status: "COMPLETED", description: "Booking request QC charge"
+      });
+    }
     return NextResponse.json(persisted, { status: persisted.ok ? 200 : 500 });
   } catch (error) {
     return NextResponse.json(
