@@ -2985,44 +2985,18 @@ function formatMoney(amount, currency) {
 
 
 function renderProfiles() {
-
-  const grid = document.getElementById('homeProfileGrid');
-
-  const blurred = isBlurred();
-
-  grid.innerHTML = state.profiles.slice(0,4).map(p => `
-
-    <div onclick="openProfile(${p.id})" class="ch bga8 r2xl oh b1 ba7 cp">
-
-      <div style="height:128px;background:linear-gradient(to bottom right, var(--tw-gradient-from), var(--tw-gradient-to));position:relative;" class="${p.color} ${blurred?'bw':''}">
-
-        <div style="position:absolute;top:8px;right:8px;padding:2px 8px;background:rgba(0,0,0,0.5);backdrop-filter:blur(4px);border-radius:6px;font-size:10px;color:white;font-weight:700;"><i class="fas fa-star" style="font-size:8px;color:var(--g);margin-right:2px;"></i>${p.rating}</div>
-
-      </div>
-
-      <div class="p3">
-
-        <h4 class="sm fw7 ca1">${p.name}</h4>
-
-        <p class="xs ca4 mt1">${p.location} · ${blurred?'??':p.age}</p>
-
-        <div class="flex aic g1 mt2">
-
-          <span class="px2 py1 bg-gr/10 cgr xs fw7 rf">${p.avail}</span>
-
-          <span class="px2 py1 bgpu/10 cpu xs fw7 rf">${p.tier.toUpperCase()}</span>
-
-        </div>
-
-      </div>
-
-    </div>
-
-  `).join('');
-
+  const grid=document.getElementById('homeProfileGrid'); if(!grid)return;
+  const blurred=isBlurred();
+  grid.innerHTML=state.profiles.slice(0,4).map(function(p){
+    const image=p.image||p.avatarUrl||'';
+    const initials=esc(p.name||'').split(' ').map(function(x){return x[0]||''}).join('').slice(0,3);
+    const visual=image ? '<img src="'+String(image).replace(/"/g,'&quot;')+'" alt="" style="width:100%;height:128px;object-fit:cover;display:block;'+(blurred?'filter:blur(12px)':'')+'">' :
+      '<div style="height:128px;background:linear-gradient(135deg,var(--pu),var(--r));display:flex;align-items:center;justify-content:center;font-size:30px;font-weight:900;color:#fff">'+initials+'</div>';
+    return '<div data-aqe-profile-id="'+esc(p.id)+'" class="ch bga8 r2xl oh b1 ba7 cp"><div style="height:128px;position:relative">'+visual+
+      '<div style="position:absolute;top:8px;right:8px;padding:2px 8px;background:rgba(0,0,0,.5);border-radius:6px;font-size:10px;color:white;font-weight:700"><i class="fas fa-star" style="font-size:8px;color:var(--g);margin-right:2px"></i>'+esc(p.rating||'New')+'</div></div>'+
+      '<div class="p3"><h4 class="sm fw7 ca1">'+esc(p.name||'AQE Member')+'</h4><p class="xs ca4 mt1">'+esc(p.location||p.city||'East Africa')+' · '+(blurred?'??':esc(p.age||''))+'</p><div class="flex aic g1 mt2"><span class="px2 py1 bg-gr/10 cgr xs fw7 rf">'+esc(p.avail||'Available')+'</span><span class="px2 py1 bgpu/10 cpu xs fw7 rf">'+esc(String(p.tier||'basic').toUpperCase())+'</span></div></div></div>';
+  }).join('');
 }
-
-
 
 function renderExplore() {
 
@@ -3071,6 +3045,20 @@ function renderExplore() {
 }
 
 
+
+function renderExplore() {
+  const grid=document.getElementById('exploreResults'); if(!grid)return;
+  const blurred=isBlurred();
+  grid.innerHTML=state.profiles.map(function(p){
+    const image=p.image||p.avatarUrl||'';
+    const initials=esc(p.name||'').split(' ').map(function(x){return x[0]||''}).join('').slice(0,3);
+    const visual=image ? '<img src="'+String(image).replace(/"/g,'&quot;')+'" alt="" style="width:100%;height:144px;object-fit:cover;display:block;'+(blurred?'filter:blur(12px)':'')+'">' :
+      '<div style="height:144px;background:linear-gradient(135deg,var(--pu),var(--r));display:flex;align-items:center;justify-content:center;font-size:32px;font-weight:900;color:#fff">'+initials+'</div>';
+    return '<div data-aqe-profile-id="'+esc(p.id)+'" class="ch bga8 r2xl oh b1 ba7 cp"><div style="height:144px;position:relative">'+visual+
+      '<div style="position:absolute;top:8px;right:8px;padding:2px 8px;background:rgba(0,0,0,.5);border-radius:6px;font-size:10px;color:white;font-weight:700"><i class="fas fa-star" style="font-size:8px;color:var(--g);margin-right:2px"></i>'+esc(p.rating||'New')+'</div></div>'+
+      '<div class="p3"><div class="flex aic g2 mb1"><h4 class="sm fw7 ca1">'+esc(p.name||'AQE Member')+'</h4><i class="fas fa-check-circle cpu" style="font-size:10px"></i></div><p class="xs ca4">'+esc(p.location||p.city||'East Africa')+' · '+(blurred?'???':esc(p.lang||''))+'</p><div class="flex aic g1 mt2"><span class="px2 py1 '+(p.avail==='Available'?'bg-gr/10 cgr':'bg-amber-500/10 text-amber-400')+' xs fw7 rf">'+esc(p.avail||'Available')+'</span><span class="px2 py1 bgg/10 cg xs fw7 rf">'+esc(String(p.tier||'basic').toUpperCase())+'</span></div></div></div>';
+  }).join('');
+}
 
 function renderMarket() {
 
