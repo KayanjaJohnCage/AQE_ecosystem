@@ -140,6 +140,10 @@ $$;
 revoke execute on function public.aqe_payment_order_lifecycle_notify() from public,anon,authenticated;
 grant execute on function public.aqe_payment_order_lifecycle_notify() to service_role;
 
+-- Supersede the older confirmed/rejected-only trigger so each lifecycle
+-- event produces exactly one customer notification.
+drop trigger if exists payment_order_notification_trigger on public.payment_orders;
+
 drop trigger if exists trg_aqe_payment_order_lifecycle_notify on public.payment_orders;
 create trigger trg_aqe_payment_order_lifecycle_notify
 after insert or update of status on public.payment_orders
