@@ -179,20 +179,56 @@ export async function GET(request: Request) {
     const { data, error } = await client
       .from("payment_orders")
       .select(
-        "id, user_id, amount, currency, qc_package_id, reference, provider, status, metadata, created_at",
+        "id, user_id, amount, currency, qc_package_id, reference, provider, status, metadata, created_at, updated_at",
       )
-      .in("status", ["initiated", "pending"])
       .order("created_at", { ascending: false })
-      .limit(100);
+      .limit(200);
     if (error)
       return NextResponse.json(
         { ok: false, reason: error.message },
         { status: 500 },
       );
+
+    const rows = data ?? [];
+    const userIds = [...new Set(rows.map((row) => row.user_id).filter(Boolean))];
+    const profiles = userIds.length
+      ? await client
+          .from("profiles")
+          .select("user_id,display_name,phone,tier,verification_status")
+          .in("user_id", userIds)
+      : { data: [] };
+    const receiver = await client
+      .from("payment_receiver_settings")
+      .select("receiver_name,receiver_phone,receiver_card")
+      .eq("id", 1)
+      .maybeSingle();
+    const profileByUser = new Map(
+      (profiles.data ?? []).map((profile) => [profile.user_id, profile]),
+    );
+
     return NextResponse.json({
       ok: true,
       source: "supabase",
-      payments: data ?? [],
+      payments: rows.map((row) => {
+        const profile = profileByUser.get(row.user_id);
+        const sender =
+          row.metadata?.senderDetails && typeof row.metadata.senderDetails === "object"
+            ? row.metadata.senderDetails
+            : {};
+        const terminal = ["confirmed", "rejected", "cancelled"].includes(row.status);
+        return {
+          ...row,
+          displayStatus: row.status === "confirmed" ? "completed" : row.status,
+          locked: terminal,
+          senderName: String(sender.name ?? profile?.display_name ?? ""),
+          senderPhone: String(sender.number ?? sender.phone ?? profile?.phone ?? ""),
+          senderNetwork: String(sender.network ?? ""),
+          receiverName: receiver.data?.receiver_name ?? "",
+          receiverPhone: receiver.data?.receiver_phone ?? "",
+          receiverCard: receiver.data?.receiver_card ?? "",
+          sentAt: row.created_at,
+        };
+      }),
     });
   } catch (error) {
     return NextResponse.json(
@@ -242,7 +278,7 @@ export async function PATCH(request: Request) {
       });
     const current = await client
       .from("payment_orders")
-      .select("id, user_id, status, metadata")
+      .select("id, user_id, status, metadata, amount, currency, reference")
       .eq("id", orderId)
       .maybeSingle();
     if (current.error || !current.data)
@@ -253,6 +289,18 @@ export async function PATCH(request: Request) {
         },
         { status: 404 },
       );
+
+    if (["confirmed", "rejected", "cancelled"].includes(current.data.status)) {
+      return NextResponse.json(
+        {
+          ok: false,
+          locked: true,
+          reason: `This payment request is locked because it is already ${current.data.status === "confirmed" ? "completed" : current.data.status}.`,
+        },
+        { status: 409 },
+      );
+    }
+
     if (nextState === "confirmed") {
       const atomic = await client.rpc("confirm_payment_order_atomic", {
         p_order_id: orderId,
@@ -289,7 +337,8 @@ export async function PATCH(request: Request) {
       .from("payment_orders")
       .update({ status: nextState, updated_at: new Date().toISOString() })
       .eq("id", orderId)
-      .select("id, status, updated_at")
+      .in("status", ["initiated", "pending"])
+      .select("id, user_id, amount, currency, reference, metadata, status, updated_at")
       .single();
     if (updated.error)
       return NextResponse.json(
@@ -297,7 +346,38 @@ export async function PATCH(request: Request) {
         { status: 500 },
       );
 
-    return NextResponse.json({ ok: true, saved: true, payment: updated.data });
+    if (updated.error)
+      return NextResponse.json(
+        { ok: false, reason: updated.error.message },
+        { status: 500 },
+      );
+
+    if (updated.data?.user_id) {
+      await client.rpc("aqe_notify", {
+        p_user_id: updated.data.user_id,
+        p_type: nextState === "rejected" ? "payment_rejected" : "payment_cancelled",
+        p_title: nextState === "rejected" ? "Payment request rejected" : "Payment request cancelled",
+        p_body: `Your AQE payment request ${updated.data.reference} was ${nextState} by the manager.`,
+        p_reference_type: "payment_order",
+        p_reference_id: updated.data.id,
+        p_dedupe_key: `PAYMENT-${nextState.toUpperCase()}-${updated.data.id}`,
+        p_metadata: {
+          status: nextState,
+          amount: updated.data.amount,
+          currency: updated.data.currency,
+        },
+      });
+    }
+
+    return NextResponse.json({
+      ok: true,
+      saved: true,
+      payment: {
+        ...updated.data,
+        displayStatus: nextState === "confirmed" ? "completed" : nextState,
+        locked: true,
+      },
+    });
   } catch (error) {
     return NextResponse.json(
       {
