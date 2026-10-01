@@ -199,7 +199,7 @@ export async function POST(request: Request) {
       if (current.error || !current.data) return NextResponse.json({ ok: false, reason: current.error?.message ?? "Record not found." }, { status: 404 });
 
       const allowedByResource: Record<string,string[]> = {
-        profiles:["display_name","bio","phone","country","location","area","category","services","content_categories","age","gender","pronouns","headline","languages","availability","timezone","visibility","social_platforms","contact_methods","tier","verification_status","account_status"],
+        profiles:["display_name","bio","phone","country","location","area","category","services","content_categories","age","gender","pronouns","headline","languages","availability","timezone","visibility","social_platforms","contact_methods"],
         notifications:["type","title","body","read_at","metadata"],
         bookings:["service","amount","currency","status","notes"],
         direct_messages:["body","read_at"],
