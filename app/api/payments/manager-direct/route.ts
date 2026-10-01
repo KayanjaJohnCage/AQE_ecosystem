@@ -202,6 +202,11 @@ export async function GET(request: Request) {
       .select("receiver_name,receiver_phone,receiver_card")
       .eq("id", 1)
       .maybeSingle();
+    const receiverDetails = {
+      name: receiver.data?.receiver_name || process.env.MUKURU_RECEIVER_NAME || "AQE Payments Receiver",
+      phone: receiver.data?.receiver_phone || process.env.MUKURU_RECEIVER_PHONE || "Not configured",
+      card: receiver.data?.receiver_card || process.env.MUKURU_RECEIVER_CARD || "Not configured",
+    };
     const profileByUser = new Map(
       (profiles.data ?? []).map((profile) => [profile.user_id, profile]),
     );
@@ -223,9 +228,9 @@ export async function GET(request: Request) {
           senderName: String(sender.name ?? profile?.display_name ?? ""),
           senderPhone: String(sender.number ?? sender.phone ?? profile?.phone ?? ""),
           senderNetwork: String(sender.network ?? ""),
-          receiverName: receiver.data?.receiver_name ?? "",
-          receiverPhone: receiver.data?.receiver_phone ?? "",
-          receiverCard: receiver.data?.receiver_card ?? "",
+          receiverName: receiverDetails.name,
+          receiverPhone: receiverDetails.phone,
+          receiverCard: receiverDetails.card,
           sentAt: row.created_at,
         };
       }),
