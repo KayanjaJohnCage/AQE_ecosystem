@@ -16,7 +16,7 @@ export async function GET() {
     const { data, error } = await client
       .from("marketplace_products")
       .select(
-        "id, seller_id, title, price, currency, inventory, status, created_at",
+        "id, seller_id, title, price, currency, inventory, status, image_path, image_url, created_at",
       )
       .eq("status", "active")
       .gt("inventory", 0)
@@ -194,7 +194,7 @@ export async function PATCH(request: Request) {
     const updated = await client.from("marketplace_products")
       .update({ ...update, updated_at: new Date().toISOString() })
       .eq("id", productId)
-      .select("id,seller_id,title,price,currency,inventory,status,created_at,updated_at")
+      .select("id,seller_id,title,price,currency,inventory,status,image_path,image_url,created_at,updated_at")
       .single();
 
     if (updated.error) return NextResponse.json({ ok: false, reason: updated.error.message }, { status: 500 });
