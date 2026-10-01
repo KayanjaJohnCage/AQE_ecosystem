@@ -44,7 +44,6 @@ const PROTECTED_RESOURCES = new Set([
   "payment_orders",
   "cash_wallet",
   "cash_wallet_ledger",
-  "transaction_receipts",
   "referral_earnings",
   "qc_ledger",
   "creator_earnings",
