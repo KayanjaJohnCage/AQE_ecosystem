@@ -52,6 +52,7 @@ export type AqePlatformSettings = {
   };
   customerContent: {
     home: Record<string, unknown>;
+    explore: Record<string, unknown>;
     rewards: Record<string, unknown>;
     campaign: Record<string, unknown>;
     raffle: Record<string, unknown>;
