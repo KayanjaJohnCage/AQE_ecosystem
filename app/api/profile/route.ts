@@ -47,7 +47,7 @@ export async function GET(request: Request) {
         .select("storage_path,is_profile_photo,moderation_status")
         .eq("id", data.profile_photo_id)
         .maybeSingle();
-      if (!media.error && media.data?.storage_path && media.data.is_profile_photo && media.data.moderation_status === "approved") {
+      if (!media.error && media.data?.storage_path && media.data.is_profile_photo) {
         const signed = await client.storage
           .from("profile-media")
           .createSignedUrl(media.data.storage_path, 3600);
