@@ -762,7 +762,7 @@ export default function ManagerPage() {
     const { session } = readStoredSession();
     const accessToken = session.access_token;
     const refreshToken = session.refresh_token;
-    if (!url || !key || !accessToken || !refreshToken) return;
+    if (!url || !key || typeof accessToken !== "string" || typeof refreshToken !== "string") return;
     const client = createClient(url, key);
     let channel: ReturnType<typeof client.channel> | undefined;
     let cancelled = false;
