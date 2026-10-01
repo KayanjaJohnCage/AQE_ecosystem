@@ -18,18 +18,18 @@ async function getMediaLimitContext(userId: string, kind: "image" | "video") {
   const tier: Tier = profile?.tier === "premium" || profile?.tier === "vip" ? profile.tier : "basic";
   const { data: settingsRow } = await client.from("platform_settings").select("settings").eq("id", 1).maybeSingle();
   const configured = settingsRow?.settings?.mediaLimits?.[tier] ?? {};
-  const rawLimit = configured[kind === "image" ? "imagesPerMonth" : "videosPerMonth"];
+  const rawLimit = configured.imagesPerMonth;
   const unlimited = rawLimit === null || rawLimit === undefined || rawLimit === -1;
-  const countLimit = unlimited ? null : Number(rawLimit ?? (kind === "image" ? 10 : 10));
+  const countLimit = unlimited ? null : Number(rawLimit ?? 10);
   const maxSizeMB = Number(configured[kind === "image" ? "maxImageSizeMB" : "maxVideoSizeMB"] ?? (kind === "image" ? 5 : 75));
   if (countLimit !== null && (!Number.isFinite(countLimit) || countLimit < 0)) return { ok: false as const, reason: "Invalid media upload limit configuration." };
   if (!Number.isFinite(maxSizeMB) || maxSizeMB <= 0) return { ok: false as const, reason: "Invalid media file size configuration." };
   const monthStart = new Date();
   monthStart.setUTCDate(1);
   monthStart.setUTCHours(0, 0, 0, 0);
-  const { count, error: countError } = await client.from("profile_media").select("id", { count: "exact", head: true }).eq("owner_user_id", userId).eq("media_type", kind).gte("created_at", monthStart.toISOString());
+  const { count, error: countError } = await client.from("profile_media").select("id", { count: "exact", head: true }).eq("owner_user_id", userId).gte("created_at", monthStart.toISOString());
   if (countError) return { ok: false as const, reason: countError.message };
-  if (countLimit !== null && (count ?? 0) >= countLimit) return { ok: false as const, reason: "Your " + tier + " plan has reached its " + kind + " upload limit for this month." };
+  if (countLimit !== null && (count ?? 0) >= countLimit) return { ok: false as const, reason: "Your " + tier + " plan has reached its monthly media upload limit of " + countLimit + "." };
   return { ok: true as const, limited: true, tier, maxBytes: maxSizeMB * 1024 * 1024 };
 }
 
