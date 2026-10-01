@@ -227,7 +227,12 @@ export async function PATCH(request: Request) {
       .select("id,user_id,display_name,bio,phone,country,nationality,location,area,category,services,content_categories,age,gender,pronouns,headline,languages,availability,timezone,visibility,social_platforms,contact_methods,tier,verification_status,profile_photo_id,created_at,updated_at")
       .maybeSingle();
 
-    if (error) return NextResponse.json({ ok: false, reason: error.message }, { status: 500 });
+    if (error) {
+      if (error.code === "23505" && /profiles_phone_normalized_unique_idx|phone/i.test(error.message || "")) {
+        return NextResponse.json({ ok: false, reason: "That phone number is already registered. Use a different phone number." }, { status: 409 });
+      }
+      return NextResponse.json({ ok: false, reason: error.message }, { status: 500 });
+    }
     if (!data) return NextResponse.json({ ok: false, reason: "Profile not found." }, { status: 404 });
 
     return NextResponse.json({ ok: true, saved: true, source: "supabase", profile: data });
