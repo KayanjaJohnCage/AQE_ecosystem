@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import Script from "next/script";
 
 export const metadata: Metadata = {
   title: "AfriQueer Escorts Ecosystem",
@@ -25,6 +26,11 @@ export default function CustomerPage() {
         className="aqe-original-frame"
         src="/aqe-original.html"
       />
+      <Script id="aqe-pwa-register" strategy="afterInteractive">{`
+        if ("serviceWorker" in navigator) {
+          navigator.serviceWorker.register("/sw.js", { scope: "/" }).catch(() => {});
+        }
+      `}</Script>
     </main>
   );
 }
