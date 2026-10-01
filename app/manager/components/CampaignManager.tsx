@@ -49,11 +49,11 @@ export default function CampaignManager() {
 
   async function createCampaign(event: React.FormEvent) {
     event.preventDefault();
-    const payload = new FormData();
-    payload.set("action","campaign"); payload.set("name",form.name); payload.set("description",form.description); payload.set("status",form.status);
-    if (campaignImage) payload.append("image",campaignImage);
+    const requestPayload = new FormData();
+    requestPayload.set("action","campaign"); requestPayload.set("name",form.name); requestPayload.set("description",form.description); requestPayload.set("status",form.status);
+    if (campaignImage) requestPayload.append("image",campaignImage);
     const auth = headers(); delete (auth as Record<string,string>)["Content-Type"];
-    const response = await fetch("/api/campaigns", { method: "POST", headers: auth, body: payload });
+    const response = await fetch("/api/campaigns", { method: "POST", headers: auth, body: requestPayload });
     const payload = await response.json().catch(() => ({}));
     setMessage(payload.ok ? "Campaign created." : payload.reason || "Campaign creation failed.");
     if (payload.ok) { setForm({ ...form, name: "", description: "" }); setCampaignImage(null); await load(); if (payload.campaign?.id) setCampaignId(payload.campaign.id); }
