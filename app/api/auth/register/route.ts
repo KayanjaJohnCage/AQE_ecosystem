@@ -192,7 +192,22 @@ export async function POST(request: Request) {
         error: error?.message ?? "No user returned",
         status: error?.status ?? null,
         code: error?.code ?? null,
+        userId: data.user?.id ?? null,
       });
+
+      /* Supabase may create the Auth row before a confirmation-email transport
+         failure is returned. Remove that orphan immediately so a retry cannot
+         create a duplicate account. */
+      if (error && data.user?.id) {
+        const cleanup = await client.auth.admin.deleteUser(data.user.id);
+        if (cleanup.error) {
+          console.error("[AQE registration] Auth cleanup after signUp failure failed", {
+            userId: data.user.id,
+            error: cleanup.error.message,
+          });
+        }
+      }
+
       const authMessage = String(error?.message ?? "");
       const confirmationEmailFailure = /error sending confirmation email|confirmation email/i.test(authMessage);
       return NextResponse.json(
