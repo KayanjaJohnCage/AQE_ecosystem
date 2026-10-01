@@ -82,7 +82,7 @@ export async function POST(request: Request) {
     const { error: profileError } = await client
       .from("profiles")
       .update({
-        avatar_url: media.storage_path,
+        profile_photo_id: media.id,
         updated_at: new Date().toISOString(),
       })
       .eq("user_id", identity.userId);
