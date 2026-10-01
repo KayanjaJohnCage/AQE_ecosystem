@@ -93,6 +93,25 @@ export async function POST(request: Request) {
       });
     }
 
+    const normalizedPhone = phone.replace(/[^0-9]/g, "");
+    if (normalizedPhone) {
+      const duplicatePhone = await client
+        .from("profiles")
+        .select("user_id")
+        .neq("phone", "")
+        .not("phone", "is", null)
+        .limit(1000);
+      const duplicate = (duplicatePhone.data ?? []).some(
+        (row) => String(row.user_id) !== "" && normalizedPhone === String(row.phone ?? "").replace(/[^0-9]/g, ""),
+      );
+      if (duplicate) {
+        return NextResponse.json(
+          { ok: false, reason: "That phone number is already registered. Use a different phone number." },
+          { status: 409 },
+        );
+      }
+    }
+
     let referredBy: string | null = null;
     if (referralCode) {
       const referrer = await client
