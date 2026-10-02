@@ -6,8 +6,6 @@ import { readStoredSession } from "../../lib/clientSession";
 import ProfileBoostManager from "./components/ProfileBoostManager";
 import CampaignManager from "./components/CampaignManager";
 import PrizeManager from "./components/PrizeManager";
-import AnnouncementManager from "./components/AnnouncementManager";
-import VipTaskManager from "./components/VipTaskManager";
 
 type ManagerData = {
   users: number;
@@ -1891,10 +1889,8 @@ export default function ManagerPage() {
                 </div>
               </section>
             </>
-          ) : active === "Announcements" ? (
-            <AnnouncementManager />
           ) : active === "Tasks & Rewards" ? (
-            <div className="manager-stack"><VipTaskManager /><PrizeManager /></div>
+            <PrizeManager />
           ) : (
             <section className="manager-card manager-detail">
               <div className="manager-table-header">
