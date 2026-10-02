@@ -1188,6 +1188,7 @@ export default function ManagerPage() {
           </div>
         ))}
       </aside>
+      {mobileMenuOpen ? <button type="button" className="manager-mobile-backdrop" aria-label="Close Manager menu" onClick={() => setMobileMenuOpen(false)} /> : null}
 
       <main className="manager-shell-main">
         <header className="manager-shell-top">
