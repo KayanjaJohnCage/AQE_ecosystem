@@ -13505,6 +13505,25 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
     if(!message){toast("Write a message first.","error");return}
     try{var b=await req("/api/support/tickets",{method:"POST",body:JSON.stringify({subject:subject,message:message,category:"OTHER",priority:"MEDIUM"})});if(document.getElementById("aqeSupportMessage"))document.getElementById("aqeSupportMessage").value="";var id=b.ticket&&b.ticket.ticketId||b.ticketId||"saved";proof("Manager Support message sent successfully. Ticket reference: "+id);toast("Support request sent successfully.","success")}catch(e){toast(e.message||"Support request failed.","error")}
   };
+  async function refreshReceiverAfterPaymentOpen(){
+    try{
+      var box=document.getElementById("aqeServerReceiver");if(!box)return;
+      var b=await fetch("/api/payments/receiver?ts="+Date.now(),{cache:"no-store"}).then(function(r){return r.json()});
+      var r=b.receiver||{};if(!r.receiverPhone&&!r.receiverCard)return;
+      box.innerHTML='<div class="aqe-pay-small" style="color:#D4AF37;font-weight:800">Mukuru Global Money Transfer receiver</div>'+
+        '<div style="display:grid;gap:7px;margin-top:8px">'+
+        '<div><small>Receiver name</small><div class="aqe-pay-input" style="margin-top:3px">'+String(r.receiverName||"—")+'</div></div>'+
+        '<div><small>Receiver phone</small><div class="aqe-pay-input" style="margin-top:3px">'+String(r.receiverPhone||"—")+'</div></div>'+
+        '<div><small>Receiver card / account</small><div class="aqe-pay-input" style="margin-top:3px;word-break:break-word">'+String(r.receiverCard||"—")+'</div></div>'+
+        '<div class="xs ca5" style="white-space:pre-wrap">'+String(r.instructions||"")+'</div></div>';
+    }catch(_){}
+  }
+  var aqeOldPaymentOpen=window.aqeExactOpen;
+  if(aqeOldPaymentOpen&&!aqeOldPaymentOpen.__aqeReceiverProof){
+    window.aqeExactOpen=function(){var r=aqeOldPaymentOpen.apply(this,arguments);setTimeout(refreshReceiverAfterPaymentOpen,250);setTimeout(refreshReceiverAfterPaymentOpen,900);return r};
+    window.aqeExactOpen.__aqeReceiverProof=true;
+  }
+
   window.aqeOpenManagerTroubleshoot=async function(){
     var requested=window.prompt("What account change or correction do you need?");if(!requested)return;
     var details=window.prompt("Add any details the Manager needs to review.");if(details===null)return;
