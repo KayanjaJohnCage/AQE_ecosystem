@@ -13488,5 +13488,30 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 </script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js" defer></script>
 
+
+<script id="aqe-final-proof-fix">
+(function(){
+  "use strict";
+  function session(){try{return JSON.parse(localStorage.getItem("aqe_next_session")||"null")}catch(_){return null}}
+  async function req(path,options){
+    var o=options||{},h=Object.assign({"Content-Type":"application/json"},o.headers||{}),s=session();
+    if(s&&s.access_token)h.Authorization="Bearer "+s.access_token;o.headers=h;
+    var r=await fetch(path,o),b=await r.json().catch(function(){return {}});
+    if(!r.ok||b.ok===false)throw new Error(b.reason||b.message||("Request failed ("+r.status+")"));return b;
+  }
+  function proof(text){var old=document.getElementById("aqeCustomerProof");if(old)old.remove();var x=document.createElement("div");x.id="aqeCustomerProof";x.style.cssText="position:fixed;right:12px;bottom:12px;z-index:99999;max-width:min(430px,calc(100vw - 24px))";x.innerHTML='<div class="aqe-proof">'+String(text)+'</div>';document.body.appendChild(x);setTimeout(function(){x.remove()},8000)}
+  window.aqeSendSupport=async function(){
+    var subject=String((document.getElementById("aqeSupportSubject")||{}).value||"Account support"),message=String((document.getElementById("aqeSupportMessage")||{}).value||"").trim();
+    if(!message){toast("Write a message first.","error");return}
+    try{var b=await req("/api/support/tickets",{method:"POST",body:JSON.stringify({subject:subject,message:message,category:"OTHER",priority:"MEDIUM"})});if(document.getElementById("aqeSupportMessage"))document.getElementById("aqeSupportMessage").value="";var id=b.ticket&&b.ticket.ticketId||b.ticketId||"saved";proof("Manager Support message sent successfully. Ticket reference: "+id);toast("Support request sent successfully.","success")}catch(e){toast(e.message||"Support request failed.","error")}
+  };
+  window.aqeOpenManagerTroubleshoot=async function(){
+    var requested=window.prompt("What account change or correction do you need?");if(!requested)return;
+    var details=window.prompt("Add any details the Manager needs to review.");if(details===null)return;
+    try{var b=await req("/api/support/troubleshoot",{method:"POST",body:JSON.stringify({requestedChange:requested,details:details})});var id=b.request&&b.request.id||b.id||"saved";proof("Troubleshoot request sent successfully. Reference: "+id);toast("Troubleshoot request sent successfully.","success")}catch(e){toast(e.message||"Troubleshoot request failed.","error")}
+  };
+})();
+</script>
+
 </body>
 </html>
