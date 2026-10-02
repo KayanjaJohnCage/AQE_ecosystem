@@ -1,21 +1,31 @@
 import { NextResponse } from "next/server";
 import { requireAuthenticatedRoleAccess } from "../../../lib/aqe/auth";
-import { createServerSupabaseClient } from "../../../lib/supabaseServer";
+import { createAnonSupabaseClient, createServerSupabaseClient } from "../../../lib/supabaseServer";
 
 export async function GET(request: Request) {
-  const client=createServerSupabaseClient();
-  if(!client) return NextResponse.json({ok:true,announcements:[]});
+  let client=createServerSupabaseClient();
   const access=await requireAuthenticatedRoleAccess(request,["customer","manager","admin"]);
+  const managerRequested=new URL(request.url).searchParams.get("manager")==="1";
+  if(!client && !managerRequested) client=createAnonSupabaseClient();
+  if(!client) return NextResponse.json({ok:true,announcements:[]});
   const userId=access.ok?access.session.userId:null;
   const now=new Date().toISOString();
-  const managerRequested=new URL(request.url).searchParams.get("manager")==="1";
   const managerAccess=managerRequested ? await requireAuthenticatedRoleAccess(request,["manager","admin"]) : null;
   if(managerRequested && !managerAccess?.ok) return NextResponse.json({ok:false,reason:managerAccess?.reason||"Manager access required."},{status:403});
-  const {data,error}= managerRequested
+  let {data,error}= managerRequested
     ? await client.from("announcements").select("*").order("created_at",{ascending:false}).limit(100)
     : await client.from("announcements").select("*").eq("published",true)
     .or(`starts_at.is.null,starts_at.lte.${now}`).or(`ends_at.is.null,ends_at.gte.${now}`)
     .order("created_at",{ascending:false}).limit(20);
+  if(error && !managerRequested) {
+    const fallback=createAnonSupabaseClient();
+    if(fallback) {
+      const retry=await fallback.from("announcements").select("*").eq("published",true)
+        .or(`starts_at.is.null,starts_at.lte.${now}`).or(`ends_at.is.null,ends_at.gte.${now}`)
+        .order("created_at",{ascending:false}).limit(20);
+      data=retry.data; error=retry.error;
+    }
+  }
   if(error) return NextResponse.json({ok:false,reason:error.message},{status:500});
   if(managerRequested) return NextResponse.json({ok:true,announcements:data??[]});
   let dismissed=new Set<string>();
