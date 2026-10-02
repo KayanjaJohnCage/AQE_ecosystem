@@ -111,12 +111,24 @@ export async function POST(request: Request) {
     );
 
     if (supabaseConfigured) {
-      const charge = await chargeChatQcFromDatabase(identity.userId, 1);
-      if (!charge.ok) {
-        return NextResponse.json(
-          { ...charge, ok: false, reason: charge.reason ?? "Chat charge failed." },
-          { status: 402 },
-        );
+      const membership = await client
+        .from("profiles")
+        .select("tier,verification_status")
+        .eq("user_id", identity.userId)
+        .maybeSingle();
+
+      const tier = String(membership.data?.tier ?? "").toLowerCase();
+      const subscribed = ["basic", "premium", "vip"].includes(tier) &&
+        String(membership.data?.verification_status ?? "").toLowerCase() === "approved";
+
+      if (!subscribed) {
+        const charge = await chargeChatQcFromDatabase(identity.userId, 1);
+        if (!charge.ok) {
+          return NextResponse.json(
+            { ...charge, ok: false, reason: charge.reason ?? "Chat charge failed." },
+            { status: 402 },
+          );
+        }
       }
     }
 
