@@ -105,12 +105,10 @@ export async function POST(request: Request) {
 
     // The server is the source of truth for chat charging. The client cannot
     // bypass QC by calling the message endpoint directly.
-    const supabaseConfigured = Boolean(
-      process.env.NEXT_PUBLIC_SUPABASE_URL &&
-      process.env.SUPABASE_SERVICE_ROLE_KEY,
-    );
+    const client = createServerSupabaseClient();
+    const supabaseConfigured = Boolean(client);
 
-    if (supabaseConfigured) {
+    if (supabaseConfigured && client) {
       const membership = await client
         .from("profiles")
         .select("tier,verification_status")
