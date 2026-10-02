@@ -2029,6 +2029,7 @@ export default function ManagerPage() {
                       ) : null}
                       {active === "Users & Profiles" && row.id ? (
                         <>
+                          <button type="button" onClick={() => viewCustomer(row.id!)}>View</button>
                           <button type="button" onClick={() => managerEdit(row)}>Update</button>
                           <button type="button" onClick={() => managerBlock(row)}>{/blocked/i.test(row.value) ? "Unblock" : "Block"}</button>
                           <button
