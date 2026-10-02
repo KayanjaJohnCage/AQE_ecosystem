@@ -105,6 +105,9 @@ export async function POST(request: Request) {
     }
 
     const providerId = String(body.providerId ?? "").trim();
+    const providerProfile = await client.from("profiles").select("user_id,verification_status,account_status").eq("user_id", providerId).maybeSingle();
+    if (providerProfile.error || !providerProfile.data) return NextResponse.json({ ok: false, reason: "Booking provider is not a registered user." }, { status: 404 });
+    if (String(providerProfile.data.verification_status || "").toLowerCase() !== "approved" || String(providerProfile.data.account_status || "").toLowerCase() !== "active") return NextResponse.json({ ok: false, reason: "Bookings are only available for verified active members." }, { status: 403 });
     const service = String(body.service ?? "").trim();
     const amount = Number(body.amount ?? 0);
     const settingsRow = client
