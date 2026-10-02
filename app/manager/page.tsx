@@ -652,9 +652,14 @@ export default function ManagerPage() {
         const title = window.prompt("VIP task title") || "";
         const description = window.prompt("Task description") || "";
         if (!title) return;
+        const taskType = window.prompt("Task type", "general") || "general";
         const rewardQc = Number(window.prompt("QC reward", "0") || 0);
         const rewardCash = Number(window.prompt("Cash reward (UGX)", "0") || 0);
-        const response = await fetch("/api/vip/tasks", { method: "POST", headers: managerHeaders(), body: JSON.stringify({ managerAction: "create", title, description, rewardQc, rewardCash }) });
+        const startsAt = window.prompt("Start date/time (ISO, optional)", "") || null;
+        const endsAt = window.prompt("End date/time (ISO, optional)", "") || null;
+        const sortOrder = Number(window.prompt("Display order", "0") || 0);
+        const active = !/^no|false|0$/i.test(window.prompt("Publish active? yes/no", "yes") || "yes");
+        const response = await fetch("/api/vip/tasks", { method: "POST", headers: managerHeaders(), body: JSON.stringify({ managerAction: "create", title, description, taskType, rewardQc, rewardCash, startsAt, endsAt, sortOrder, active }) });
         const body = await response.json().catch(() => ({}));
         if (!response.ok || !body.ok) throw new Error(body.reason || "VIP task creation failed.");
         setReviewMessage("VIP task published for verified VIP members.");
