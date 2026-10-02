@@ -104,25 +104,6 @@ export async function POST(request: Request) {
       );
     }
 
-    const membership = await client
-      .from("profiles")
-      .select("tier,verification_status")
-      .eq("user_id", identity.userId)
-      .maybeSingle();
-    if (membership.error) {
-      return NextResponse.json({ ok: false, reason: membership.error.message }, { status: 500 });
-    }
-    if (!membership.data || membership.data.verification_status !== "approved") {
-      return NextResponse.json(
-        {
-          ok: false,
-          reason: "Active membership verification is required before creating booking requests.",
-          tier: membership.data?.tier ?? "basic",
-          membershipStatus: "pending_payment",
-        },
-        { status: 403 },
-      );
-    }
     const providerId = String(body.providerId ?? "").trim();
     const service = String(body.service ?? "").trim();
     const amount = Number(body.amount ?? 0);
