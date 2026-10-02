@@ -121,7 +121,9 @@ export async function DELETE(request: Request) {
     const mediaPaths = await client.from("profile_media").select("storage_path").eq("owner_user_id", userId);
     if (mediaPaths.data?.length) {
       const storageDelete = await client.storage.from("profile-media").remove(mediaPaths.data.map((row) => row.storage_path).filter(Boolean));
-      if (storageDelete.error) cleanupErrors.push("profile-media storage: " + storageDelete.error.message);
+      if (storageDelete.error && !/not found|does not exist/i.test(storageDelete.error.message)) {
+        cleanupErrors.push("profile-media storage: " + storageDelete.error.message);
+      }
     }
     const deleteRows = async (table: string, column: string, value: string) => {
       const result = await client.from(table).delete().eq(column, value);
