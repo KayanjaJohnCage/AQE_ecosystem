@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import { readStoredSession } from "../../lib/clientSession";
+import { readStoredSession } from "../../../lib/clientSession";
 
 type Announcement={id:string;title:string;message:string;kind:string;priority:string;published:boolean;created_at:string};
 function headers(){const {session,user}=readStoredSession();const h:HeadersInit={"Content-Type":"application/json"};if(session.access_token)h.authorization="Bearer "+session.access_token;if(user.id)h["x-user-id"]=user.id;return h;}
