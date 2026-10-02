@@ -183,70 +183,45 @@ export async function POST(request: Request) {
       );
     }
 
-    // Production confirmations use the official site. Preview deployments use
-    // Vercel's deployment URL so preview tests do not redirect into production.
-    // Supabase must allow the production URL and a Vercel preview wildcard.
-    const configuredSiteUrl = String(process.env.NEXT_PUBLIC_SITE_URL ?? "").replace(/\/$/, "");
-    const previewHost =
-      process.env.VERCEL_ENV === "preview"
-        ? String(process.env.VERCEL_URL || process.env.NEXT_PUBLIC_VERCEL_URL || "").trim()
-        : "";
-    const siteUrl = previewHost
-      ? `https://${previewHost.replace(/^https?:\/\//, "").replace(/\/$/, "")}`
-      : configuredSiteUrl;
-    const emailRedirectTo = siteUrl ? siteUrl + "/auth/confirmed" : undefined;
-    const { data, error } = await authClient.auth.signUp({
-      email,
+    // Customer registration is completed server-side with email_confirm=true.
+    // AQE account verification is handled by the profile verification workflow;
+    // registration must not depend on Supabase's confirmation-email transport.
+    const authClient = createAnonSupabaseClient();
+    if (!authClient) {
+      return NextResponse.json(
+        { ok: false, reason: "Authentication service is not configured." },
+        { status: 503 },
+      );
+    }
+
+    const created = await client.auth.admin.createUser({
+      email: normalizedEmail,
       password,
-      options: {
-        data: {
-          display_name: displayName,
-          phone,
-          role: "customer",
-        },
-        ...(emailRedirectTo ? { emailRedirectTo } : {}),
+      email_confirm: true,
+      user_metadata: {
+        display_name: displayName,
+        phone,
+        role: "customer",
       },
     });
 
-    const createdAuthUserId = (data as { user?: { id?: string } } | null)?.user?.id;
-    if (error || !data.user) {
-      console.error("[AQE registration] Supabase signUp failed", {
-        email,
-        error: error?.message ?? "No user returned",
-        status: error?.status ?? null,
-        code: error?.code ?? null,
-        userId: createdAuthUserId ?? null,
+    if (created.error || !created.data.user) {
+      console.error("[AQE registration] Supabase admin user creation failed", {
+        email: normalizedEmail,
+        error: created.error?.message ?? "No user returned",
+        code: created.error?.code ?? null,
       });
-
-      /* Supabase may create the Auth row before a confirmation-email transport
-         failure is returned. Remove that orphan immediately so a retry cannot
-         create a duplicate account. */
-      if (error && createdAuthUserId) {
-        const cleanup = await client.auth.admin.deleteUser(createdAuthUserId);
-        if (cleanup.error) {
-          console.error("[AQE registration] Auth cleanup after signUp failure failed", {
-            userId: createdAuthUserId,
-            error: cleanup.error.message,
-          });
-        }
-      }
-
-      const authMessage = String(error?.message ?? "");
-      const confirmationEmailFailure = /error sending confirmation email|confirmation email/i.test(authMessage);
       return NextResponse.json(
         {
           ok: false,
-          reason: confirmationEmailFailure
-            ? "AQE could not send the email confirmation message. The account was not completed. Configure Supabase Auth custom SMTP and verify the AQE Site URL/redirect URL, then try registration again."
-            : (
-              error?.message ??
-              "Unable to create the account. Check the Supabase Auth configuration and try again."
-            ),
-          code: confirmationEmailFailure ? "AUTH_EMAIL_DELIVERY_UNAVAILABLE" : (error?.code ?? null),
+          reason: created.error?.message ?? "Unable to create the account.",
+          code: created.error?.code ?? null,
         },
         { status: 400 },
       );
     }
+
+    const data = { user: created.data.user, session: null };
 
     const profileRecord = createProfileRecord({
       userId: data.user?.id ?? `user-${Date.now()}`,
@@ -411,7 +386,31 @@ export async function POST(request: Request) {
       }
     }
 
-    const signedIn = { data: { session: data.session } };
+    const signedIn = await authClient.auth.signInWithPassword({
+      email: normalizedEmail,
+      password,
+    });
+
+    if (signedIn.error || !signedIn.data.session) {
+      console.error("[AQE registration] account created but automatic sign-in failed", {
+        userId: data.user?.id ?? null,
+        error: signedIn.error?.message ?? "No session returned",
+      });
+      return NextResponse.json({
+        ok: true,
+        mode: "supabase",
+        user: data.user,
+        profile: persisted.profile ?? profileRecord.profile,
+        session: null,
+        tier: "basic",
+        requestedTier,
+        upgradeRequired: requestedTier !== "basic",
+        emailVerificationRequired: false,
+        emailVerificationSent: false,
+        loginRequired: true,
+        message: "Account created successfully. Sign in to continue.",
+      });
+    }
 
     const response = NextResponse.json({
       ok: true,
@@ -422,8 +421,8 @@ export async function POST(request: Request) {
       tier: "basic",
       requestedTier,
       upgradeRequired: requestedTier !== "basic",
-      emailVerificationRequired: !signedIn.data.session,
-      emailVerificationSent: !signedIn.data.session,
+      emailVerificationRequired: false,
+      emailVerificationSent: false,
     });
 
     if (signedIn.data.session?.access_token) {
