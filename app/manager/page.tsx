@@ -166,6 +166,7 @@ export default function ManagerPage() {
   const [liveRows, setLiveRows] = useState<Record<string, ManagerRow[]>>({});
   const [profileQuery, setProfileQuery] = useState("");
   const [transactionUserFilter, setTransactionUserFilter] = useState("");
+  const [paymentQueueOnly, setPaymentQueueOnly] = useState(false);
   const [reviewMessage, setReviewMessage] = useState("");
   const [managerNumbers, setManagerNumbers] = useState<ManagerPaymentNumber[]>([]);
   const [troubleshootRequests, setTroubleshootRequests] = useState<TroubleshootRequest[]>([]);
@@ -800,6 +801,7 @@ export default function ManagerPage() {
           "Payments & Approvals": "/api/payments/manager-direct",
           "Profile Media": "/api/media/manager",
           "Transactions & QC": "/api/receipts",
+  "VIP Salary": "/api/vip/salary?manager=1",
         };
         let endpoint = endpoints[active];
         if (active === "Transactions & QC" && transactionUserFilter.trim()) {
@@ -818,6 +820,7 @@ export default function ManagerPage() {
         if (active === "Payments & Approvals" && Array.isArray(payload.payments)) setLiveRows(x => ({...x,"Payments & Approvals":payload.payments.map((p:any)=>({id:p.id,title:`${p.currency||"UGX"} ${Number(p.amount||0).toLocaleString()} • ${p.senderName||p.user_id||"member"}`,meta:`${p.metadata?.paymentKind==="wallet_deposit"?"WALLET":"UPGRADE"} • ${p.created_at?new Date(p.created_at).toLocaleString():"Time unavailable"} • From ${p.senderPhone||"—"} → ${p.receiverName||"—"}`,value:`${p.displayStatus||p.status||"pending"} • ${p.locked?"LOCKED":"ACTION REQUIRED"}`}))}));
         if (active === "Profile Media" && Array.isArray(payload.media)) setLiveRows(x => ({...x,"Profile Media":payload.media.map((m:any)=>({id:m.id,title:`${String(m.type||"image").toUpperCase()} • ${m.isProfilePhoto?"PROFILE PHOTO":"PROFILE CONTENT"}`,meta:`Owner: ${m.ownerUserId||"member"}`,value:m.moderationStatus||"pending"}))}));
         if (active === "Transactions & QC" && Array.isArray(payload.receipts)) setLiveRows(x => ({...x,"Transactions & QC":payload.receipts.map((q:any)=>({id:q.id,title:q.description||q.transaction_type||"Transaction",meta:q.receipt_number||"Receipt",value:`${q.status||"COMPLETED"} • ${q.currency||"UGX"} ${Number(q.amount||0).toLocaleString()}`}))}));
+        if (active === "VIP Salary" && Array.isArray(payload.requests)) setLiveRows(x => ({...x,"VIP Salary":payload.requests.map((q:any)=>({id:q.id,title:`UGX ${Number(q.amount||0).toLocaleString()} • ${q.recipient_name||"VIP member"}`,meta:`${q.payment_method||"MOBILE_MONEY"} • ${q.recipient_account||"—"} • ${q.created_at?new Date(q.created_at).toLocaleString():"Time unavailable"}`,value:String(q.status||"PENDING")}))}));
       } catch (_) {}
     };
     refresh();
@@ -899,12 +902,16 @@ export default function ManagerPage() {
     value: `${profile.status} • ${(profile.tier || "basic").toUpperCase()}`,
     role: profile.role,
   }));
-  const rows: ManagerRow[] =
+  const baseRows: ManagerRow[] =
     active === "Users & Profiles" && profileRows.length > 0
       ? profileRows
       : liveRows[active]?.length
         ? liveRows[active]
         : (tableSeeds[active] ?? []);
+  const rows: ManagerRow[] =
+    active === "Payments & Approvals" && paymentQueueOnly
+      ? baseRows.filter((row) => /pending|action required/i.test(row.value))
+      : baseRows;
   const paymentRows: ManagerRow[] = liveRows["Payments & Approvals"] ?? [];
 
   async function viewCustomer(userId: string) {
@@ -1098,6 +1105,17 @@ export default function ManagerPage() {
     if (payload.ok) event.currentTarget.reset();
   }
 
+  async function reviewVipSalary(requestId: string, status: "APPROVED" | "REJECTED" | "PAID") {
+    const { session, user } = readStoredSession();
+    const headers: HeadersInit = { "Content-Type": "application/json" };
+    if (session.access_token) headers.authorization = "Bearer " + session.access_token;
+    if (user.id) headers["x-user-id"] = user.id;
+    const response = await fetch("/api/vip/salary", { method: "PATCH", headers, body: JSON.stringify({ requestId, status }) });
+    const payload = await response.json().catch(() => ({}));
+    setReviewMessage(payload.ok ? "VIP salary withdrawal " + status.toLowerCase() + "." : payload.reason || "VIP salary withdrawal review failed.");
+    if (payload.ok) window.dispatchEvent(new Event("aqe-manager-live-event"));
+  }
+
   async function updateTroubleshoot(requestId: string, status: string) {
     const response = await fetch("/api/support/troubleshoot", {
       method: "PATCH",
@@ -1266,12 +1284,12 @@ export default function ManagerPage() {
           ) : null}
 
           <div className="manager-page-actions">
-            <button type="button" onClick={() => window.dispatchEvent(new Event("aqe-manager-live-event"))}>Refresh live data</button>
+            <button type="button" onClick={() => { setReviewMessage("Refreshing live data…"); window.dispatchEvent(new Event("aqe-manager-live-event")); setTimeout(() => setReviewMessage("Live data refreshed."), 500); }}>Refresh live data</button>
             {active === "Dashboard" ? <><button type="button" onClick={() => setActive("Payments & Approvals")}>Payment queue</button><button type="button" onClick={() => setActive("Withdrawals")}>Withdrawal queue</button><button type="button" onClick={() => setActive("Customer Support")}>Support queue</button></> : null}
             {active === "Users & Profiles" ? <button type="button" onClick={() => setProfileQuery("")}>Clear profile search</button> : null}
             {active === "Profile Media" ? <button type="button" onClick={() => setActive("Profile Media")}>Open moderation queue</button> : null}
             {active === "Bookings & Requests" ? <button type="button" onClick={() => setActive("Bookings & Requests")}>Open booking queue</button> : null}
-            {active === "Payments & Approvals" ? <button type="button" onClick={() => setActive("Payments & Approvals")}>Open pending payments</button> : null}
+            {active === "Payments & Approvals" ? <button type="button" onClick={() => { setPaymentQueueOnly(true); setReviewMessage("Showing pending payment approvals."); window.dispatchEvent(new Event("aqe-manager-live-event")); }}>{paymentQueueOnly ? "Showing pending payments" : "Open pending payments"}</button> : null}
             {active === "Withdrawals" ? <button type="button" onClick={() => setActive("Withdrawals")}>Open withdrawal queue</button> : null}
             {active === "Customer Support" ? <button type="button" onClick={() => setReviewMessage("Troubleshoot requests are listed below.")}>Troubleshoot queue</button> : null}
             {active === "Transactions & QC" ? <><button type="button" onClick={() => setActive("Transactions & QC")}>Refresh history</button><button type="button" className="manager-danger-button" onClick={managerClear}>Clear transaction history</button></> : null}
@@ -2043,6 +2061,15 @@ export default function ManagerPage() {
                         >
                           Mark Succeed — payout sent
                         </button>
+                      ) : null}
+                      {active === "VIP Salary" && row.id && /pending/i.test(row.value) ? (
+                        <>
+                          <button type="button" onClick={() => reviewVipSalary(row.id!, "APPROVED")}>Approve</button>
+                          <button type="button" onClick={() => reviewVipSalary(row.id!, "REJECTED")}>Reject</button>
+                        </>
+                      ) : null}
+                      {active === "VIP Salary" && row.id && /approved/i.test(row.value) ? (
+                        <button type="button" onClick={() => reviewVipSalary(row.id!, "PAID")}>Mark Succeed — payout sent</button>
                       ) : null}
                       {active === "Withdrawals" &&
                       row.id &&
