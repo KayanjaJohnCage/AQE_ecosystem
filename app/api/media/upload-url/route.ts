@@ -33,8 +33,8 @@ export async function POST(request: Request) {
       ok: true,
       bucket: result.bucket,
       objectPath: result.objectPath,
-      token: result.token,
-      mediaId: result.mediaId,
+      token: "token" in result ? result.token : null,
+      mediaId: "mediaId" in result ? result.mediaId : null,
       source: result.source,
     });
   } catch (error) {
