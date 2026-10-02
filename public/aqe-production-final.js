@@ -130,7 +130,7 @@
       var b=await api("/api/payments/receiver?status=available");
       var r=b.receiver||b.receivers?.[0];
       if(!r){host.textContent="No Mukuru receiver is currently marked Available. Manager configuration will appear here automatically.";return}
-      host.innerHTML="<strong>Send to this Mukuru receiver</strong><br>"+String(r.receiver_name||r.name||"AQE Receiver")+"<br><b>"+String(r.receiver_phone||r.phone||"—")+"</b>"+(r.receiver_card?"<br>Card: "+String(r.receiver_card):"")+(r.network?"<br>"+String(r.network):"")+(r.instructions?"<div style='margin-top:6px;opacity:.8'>"+String(r.instructions).replace(/</g,"&lt;")+"</div>":"");
+      host.innerHTML="<strong>Send to this Mukuru receiver</strong><br>"+String(r.receiverName||r.receiver_name||r.name||"AQE Receiver")+"<br><b>"+String(r.receiverPhone||r.receiver_phone||r.phone||"—")+"</b>"+((r.receiverCard||r.receiver_card)?"<br>Card: "+String(r.receiverCard||r.receiver_card):"")+(r.network?"<br>"+String(r.network):"")+(r.instructions?"<div style='margin-top:6px;opacity:.8'>"+String(r.instructions).replace(/</g,"&lt;")+"</div>":"");
     }catch(e){host.textContent="Mukuru receiver could not be loaded: "+(e.message||"try again")}
   }
   var originalPaymentOpen=window.aqeExactOpen;
