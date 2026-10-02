@@ -637,6 +637,29 @@ export default function ManagerPage() {
 
   const managerCreate = async () => {
     const resource = managerResourceForActive(active);
+    try {
+      if (active === "Announcements") {
+        const title = window.prompt("Announcement title") || "";
+        const message = window.prompt("Announcement message") || "";
+        if (!title || !message) return;
+        const response = await fetch("/api/announcements", { method: "POST", headers: managerHeaders(), body: JSON.stringify({ title, message, kind: window.prompt("Type", "general") || "general", priority: window.prompt("Priority", "normal") || "normal", published: true }) });
+        const body = await response.json().catch(() => ({}));
+        if (!response.ok || !body.ok) throw new Error(body.reason || "Announcement publish failed.");
+        setReviewMessage("Announcement published and is now visible to customers.");
+        return;
+      }
+      if (active === "Tasks & Rewards") {
+        const title = window.prompt("VIP task title") || "";
+        const description = window.prompt("Task description") || "";
+        if (!title) return;
+        const rewardQc = Number(window.prompt("QC reward", "0") || 0);
+        const rewardCash = Number(window.prompt("Cash reward (UGX)", "0") || 0);
+        const response = await fetch("/api/vip/tasks", { method: "POST", headers: managerHeaders(), body: JSON.stringify({ managerAction: "create", title, description, rewardQc, rewardCash }) });
+        const body = await response.json().catch(() => ({}));
+        if (!response.ok || !body.ok) throw new Error(body.reason || "VIP task creation failed.");
+        setReviewMessage("VIP task published for verified VIP members.");
+        return;
+      }
     if (!resource || (!["notifications","bookings","direct_messages","marketplace_products","campaigns","aqe_prizes","support_ticket","profiles"].includes(resource))) {
       setReviewMessage("Create-new is not available for this financial/audit queue. Use its dedicated workflow.");
       return;
