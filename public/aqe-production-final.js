@@ -282,8 +282,15 @@
 
   /* Resumable uploads: use Supabase TUS for large files and keep failed work queued locally. */
   var uploadQueue=[];
+  var uploadDbPromise=null;
   function queueKey(){return "aqe_upload_queue_v1"}
   function saveQueue(){try{localStorage.setItem(queueKey(),JSON.stringify(uploadQueue.map(function(x){return {name:x.file.name,size:x.file.size,type:x.file.type,kind:x.kind,profilePhoto:x.profilePhoto}})))}catch(_){}}
+  function uploadDb(){if(uploadDbPromise)return uploadDbPromise;uploadDbPromise=new Promise(function(resolve){if(!window.indexedDB){resolve(null);return}var r=indexedDB.open("aqe-media-upload-queue",1);r.onupgradeneeded=function(){r.result.createObjectStore("files",{keyPath:"id",autoIncrement:true})};r.onsuccess=function(){resolve(r.result)};r.onerror=function(){resolve(null)}});return uploadDbPromise}
+  function idbPut(item){return uploadDb().then(function(db){return new Promise(function(resolve){if(!db){resolve(null);return}var tx=db.transaction("files","readwrite");tx.objectStore("files").add({file:item.file,kind:item.kind,profilePhoto:!!item.profilePhoto,createdAt:Date.now()});tx.oncomplete=function(){resolve(true)};tx.onerror=function(){resolve(null)}})})}
+  function idbAll(){return uploadDb().then(function(db){return new Promise(function(resolve){if(!db){resolve([]);return}var tx=db.transaction("files","readonly"),req=tx.objectStore("files").getAll();req.onsuccess=function(){resolve(req.result||[])};req.onerror=function(){resolve([])}})})}
+  function idbDelete(id){return uploadDb().then(function(db){return new Promise(function(resolve){if(!db||id==null){resolve();return}var tx=db.transaction("files","readwrite");tx.objectStore("files").delete(id);tx.oncomplete=function(){resolve()};tx.onerror=function(){resolve()}})})}
+  async function restoreUploadQueue(){var rows=await idbAll();uploadQueue=rows.map(function(x){return {dbId:x.id,file:x.file,kind:x.kind,profilePhoto:x.profilePhoto}});saveQueue()}
+
   async function uploadOne(file,kind,profilePhoto){
     var s=session();if(!s||!s.access_token)throw new Error("Please sign in before uploading.");
     if(window.tus&&file.size>6*1024*1024){
@@ -298,13 +305,13 @@
   async function processUploadQueue(){
     if(!navigator.onLine||!uploadQueue.length)return;
     var pending=uploadQueue.slice();uploadQueue=[];
-    for(var i=0;i<pending.length;i++){try{await uploadOne(pending[i].file,pending[i].kind,pending[i].profilePhoto);toast("✓ "+pending[i].file.name+" uploaded.","success")}catch(e){uploadQueue.push(pending[i])}}
+    for(var i=0;i<pending.length;i++){try{await uploadOne(pending[i].file,pending[i].kind,pending[i].profilePhoto);if(pending[i].dbId!=null)await idbDelete(pending[i].dbId);toast("✓ "+pending[i].file.name+" uploaded.","success")}catch(e){uploadQueue.push(pending[i])}}
     saveQueue();
     if(typeof window.aqeRefreshServerMedia==="function")window.aqeRefreshServerMedia().catch(function(){})
   }
   window.aqeUploadMedia=async function(){
     var input=el("aqeMediaInput"),files=input&&input.files?Array.prototype.slice.call(input.files):[];if(!files.length){toast("Choose media first.","error");return}
-    for(var i=0;i<files.length;i++){var f=files[i];try{if(navigator.onLine)await uploadOne(f,f.type.indexOf("video")===0?"video":"image",false);else throw new Error("offline")}catch(e){uploadQueue.push({file:f,kind:f.type.indexOf("video")===0?"video":"image",profilePhoto:false});toast("Upload paused and queued. It will retry automatically when the network returns.","info")}}
+    for(var i=0;i<files.length;i++){var f=files[i];try{if(navigator.onLine)await uploadOne(f,f.type.indexOf("video")===0?"video":"image",false);else throw new Error("offline")}catch(e){var item={file:f,kind:f.type.indexOf("video")===0?"video":"image",profilePhoto:false};uploadQueue.push(item);await idbPut(item);toast("Upload paused and cached locally. It will retry automatically when the network returns.","info")}}
     saveQueue();input.value="";if(typeof window.aqeRefreshServerMedia==="function")await window.aqeRefreshServerMedia().catch(function(){})
   };
   window.addEventListener("online",processUploadQueue);
@@ -321,7 +328,7 @@
     hideCustomerManagerControl();loadSupportProof();installWithdrawFields();installVipSalaryScreen();
     setTimeout(openReferralRegistration,400);
     setTimeout(loadAnnouncement,600);
-    setTimeout(processUploadQueue,1200);
+    setTimeout(function(){restoreUploadQueue().then(processUploadQueue).catch(function(){processUploadQueue()})},1200);
     document.querySelectorAll("#drawer button").forEach(function(b){if(!b.dataset.finalNav){b.dataset.finalNav="1";var onclick=b.getAttribute("onclick")||"";var m=onclick.match(/showScreen\(['"]([^'"]+)['"]/);if(m)b.onclick=function(e){e&&e.preventDefault();showScreen(m[1]);var d=el("drawer");if(d)d.classList.add("hidden")}}});
   }
   if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",install);else install();
