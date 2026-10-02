@@ -1,6 +1,6 @@
 "use client";
 import { useEffect,useState } from "react";
-import { readStoredSession } from "../../lib/clientSession";
+import { readStoredSession } from "../../../lib/clientSession";
 type Task={id:string;title:string;description:string;task_type:string;reward_qc:number;reward_cash:number;active:boolean};
 function headers(){const {session,user}=readStoredSession();const h:HeadersInit={"Content-Type":"application/json"};if(session.access_token)h.authorization="Bearer "+session.access_token;if(user.id)h["x-user-id"]=user.id;return h;}
 export default function VipTaskManager(){
