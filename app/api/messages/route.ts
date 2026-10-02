@@ -93,6 +93,13 @@ export async function POST(request: Request) {
 
     const recipientId = String(body.recipientId ?? "").trim();
     const text = validateCommunityText(body.body, "Message");
+    const client = createServerSupabaseClient();
+    if (client) {
+      const recipient = await client.from("profiles").select("user_id,verification_status,account_status").eq("user_id", recipientId).maybeSingle();
+      if (recipient.error || !recipient.data) return NextResponse.json({ ok: false, reason: "Recipient is not a registered user." }, { status: 404 });
+      if (String(recipient.data.verification_status || "").toLowerCase() !== "approved" || String(recipient.data.account_status || "").toLowerCase() !== "active") return NextResponse.json({ ok: false, reason: "Messages are only available to verified active members." }, { status: 403 });
+    }
+
     if (!recipientId || recipientId === identity.userId || !text.ok) {
       const reason =
         recipientId === identity.userId
@@ -105,7 +112,6 @@ export async function POST(request: Request) {
 
     // The server is the source of truth for chat charging. The client cannot
     // bypass QC by calling the message endpoint directly.
-    const client = createServerSupabaseClient();
     const supabaseConfigured = Boolean(client);
 
     if (supabaseConfigured && client) {
