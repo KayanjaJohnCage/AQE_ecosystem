@@ -55,6 +55,10 @@ export async function GET(request: Request) {
             ? message.recipient_id
             : message.sender_id,
         preview: message.body,
+        body: message.body,
+        senderId: message.sender_id,
+        recipientId: message.recipient_id,
+        createdAt: message.created_at,
         time: new Date(message.created_at).toLocaleTimeString([], {
           hour: "2-digit",
           minute: "2-digit",
