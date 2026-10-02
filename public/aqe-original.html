@@ -13120,5 +13120,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
   window.addEventListener("aqe-screen-change",function(ev){if(ev.detail&&ev.detail.id==="screen-me")aqeRefreshServerMedia();if(ev.detail&&ev.detail.id==="screen-home")applyFilter("home",homeFilter);if(ev.detail&&ev.detail.id==="screen-explore")applyFilter("explore",exploreFilter)});
   if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",function(){setTimeout(function(){loadCustomerFilters();aqeRefreshServerMedia()},200)});
 })();
-</script></body>
+</script><script src="https://cdn.jsdelivr.net/npm/tus-js-client@4.3.1/dist/tus.min.js" defer></script>
+<script src="/aqe-production-final.js" defer></script>
+</body>
 </html>
