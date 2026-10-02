@@ -23,6 +23,7 @@ const DELETE_RESOURCES = new Set([
   "profile_comments",
   "account_troubleshoot_requests",
   "transaction_receipts",
+  "payment_orders",
   "transactions",
 ]);
 
@@ -41,7 +42,6 @@ const CLEAR_RESOURCES = new Set([
 ]);
 
 const PROTECTED_RESOURCES = new Set([
-  "payment_orders",
   "cash_wallet",
   "cash_wallet_ledger",
   "referral_earnings",
