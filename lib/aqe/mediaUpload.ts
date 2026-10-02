@@ -123,7 +123,7 @@ export async function createMediaUploadUrl({
     };
   }
 
-  const { error: mediaError } = await client.from("profile_media").insert({
+  const { data: mediaRow, error: mediaError } = await client.from("profile_media").insert({
     owner_user_id: userId,
     storage_path: objectPath,
     media_type: kind,
@@ -145,5 +145,6 @@ export async function createMediaUploadUrl({
     objectPath,
     token: data.token,
     path: data.path,
+    mediaId: mediaRow?.id ?? null,
   };
 }
