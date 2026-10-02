@@ -262,6 +262,30 @@
     try{var b=await api("/api/bookings",{method:"POST",body:JSON.stringify({providerId:providerId,service:"Booking request",amount:0,currency:"UGX",notes:String(note&&note.value||"").trim(),qcCost:0})});if(note)note.value="";toast("✓ Booking request sent. "+String(b.booking?.id||"")+" is recorded for Manager/provider review.","success");if(typeof window.aqeRefreshFinancialState==="function")window.aqeRefreshFinancialState().catch(function(){})}catch(e){toast(e.message||"Booking request failed.","error")}
   };
 
+  /* Profile-photo/media picker uses the same durable server upload path. */
+  window.handleProfileFiles=async function(files,type){
+    var arr=Array.prototype.slice.call(files||[]);if(!arr.length)return;
+    var firstImageId=null;
+    for(var i=0;i<arr.length;i++){
+      var f=arr[i];
+      try{
+        var result=await uploadOne(f,type,false);
+        var mediaId=result&&result.mediaId||result&&result.media&&result.media.id||null;
+        if(type==="image"&&!firstImageId&&mediaId)firstImageId=mediaId;
+        toast("✓ "+f.name+" uploaded successfully.","success");
+      }catch(e){
+        var item={file:f,kind:type,profilePhoto:type==="image"&&i===0};uploadQueue.push(item);await idbPut(item);
+        toast("Upload paused and cached locally. It will retry when the network returns.","info");
+      }
+    }
+    if(firstImageId){
+      try{await api("/api/media/profile-photo",{method:"POST",body:JSON.stringify({mediaId:firstImageId})});toast("✓ Profile photo saved.","success")}catch(e){toast(e.message||"Profile photo could not be set.","error")}
+    }
+    saveQueue();
+    if(typeof window.aqeRefreshServerMedia==="function")await window.aqeRefreshServerMedia().catch(function(){});
+    if(typeof window.renderMyProfileMedia==="function")window.renderMyProfileMedia();
+  };
+
   /* Full customer-visible announcements. */
   async function loadAnnouncement(){
     var old=el("aqeAnnouncementCard");if(old)old.remove();
