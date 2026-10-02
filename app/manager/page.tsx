@@ -1890,8 +1890,10 @@ export default function ManagerPage() {
                 </div>
               </section>
             </>
+          ) : active === "Announcements" ? (
+            <AnnouncementManager />
           ) : active === "Tasks & Rewards" ? (
-            <PrizeManager />
+            <div className="manager-stack"><VipTaskManager /><PrizeManager /></div>
           ) : (
             <section className="manager-card manager-detail">
               <div className="manager-table-header">
