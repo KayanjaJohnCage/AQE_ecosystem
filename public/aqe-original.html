@@ -13159,6 +13159,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
         b.style.cursor="pointer";
       });
       document.querySelectorAll(".px-sec").forEach(function(s){s.style.display=""});
+      document.querySelectorAll("[data-screen]").forEach(function(b){var id=b.getAttribute("data-screen");if(id&&document.getElementById(id)){b.onclick=function(ev){if(ev){ev.preventDefault();ev.stopPropagation()}if(typeof window.aqeLiveShowScreen==="function")window.aqeLiveShowScreen(id);else if(typeof window.showScreen==="function")window.showScreen(id);return false};}});
       if(typeof window.aqeRepairNavigation==="function")window.aqeRepairNavigation();
     }catch(_){}
   }
@@ -13171,13 +13172,13 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
   window.copyInvite=function(){
     var u=current();if(!u){if(typeof openAuth==="function")openAuth();return}
     if(String(u.tier||"").toLowerCase()!=="vip"){if(typeof pxOpenUpgrade==="function")pxOpenUpgrade();return}
-    var code=referralCode(),url=location.origin+"/?ref="+encodeURIComponent(code),text="Join AQE with my code: "+code+" at "+url;
+    var code=referralCode(),url=location.origin+"/customer?ref="+encodeURIComponent(code),text="Join AQE with my code: "+code+" at "+url;
     function done(){toast("Referral link copied. Code "+code+" is attached to the registration link.","success")}
     if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(text).then(done).catch(function(){toast(url,"success")});else{var ta=document.createElement("textarea");ta.value=text;document.body.appendChild(ta);ta.select();document.execCommand("copy");ta.remove();done()}
   };
   window.copyRef=window.copyInvite;
   window.shareTo=function(platform){
-    var code=referralCode(),url=location.origin+"/?ref="+encodeURIComponent(code),text="Join AQE — use my referral code: "+code;
+    var code=referralCode(),url=location.origin+"/customer?ref="+encodeURIComponent(code),text="Join AQE — use my referral code: "+code;
     if(platform==="whatsapp")window.open("https://wa.me/?text="+encodeURIComponent(text+" "+url),"_blank");
     else if(platform==="telegram")window.open("https://t.me/share/url?url="+encodeURIComponent(url)+"&text="+encodeURIComponent(text),"_blank");
     else window.copyInvite();
@@ -13359,13 +13360,13 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
       if(!b.ok)return;var x=await b.json();var list=x.announcements||x.items||[];
       if(!list.length)return;
       var key="aqe-announcements-seen-v1",seen={};try{seen=JSON.parse(localStorage.getItem(key)||"{}")}catch(_){}
-      var fresh=list.find(function(a){return !seen[String(a.id)]});
+      var fresh=list.find(function(a){return !a.dismissed&&!seen[String(a.id)]});
       if(!fresh)return;
       var old=E("aqeAnnouncementOverlay");if(old)old.remove();
       var box=document.createElement("div");box.id="aqeAnnouncementOverlay";box.className="aqe-announcement-overlay";
       box.innerHTML='<article class="aqe-announcement-card"><div class="flex aic jb g3"><span class="px-pill ok">'+String(fresh.kind||"AQE ANNOUNCEMENT").toUpperCase()+'</span><button id="aqeAnnouncementClose" class="mx-iconbtn" type="button"><i class="fas fa-times"></i></button></div><h2 style="margin-top:18px">'+String(fresh.title||"AQE Update")+'</h2><p style="margin-top:14px">'+String(fresh.message||fresh.body||"")+'</p><div class="xs ca5">Published '+(fresh.created_at?new Date(fresh.created_at).toLocaleString():"")+'</div><button id="aqeAnnouncementContinue" class="px-btn primary" style="width:100%;margin-top:20px">Continue to AQE</button></article>';
       document.body.appendChild(box);
-      function close(){seen[String(fresh.id)]=true;try{localStorage.setItem(key,JSON.stringify(seen))}catch(_){}box.remove()}
+      async function close(){seen[String(fresh.id)]=true;try{localStorage.setItem(key,JSON.stringify(seen))}catch(_){}try{await fetch("/api/announcements",{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+((session()||{}).access_token||"")},body:JSON.stringify({action:"dismiss",id:String(fresh.id)})})}catch(_){}box.remove()}
       E("aqeAnnouncementClose").onclick=close;E("aqeAnnouncementContinue").onclick=close;
     }catch(e){console.warn("[AQE] announcements",e)}
   }
