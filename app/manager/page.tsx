@@ -664,7 +664,6 @@ export default function ManagerPage() {
       setReviewMessage("Create-new is not available for this financial/audit queue. Use its dedicated workflow.");
       return;
     }
-    try {
       if (resource === "profiles") {
         const email = window.prompt("Customer email") || "";
         const password = window.prompt("Temporary password (8+ characters)") || "";
