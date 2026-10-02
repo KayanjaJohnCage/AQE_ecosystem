@@ -132,7 +132,7 @@ export async function createMediaUploadUrl({
     visibility: "public",
     moderation_status: "pending",
     content_access: resolvedContentAccess,
-  });
+  }).select("id").single();
 
   if (mediaError) {
     return { ok: false, reason: mediaError.message };
