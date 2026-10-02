@@ -38,6 +38,7 @@ const CLEAR_RESOURCES = new Set([
   "profile_comments",
   "account_troubleshoot_requests",
   "transaction_receipts",
+  "payment_orders",
   "transactions",
 ]);
 
