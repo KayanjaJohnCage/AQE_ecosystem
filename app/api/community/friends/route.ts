@@ -23,8 +23,9 @@ export async function POST(request: Request) {
     if (!recipientId || recipientId === identity.userId) return NextResponse.json({ ok: false, reason: "A different recipient is required." }, { status: 400 });
     const client = createServerSupabaseClient();
     if (!client) return NextResponse.json({ ok: false, reason: "Friend request service is unavailable." }, { status: 503 });
-    const recipient = await client.from("profiles").select("user_id,display_name").eq("user_id", recipientId).maybeSingle();
+    const recipient = await client.from("profiles").select("user_id,display_name,verification_status,account_status").eq("user_id", recipientId).maybeSingle();
     if (recipient.error || !recipient.data) return NextResponse.json({ ok: false, reason: "Recipient is not a registered user." }, { status: 404 });
+    if (String(recipient.data.verification_status || "").toLowerCase() !== "approved" || String(recipient.data.account_status || "").toLowerCase() !== "active") return NextResponse.json({ ok: false, reason: "Friend requests are only available for verified active members." }, { status: 403 });
     const existing = await client.from("friend_requests").select("id,status").eq("sender_id",identity.userId).eq("recipient_id",recipientId)
       .in("status",["pending","accepted"]).maybeSingle();
     if (existing.data) return NextResponse.json({ ok: false, reason: existing.data.status === "accepted" ? "You are already friends." : "Friend request already sent." }, { status: 409 });
