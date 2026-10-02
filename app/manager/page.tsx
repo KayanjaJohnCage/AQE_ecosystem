@@ -1837,6 +1837,7 @@ export default function ManagerPage() {
                             <button type="button" onClick={() => reviewPayment(row.id!, "rejected")}>
                               Reject & Lock
                             </button>
+                            <button type="button" className="manager-danger-button" onClick={() => managerDelete(row)}>Delete approval</button>
                           </>
                         ) : row.id ? <span className="manager-locked-label">Locked</span> : null}
                       </div>
