@@ -2,9 +2,23 @@ import { NextResponse } from "next/server";
 import { requireAuthenticatedRoleAccess, resolveMutationUserId } from "../../../../lib/aqe/auth";
 import { createServerSupabaseClient } from "../../../../lib/supabaseServer";
 
+function kampalaParts() {
+  const parts = new Intl.DateTimeFormat("en-UG", {
+    timeZone: "Africa/Kampala",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(new Date());
+  return {
+    year: Number(parts.find((part) => part.type === "year")?.value || 0),
+    month: String(parts.find((part) => part.type === "month")?.value || "01").padStart(2, "0"),
+    day: Number(parts.find((part) => part.type === "day")?.value || 0),
+  };
+}
+
 function status() {
-  const day = new Date().getUTCDate();
-  return { day, unlocked: day >= 20 };
+  const local = kampalaParts();
+  return { day: local.day, unlocked: local.day >= 20, period: `${local.year}-${local.month}` };
 }
 
 export async function GET(request: Request) {
@@ -26,7 +40,7 @@ export async function GET(request: Request) {
   if (String(profile.data.tier).toLowerCase() !== "vip") return NextResponse.json({ok:false,reason:"VIP membership is required."},{status:403});
 
   const now = new Date();
-  const period = now.toISOString().slice(0,7);
+  const period = s.period;
   let room = await client.from("vip_asset_rooms").select("salary_balance,withdrawn_salary_total").eq("user_id",access.session.userId).maybeSingle();
   const s = status();
 
