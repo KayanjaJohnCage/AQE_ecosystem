@@ -141,6 +141,7 @@ export async function GET(request: Request) {
         );
       }
       const counts = (countsResult.data ?? {}) as Record<string, unknown>;
+      const transactionCount = await countRows(client, "transaction_receipts");
 
       return NextResponse.json({
         ok: true,
@@ -160,7 +161,7 @@ export async function GET(request: Request) {
           users: Number(counts.users ?? 0),
           vip: Number(counts.vip ?? 0),
           media: Number(counts.media ?? 0),
-          transactions: Number(counts.transactions ?? 0),
+          transactions: transactionCount,
           bookings: Number(counts.bookings ?? 0),
           messages: Number(counts.messages ?? 0),
           products: Number(counts.products ?? 0),
