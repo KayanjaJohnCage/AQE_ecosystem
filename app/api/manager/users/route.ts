@@ -32,6 +32,56 @@ import { NextResponse } from "next/server";
 import { requireAuthenticatedRoleAccess } from "../../../../lib/aqe/auth";
 import { createServerSupabaseClient } from "../../../../lib/supabaseServer";
 
+
+export async function GET(request: Request) {
+  const access = await requireAuthenticatedRoleAccess(request, ["manager", "admin"]);
+  if (!access.ok) return NextResponse.json({ ok: false, reason: access.reason }, { status: 403 });
+  const client = createServerSupabaseClient();
+  if (!client) return NextResponse.json({ ok: false, reason: "Supabase is not configured." }, { status: 503 });
+  const url = new URL(request.url);
+  const userId = String(url.searchParams.get("userId") || "").trim();
+  if (!userId) return NextResponse.json({ ok: false, reason: "Customer user ID is required." }, { status: 400 });
+  const auth = await client.auth.admin.getUserById(userId);
+  if (auth.error || !auth.data.user) return NextResponse.json({ ok: false, reason: "Customer account was not found." }, { status: 404 });
+  const profile = await client.from("profiles").select("*").eq("user_id", userId).maybeSingle();
+  const roles = await client.from("user_roles").select("role_name").eq("user_id", userId);
+  return NextResponse.json({ ok: true, user: { id: userId, email: auth.data.user.email || "", phone: auth.data.user.phone || "", created_at: auth.data.user.created_at, last_sign_in_at: auth.data.user.last_sign_in_at, profile: profile.data || null, roles: (roles.data || []).map((x:any)=>x.role_name) } });
+}
+
+export async function PATCH(request: Request) {
+  const access = await requireAuthenticatedRoleAccess(request, ["manager", "admin"]);
+  if (!access.ok) return NextResponse.json({ ok: false, reason: access.reason }, { status: 403 });
+  const client = createServerSupabaseClient();
+  if (!client) return NextResponse.json({ ok: false, reason: "Supabase is not configured." }, { status: 503 });
+  const body = await request.json().catch(() => ({}));
+  const userId = String(body.userId || "").trim();
+  if (!userId) return NextResponse.json({ ok: false, reason: "Customer user ID is required." }, { status: 400 });
+  const roleRows = await client.from("user_roles").select("role_name").eq("user_id", userId);
+  if ((roleRows.data || []).some((row:any)=>["manager","admin"].includes(String(row.role_name).toLowerCase()))) {
+    return NextResponse.json({ ok: false, reason: "Manager/admin accounts cannot be edited from customer management." }, { status: 403 });
+  }
+  const profileFields=["display_name","phone","country","location","area","category","services","content_categories","age","gender","pronouns","headline","languages","availability","timezone","visibility","social_platforms","contact_methods","tier","verification_status","account_status","bio"];
+  const update:any={};
+  for(const key of profileFields) if(body[key] !== undefined) update[key]=body[key];
+  if(Object.keys(update).length){
+    update.updated_at=new Date().toISOString();
+    const result=await client.from("profiles").update(update).eq("user_id",userId).select("*").maybeSingle();
+    if(result.error) return NextResponse.json({ok:false,reason:result.error.message},{status:400});
+  }
+  if(body.email){
+    const email=String(body.email).trim().toLowerCase();
+    const result=await client.auth.admin.updateUserById(userId,{email,email_confirm:true});
+    if(result.error) return NextResponse.json({ok:false,reason:result.error.message},{status:400});
+  }
+  if(body.password){
+    const password=String(body.password);
+    if(password.length<8)return NextResponse.json({ok:false,reason:"Password must contain at least 8 characters."},{status:400});
+    const result=await client.auth.admin.updateUserById(userId,{password});
+    if(result.error)return NextResponse.json({ok:false,reason:result.error.message},{status:400});
+  }
+  return NextResponse.json({ok:true,message:"Customer account updated successfully."});
+}
+
 export async function DELETE(request: Request) {
   try {
     const access = await requireAuthenticatedRoleAccess(request, ["manager", "admin"]);
@@ -63,24 +113,7 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ ok: false, reason: "Manager and admin accounts cannot be deleted from customer management." }, { status: 403 });
     }
 
-    const wallet = await client
-      .from("cash_wallet")
-      .select("available_balance,pending_balance")
-      .eq("user_id", userId)
-      .maybeSingle();
-    if (wallet.data && Number(wallet.data.available_balance || 0) !== 0 || wallet.data && Number(wallet.data.pending_balance || 0) !== 0) {
-      return NextResponse.json({ ok: false, reason: "This account has wallet funds. Withdraw or resolve the balance before deleting the account." }, { status: 409 });
-    }
-
-    const pendingPayments = await client
-      .from("payment_orders")
-      .select("id")
-      .eq("user_id", userId)
-      .in("status", ["initiated", "pending"])
-      .limit(1);
-    if (pendingPayments.data?.length) {
-      return NextResponse.json({ ok: false, reason: "This account has a pending payment request. Resolve it before deleting the account." }, { status: 409 });
-    }
+    // Customer deletion is permitted regardless of wallet/payment state. Financial records remain for traceability.
 
     // Remove customer-facing identity/content records. Immutable financial/audit
     // records are deliberately retained for accounting and traceability.
@@ -116,6 +149,10 @@ export async function DELETE(request: Request) {
     await deleteRows("daily_qc_claims", "user_id", userId);
     await deleteRows("daily_checkin", "user_id", userId);
     await deleteRows("account_troubleshoot_requests", "user_id", userId);
+    await deleteRows("friend_requests", "sender_id", userId);
+    await deleteRows("friend_requests", "recipient_id", userId);
+    await deleteRows("announcement_dismissals", "user_id", userId);
+    await deleteRows("vip_task_completions", "user_id", userId);
     await deleteRows("user_roles", "user_id", userId);
     await deleteRows("referral_earnings", "beneficiary_user_id", userId);
     await deleteRows("referral_earnings", "referred_user_id", userId);
