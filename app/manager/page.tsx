@@ -157,6 +157,8 @@ export default function ManagerPage() {
     support: 0,
     withdrawals: 0,
   });
+  const [managerAuthorized, setManagerAuthorized] = useState(false);
+  const [managerAccessChecking, setManagerAccessChecking] = useState(true);
   const [active, setActive] = useState("Dashboard");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [managerLabel, setManagerLabel] = useState("Administrator");
@@ -223,6 +225,32 @@ export default function ManagerPage() {
       vipContent: {},
     },
   });
+
+  useEffect(() => {
+    let cancelled = false;
+    const checkManagerAccess = async () => {
+      try {
+        const { session, user } = readStoredSession();
+        const headers: HeadersInit = {};
+        if (session.access_token) headers.authorization = "Bearer " + session.access_token;
+        if (user.id) headers["x-user-id"] = user.id;
+        const response = await fetch("/api/manager/access", { headers, cache: "no-store" });
+        const payload = await response.json().catch(() => ({}));
+        if (cancelled) return;
+        if (!response.ok || !payload.ok) {
+          window.location.replace("/customer");
+          return;
+        }
+        setManagerAuthorized(true);
+      } catch (_) {
+        if (!cancelled) window.location.replace("/customer");
+      } finally {
+        if (!cancelled) setManagerAccessChecking(false);
+      }
+    };
+    void checkManagerAccess();
+    return () => { cancelled = true; };
+  }, []);
 
   useEffect(() => {
     const { session, user } = readStoredSession();
@@ -1100,6 +1128,10 @@ export default function ManagerPage() {
         : payload.reason || "Platform settings could not be saved.",
     );
     if (payload.settings) setSettings(payload.settings);
+  }
+
+  if (managerAccessChecking || !managerAuthorized) {
+    return <div className="manager-access-loading">Checking Manager authorization…</div>;
   }
 
   return (
