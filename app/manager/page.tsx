@@ -737,8 +737,8 @@ export default function ManagerPage() {
       } catch (error) { setReviewMessage(error instanceof Error ? error.message : "Media deletion failed."); }
       return;
     }
-    if (resource === "payment_orders" || resource === "referral_earnings") {
-      setReviewMessage("Payment orders and referral earnings are protected financial records and cannot be deleted from Manager Control.");
+    if (resource === "referral_earnings") {
+      setReviewMessage("Referral earnings are protected financial records and cannot be deleted from Manager Control.");
       return;
     }
     if (!window.confirm(`Delete this ${active} record? This action cannot be undone.`)) return;
