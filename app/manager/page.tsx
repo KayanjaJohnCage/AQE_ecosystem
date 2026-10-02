@@ -903,7 +903,8 @@ export default function ManagerPage() {
         "Services: " + (Array.isArray(p.services) ? p.services.join(", ") : "—"),
         "Role: " + roles,
         "User ID: " + body.user.id,
-      ].join("\n"));
+      ].join("
+"));
     } catch (error) { setReviewMessage(error instanceof Error ? error.message : "Customer details unavailable."); }
   }
 
@@ -1425,12 +1426,14 @@ export default function ManagerPage() {
                 <label>
                   Home filters (one label per line)
                   <textarea rows={5}
-                    value={Array.isArray(settings.customerContent.home.filters) ? (settings.customerContent.home.filters as string[]).join("\n") : ""}
+                    value={Array.isArray(settings.customerContent.home.filters) ? (settings.customerContent.home.filters as string[]).join("
+") : ""}
                     onChange={(event) => setSettings({
                       ...settings,
                       customerContent: {
                         ...settings.customerContent,
-                        home: { ...settings.customerContent.home, filters: event.target.value.split(/\n|,/).map((x)=>x.trim()).filter(Boolean).slice(0,20) }
+                        home: { ...settings.customerContent.home, filters: event.target.value.split(/
+|,/).map((x)=>x.trim()).filter(Boolean).slice(0,20) }
                       }
                     })}
                   />
@@ -1438,12 +1441,14 @@ export default function ManagerPage() {
                 <label>
                   Explore filters (one label per line)
                   <textarea rows={5}
-                    value={Array.isArray(settings.customerContent.explore.filters) ? (settings.customerContent.explore.filters as string[]).join("\n") : ""}
+                    value={Array.isArray(settings.customerContent.explore.filters) ? (settings.customerContent.explore.filters as string[]).join("
+") : ""}
                     onChange={(event) => setSettings({
                       ...settings,
                       customerContent: {
                         ...settings.customerContent,
-                        explore: { ...settings.customerContent.explore, filters: event.target.value.split(/\n|,/).map((x)=>x.trim()).filter(Boolean).slice(0,20) }
+                        explore: { ...settings.customerContent.explore, filters: event.target.value.split(/
+|,/).map((x)=>x.trim()).filter(Boolean).slice(0,20) }
                       }
                     })}
                   />
@@ -2035,7 +2040,10 @@ export default function ManagerPage() {
                           </button>
                         </>
                       ) : null}
-                      {active === "Payments & Approvals" && row.id ? (\n                         <button type="button" className="manager-danger-button" onClick={() => managerDelete(row)}>Delete approval</button>\n                       ) : null}\n                       {active !== "Users & Profiles" && row.id && !["Payments & Approvals","Withdrawals"].includes(active) ? (
+                      {active === "Payments & Approvals" && row.id ? (
+                         <button type="button" className="manager-danger-button" onClick={() => managerDelete(row)}>Delete approval</button>
+                       ) : null}
+                       {active !== "Users & Profiles" && row.id && !["Payments & Approvals","Withdrawals"].includes(active) ? (
                         <>
                           <button type="button" onClick={() => managerEdit(row)}>Update</button>
                           <button type="button" onClick={() => managerDelete(row)}>Delete</button>
