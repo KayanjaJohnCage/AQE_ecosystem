@@ -165,6 +165,7 @@ export default function ManagerPage() {
   const [profiles, setProfiles] = useState<ManagerProfile[]>([]);
   const [liveRows, setLiveRows] = useState<Record<string, ManagerRow[]>>({});
   const [profileQuery, setProfileQuery] = useState("");
+  const [transactionUserFilter, setTransactionUserFilter] = useState("");
   const [reviewMessage, setReviewMessage] = useState("");
   const [managerNumbers, setManagerNumbers] = useState<ManagerPaymentNumber[]>([]);
   const [troubleshootRequests, setTroubleshootRequests] = useState<TroubleshootRequest[]>([]);
@@ -800,7 +801,10 @@ export default function ManagerPage() {
           "Profile Media": "/api/media/manager",
           "Transactions & QC": "/api/receipts",
         };
-        const endpoint = endpoints[active];
+        let endpoint = endpoints[active];
+        if (active === "Transactions & QC" && transactionUserFilter.trim()) {
+          endpoint += "?userId=" + encodeURIComponent(transactionUserFilter.trim());
+        }
         if (!endpoint) return;
         const response = await fetch(endpoint, { headers, cache: "no-store" });
         if (!response.ok) return;
@@ -824,7 +828,7 @@ export default function ManagerPage() {
       if (timer) clearInterval(timer);
       window.removeEventListener("aqe-manager-live-event", liveEvent);
     };
-  }, [active]);
+  }, [active, transactionUserFilter]);
 
   /* Supabase Realtime wakes the manager immediately when a subscribed public table changes.
      The 3-second sync remains as a resilience fallback for missed websocket events. */
@@ -1928,6 +1932,20 @@ export default function ManagerPage() {
                     placeholder="Filter profiles"
                     aria-label="Filter profiles"
                   />
+                ) : null}
+                {active === "Transactions & QC" ? (
+                  <div className="manager-inline-filter">
+                    <input
+                      className="manager-search"
+                      value={transactionUserFilter}
+                      onChange={(event) => setTransactionUserFilter(event.target.value)}
+                      placeholder="Customer user ID (optional)"
+                      aria-label="Filter transaction receipts by customer user ID"
+                    />
+                    {transactionUserFilter ? (
+                      <button type="button" onClick={() => setTransactionUserFilter("")}>All customers</button>
+                    ) : null}
+                  </div>
                 ) : null}
                 <button
                   type="button"
