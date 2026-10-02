@@ -39,10 +39,9 @@ export async function GET(request: Request) {
   if (profile.error || !profile.data) return NextResponse.json({ok:false,reason:"Profile not found."},{status:404});
   if (String(profile.data.tier).toLowerCase() !== "vip") return NextResponse.json({ok:false,reason:"VIP membership is required."},{status:403});
 
-  const now = new Date();
+  const s = status();
   const period = s.period;
   let room = await client.from("vip_asset_rooms").select("salary_balance,withdrawn_salary_total").eq("user_id",access.session.userId).maybeSingle();
-  const s = status();
 
   if (s.unlocked) {
     const existing = await client.from("vip_salary_payments").select("id").eq("user_id",access.session.userId).eq("period",period).maybeSingle();
