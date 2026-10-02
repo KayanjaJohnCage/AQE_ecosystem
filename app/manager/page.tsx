@@ -6,6 +6,8 @@ import { readStoredSession } from "../../lib/clientSession";
 import ProfileBoostManager from "./components/ProfileBoostManager";
 import CampaignManager from "./components/CampaignManager";
 import PrizeManager from "./components/PrizeManager";
+import AnnouncementManager from "./components/AnnouncementManager";
+import VipTaskManager from "./components/VipTaskManager";
 
 type ManagerData = {
   users: number;
@@ -170,6 +172,7 @@ export default function ManagerPage() {
   const [troubleshootRequests, setTroubleshootRequests] = useState<TroubleshootRequest[]>([]);
   const [urgentAlerts, setUrgentAlerts] = useState<Array<{text:string;target:string}>>([]);
   const [recentActivity, setRecentActivity] = useState<ManagerRow[]>([]);
+  const [selectedCustomer, setSelectedCustomer] = useState<string | null>(null);
   const [browserAlertsEnabled, setBrowserAlertsEnabled] = useState(() => {
     try {
       return typeof Notification !== "undefined" && Notification.permission === "granted" &&
@@ -739,7 +742,7 @@ export default function ManagerPage() {
 
   const managerClear = async () => {
     const resource = managerResourceForActive(active);
-    if (!resource || ["payment_orders","referral_earnings","cash_wallet","cash_wallet_ledger","qc_ledger","creator_earnings","audit_log"].includes(resource)) {
+    if (!resource || ["referral_earnings","cash_wallet","cash_wallet_ledger","qc_ledger","creator_earnings","audit_log"].includes(resource)) {
       setReviewMessage("Clear-all is disabled for live financial ledgers and audit data. Transaction history/receipts can be cleared separately.");
       return;
     }
@@ -874,6 +877,35 @@ export default function ManagerPage() {
         ? liveRows[active]
         : (tableSeeds[active] ?? []);
   const paymentRows: ManagerRow[] = liveRows["Payments & Approvals"] ?? [];
+
+  async function viewCustomer(userId: string) {
+    try {
+      const response = await fetch("/api/manager/users?userId=" + encodeURIComponent(userId), { headers: managerHeaders(), cache: "no-store" });
+      const body = await response.json();
+      if (!response.ok || !body.ok) throw new Error(body.reason || "Customer details unavailable.");
+      const p = body.user?.profile || {};
+      const roles = (body.user?.roles || []).join(", ") || "customer";
+      window.alert([
+        "CUSTOMER ACCOUNT",
+        "Name: " + (p.display_name || "—"),
+        "Email: " + (body.user?.email || "—"),
+        "Phone: " + (p.phone || body.user?.phone || "—"),
+        "Country: " + (p.country || "—"),
+        "City/Region: " + (p.location || "—"),
+        "Area: " + (p.area || "—"),
+        "Category: " + (p.category || "—"),
+        "Tier: " + (p.tier || "—"),
+        "Verification: " + (p.verification_status || "—"),
+        "Account status: " + (p.account_status || "—"),
+        "Gender: " + (p.gender || "—"),
+        "Pronouns: " + (p.pronouns || "—"),
+        "Languages: " + (Array.isArray(p.languages) ? p.languages.join(", ") : "—"),
+        "Services: " + (Array.isArray(p.services) ? p.services.join(", ") : "—"),
+        "Role: " + roles,
+        "User ID: " + body.user.id,
+      ].join("\n"));
+    } catch (error) { setReviewMessage(error instanceof Error ? error.message : "Customer details unavailable."); }
+  }
 
   async function deleteCustomer(userId: string, name: string) {
     if (!userId) {
@@ -2003,7 +2035,7 @@ export default function ManagerPage() {
                           </button>
                         </>
                       ) : null}
-                      {active !== "Users & Profiles" && row.id && !["Payments & Approvals","Withdrawals"].includes(active) ? (
+                      {active === "Payments & Approvals" && row.id ? (\n                         <button type="button" className="manager-danger-button" onClick={() => managerDelete(row)}>Delete approval</button>\n                       ) : null}\n                       {active !== "Users & Profiles" && row.id && !["Payments & Approvals","Withdrawals"].includes(active) ? (
                         <>
                           <button type="button" onClick={() => managerEdit(row)}>Update</button>
                           <button type="button" onClick={() => managerDelete(row)}>Delete</button>
