@@ -29,5 +29,3 @@ export async function POST(request: Request) {
   if(row.error)return NextResponse.json({ok:false,reason:row.error.message},{status:500});
   return NextResponse.json({ok:true,completion:row.data,message:"VIP task marked complete and sent for Manager review."});
 }
-
-export async function POST_manager(request: Request) { return NextResponse.json({ok:false},{status:405}); }
