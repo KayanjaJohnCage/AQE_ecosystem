@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireAuthenticatedRoleAccess } from "../../../../lib/aqe/auth";
-import { createServerSupabaseClient } from "../../../../lib/supabaseServer";
+import { createAnonSupabaseClient, createServerSupabaseClient } from "../../../../lib/supabaseServer";
 
 type ReceiverDetails = {
   id?: string;
@@ -44,7 +44,10 @@ function mapRow(row: any): ReceiverDetails {
 
 export async function GET() {
   try {
-    const client = createServerSupabaseClient();
+    let client = createServerSupabaseClient();
+    if (!client) {
+      client = createAnonSupabaseClient();
+    }
     if (!client) {
       const receiver = envReceiver();
       return NextResponse.json({ ok:true, source:"environment", receiver, receivers:[receiver] });
