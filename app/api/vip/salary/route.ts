@@ -64,7 +64,7 @@ export async function POST(request: Request) {
   if (!s.unlocked) return NextResponse.json({ok:false,reason:"VIP salary withdrawal is locked until the 20th."},{status:409});
   const body=await request.json().catch(()=>({}));
   const amount=Number(body.amount??0), recipientName=String(body.recipientName??"").trim(), recipientAccount=String(body.recipientAccount??"").trim();
-  if(!Number.isFinite(amount)||amount<30000)return NextResponse.json({ok:false,reason:"Minimum salary withdrawal is UGX 30,000."},{status:400});
+  if(!Number.isFinite(amount)||amount<=0)return NextResponse.json({ok:false,reason:"Enter a valid VIP salary withdrawal amount."},{status:400});
   if(!recipientName||!recipientAccount)return NextResponse.json({ok:false,reason:"Recipient name and phone/card number are required."},{status:400});
   const client=createServerSupabaseClient();if(!client)return NextResponse.json({ok:false,reason:"VIP salary service is unavailable."},{status:503});
   const profile=await client.from("profiles").select("tier").eq("user_id",access.session.userId).maybeSingle();
