@@ -31,8 +31,9 @@ export async function POST(request: Request) {
     if (text.length > 1000) return NextResponse.json({ ok: false, reason: "Comment is too long." }, { status: 400 });
     const client = createServerSupabaseClient();
     if (!client) return NextResponse.json({ ok: false, reason: "Comment service is unavailable." }, { status: 503 });
-    const target = await client.from("profiles").select("user_id,display_name").eq("id", profileId).maybeSingle();
+    const target = await client.from("profiles").select("user_id,display_name,verification_status,account_status").eq("id", profileId).maybeSingle();
     if (target.error || !target.data) return NextResponse.json({ ok: false, reason: "Profile not found." }, { status: 404 });
+    if (String(target.data.verification_status || "").toLowerCase() !== "approved" || String(target.data.account_status || "").toLowerCase() !== "active") return NextResponse.json({ ok: false, reason: "Comments are only available on verified active member profiles." }, { status: 403 });
     if (target.data.user_id === identity.userId) return NextResponse.json({ ok: false, reason: "You cannot comment on your own profile." }, { status: 400 });
     const inserted = await client.from("profile_comments").insert({
       author_id: identity.userId, profile_id: profileId, body: text,
