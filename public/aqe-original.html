@@ -1244,7 +1244,7 @@ body{
 
       <div class="di" onclick="showScreen('screen-download')"><i class="fas fa-download cb"></i><span>Download</span></div>
 
-      <div class="di" onclick="showScreen('screen-manager')"><i class="fas fa-shield-alt cg"></i><span>Manager</span></div>
+      <div class="di" onclick="showScreen('screen-manager')"><i class="fas fa-headset cg"></i><span>Manager Support</span></div>
 
       <div class="di" onclick="showScreen('screen-settings')"><i class="fas fa-cog ca4"></i><span>Settings</span></div>
 
@@ -1542,22 +1542,39 @@ body{
 
 
 
-<!-- MANAGER -->
+<!-- MANAGER SUPPORT -->
 
 <div id="screen-manager" class="screen hidden">
-
   <div class="px4 py4">
-
     <div class="flex aic g3 mb4">
-
-      <button onclick="showScreen('screen-me')" style="background:none;border:none;color:var(--a1);font-size:18px;cursor:pointer;"><i class="fas fa-arrow-left"></i></button>
-
-      <h3 class="xl fw8">Manager Panel</h3>
-
+      <button onclick="showScreen('screen-me')" style="background:none;border:none;color:var(--a1);font-size:18px;cursor:pointer;" aria-label="Back to profile"><i class="fas fa-arrow-left"></i></button>
+      <div>
+        <h3 class="xl fw8">Manager Support</h3>
+        <div class="xs ca5 mt1">Send a message or account-help request directly to the AQE Manager.</div>
+      </div>
     </div>
-
+    <div class="bga8 r2xl p4 b1 ba7 mb4">
+      <div class="flex aic g2 mb2"><i class="fas fa-headset cg"></i><strong>Need help?</strong></div>
+      <p class="sm ca4" style="line-height:1.55">Use this panel for payment help, account problems, profile corrections, verification questions, withdrawals, referrals, or any other AQE support request. Your request is sent to the Manager Support queue; it does not open the Manager administration site.</p>
+    </div>
+    <form id="aqeManagerSupportForm" class="bga8 r2xl p4 b1 ba7 mb4">
+      <div class="fw7 mb3">Send message to Manager</div>
+      <label class="xs ca5">Category</label>
+      <select id="aqeManagerSupportCategory" class="inp" style="margin-top:6px;margin-bottom:12px">
+        <option value="OTHER">General support</option><option value="PAYMENT">Payment / wallet</option><option value="UPGRADE">Membership / upgrade</option><option value="WITHDRAWAL">Withdrawal</option><option value="PROFILE">Profile / verification</option><option value="REFERRAL">Referral earnings</option><option value="TECHNICAL">Technical problem</option>
+      </select>
+      <label class="xs ca5">Subject</label>
+      <input id="aqeManagerSupportSubject" class="inp" style="margin-top:6px;margin-bottom:12px" maxlength="120" placeholder="What do you need help with?">
+      <label class="xs ca5">Message</label>
+      <textarea id="aqeManagerSupportMessage" class="inp" style="margin-top:6px;min-height:130px;resize:vertical" maxlength="2000" placeholder="Describe your issue or request..."></textarea>
+      <div class="flex aic jb mt3" style="gap:10px;flex-wrap:wrap"><span id="aqeManagerSupportStatus" class="xs ca5"></span><button type="submit" class="btn bp" style="width:auto;padding:11px 18px"><i class="fas fa-paper-plane"></i> Send to Manager</button></div>
+    </form>
+    <div class="bga8 r2xl p4 b1 ba7">
+      <div class="fw7 mb2">Account troubleshooting</div>
+      <p class="xs ca5 mb3">If your account needs a controlled change or correction, submit a troubleshooting request. The Manager will review it and process it from the secure Manager console.</p>
+      <button type="button" class="btn bs2" style="width:auto;padding:10px 16px" onclick="aqeOpenManagerTroubleshoot()">Request account troubleshooting</button>
+    </div>
   </div>
-
 </div>
 
 
@@ -12876,10 +12893,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
   /* One final navigation authority. It bypasses the accumulated legacy showScreen wrappers. */
   window.aqeNavigate=function(id){
     if(!id)return;
-    if(id==="screen-manager"){
-      try{window.top.location.href="/manager"}catch(_){location.href="/manager"}
-      return;
-    }
+    
     var el=E(id);if(!el){toastMsg("That AQE page is not available yet.","error");return}
     document.querySelectorAll(".screen").forEach(function(x){x.classList.add("hidden")});
     el.classList.remove("hidden");
@@ -12912,10 +12926,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
     var id=match[1];
     ev.preventDefault();
     ev.stopImmediatePropagation();
-    if(id==="screen-manager"){
-      try{window.top.location.href="/manager"}catch(_){location.href="/manager"}
-      return;
-    }
+    
     window.aqeNavigate(id);
     if(/toggleDrawer\s*\(/.test(code)&&typeof window.toggleDrawer==="function")try{window.toggleDrawer()}catch(_){}
   },true);
@@ -13068,6 +13079,41 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
   window.aqeDeleteMediaServer=async function(id){try{var s=sess();var r=await fetch("/api/media/item",{method:"DELETE",headers:{"Content-Type":"application/json",Authorization:"Bearer "+s.access_token},body:JSON.stringify({mediaId:id})});var p=await r.json();if(!r.ok||!p.ok)throw new Error(p.reason||"Media deletion failed.");await aqeRefreshServerMedia();toastMsg("Media removed.","success")}catch(e){toastMsg(e.message||"Media removal failed.","error")}};
   var oldUpdate=window.updateUIForUser;
   window.updateUIForUser=function(){try{if(oldUpdate)oldUpdate.apply(this,arguments)}catch(_){};aqeRefreshServerMedia();return undefined};
+
+  async function aqeSendManagerSupport(event){
+    event.preventDefault();
+    var form=E("aqeManagerSupportForm"),status=E("aqeManagerSupportStatus");
+    var subject=String((E("aqeManagerSupportSubject")||{}).value||"").trim();
+    var message=String((E("aqeManagerSupportMessage")||{}).value||"").trim();
+    var category=String((E("aqeManagerSupportCategory")||{}).value||"OTHER");
+    var session=jget("aqe_next_session");
+    if(!session||!session.access_token){if(status)status.textContent="Please sign in first.";return;}
+    if(!subject||!message){if(status)status.textContent="Enter a subject and message.";return;}
+    if(status)status.textContent="Sending…";
+    try{
+      var r=await fetch("/api/support/tickets",{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+session.access_token},body:JSON.stringify({category:category,subject:subject,message:message,priority:"MEDIUM"})});
+      var p=await r.json().catch(function(){return {}});
+      if(!r.ok||!p.ok)throw new Error(p.reason||p.message||"Support request failed.");
+      if(form)form.reset();
+      if(status)status.textContent="Sent to Manager Support. Your request is now in the support queue.";
+      if(typeof toastMsg==="function")toastMsg("Message sent to Manager Support.","success");
+    }catch(e){if(status)status.textContent=e.message||"Support request failed.";if(typeof toastMsg==="function")toastMsg(e.message||"Support request failed.","error")}
+  }
+  function aqeOpenManagerTroubleshoot(){
+    var requested=window.prompt("What account change or correction do you need?");
+    if(!requested)return;
+    var details=window.prompt("Add any details the Manager needs to review.");
+    if(details===null)return;
+    var session=jget("aqe_next_session");
+    if(!session||!session.access_token){if(typeof toastMsg==="function")toastMsg("Please sign in first.","error");return;}
+    fetch("/api/support/troubleshoot",{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+session.access_token},body:JSON.stringify({requestedChange:requested,details:details})})
+      .then(function(r){return r.json().then(function(p){if(!r.ok||!p.ok)throw new Error(p.reason||"Troubleshoot request failed.");return p})})
+      .then(function(){if(typeof toastMsg==="function")toastMsg("Account troubleshooting request sent to Manager Support.","success")})
+      .catch(function(e){if(typeof toastMsg==="function")toastMsg(e.message||"Account troubleshooting request failed.","error")});
+  }
+  window.aqeOpenManagerTroubleshoot=aqeOpenManagerTroubleshoot;
+  var managerSupportForm=E("aqeManagerSupportForm");
+  if(managerSupportForm&&!managerSupportForm.dataset.bound){managerSupportForm.dataset.bound="1";managerSupportForm.addEventListener("submit",aqeSendManagerSupport);}
 
   loadCustomerFilters();
   aqeRefreshServerMedia();
