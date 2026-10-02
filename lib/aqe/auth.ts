@@ -190,7 +190,7 @@ export function getSessionFromRequest(request: Request): AqeSession {
     request.headers.get("x-user-email") ?? request.headers.get("email") ?? "";
   // In production, client-supplied identity/role headers are never trusted.
   // They remain available only for local development compatibility.
-  const isProduction = process.env.NEXT_PUBLIC_APP_ENV === "production";
+  const isProduction = process.env.NODE_ENV === "production" || process.env.VERCEL_ENV === "production" || process.env.NEXT_PUBLIC_APP_ENV === "production";
   const roleHeader = isProduction
     ? ""
     : request.headers.get("x-user-role") ??
@@ -242,7 +242,7 @@ export async function resolveAuthenticatedSession(
 ): Promise<AqeSession> {
   const requestSession = getSessionFromRequest(request);
 
-  const isProduction = process.env.NEXT_PUBLIC_APP_ENV === "production";
+  const isProduction = process.env.NODE_ENV === "production" || process.env.VERCEL_ENV === "production" || process.env.NEXT_PUBLIC_APP_ENV === "production";
 
   if (!requestSession.token || requestSession.token.startsWith("mock-")) {
     if (isProduction) {
