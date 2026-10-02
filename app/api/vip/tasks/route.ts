@@ -33,7 +33,16 @@ export async function POST(request: Request) {
     if(!["manager","admin"].includes(String(access.session.role).toLowerCase()))return NextResponse.json({ok:false,reason:"Manager access required."},{status:403});
     if(managerAction==="create"){
       const title=String(body.title||"").trim();if(!title)return NextResponse.json({ok:false,reason:"Task title is required."},{status:400});
-      const row=await client.from("vip_tasks").insert({title,description:String(body.description||""),task_type:String(body.taskType||"general"),reward_qc:Number(body.rewardQc||0),reward_cash:Number(body.rewardCash||0),active:true,created_by:access.session.userId}).select("*").single();
+      const startsAt = body.startsAt ? new Date(String(body.startsAt)).toISOString() : null;
+      const endsAt = body.endsAt ? new Date(String(body.endsAt)).toISOString() : null;
+      if (startsAt && endsAt && new Date(endsAt).getTime() <= new Date(startsAt).getTime()) return NextResponse.json({ok:false,reason:"Task end time must be after the start time."},{status:400});
+      const row=await client.from("vip_tasks").insert({
+        title,description:String(body.description||""),task_type:String(body.taskType||"general"),
+        reward_qc:Number(body.rewardQc||0),reward_cash:Number(body.rewardCash||0),
+        active:body.active !== false,starts_at:startsAt,ends_at:endsAt,
+        sort_order:Number.isInteger(Number(body.sortOrder)) ? Number(body.sortOrder) : 0,
+        created_by:access.session.userId,updated_at:new Date().toISOString()
+      }).select("*").single();
       if(row.error)return NextResponse.json({ok:false,reason:row.error.message},{status:500});
       return NextResponse.json({ok:true,task:row.data,message:"VIP task published."});
     }
