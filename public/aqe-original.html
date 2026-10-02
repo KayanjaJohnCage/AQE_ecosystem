@@ -8962,7 +8962,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 
     var drawer=document.querySelector('#drawer nav');
 
-    if(drawer){drawer.querySelectorAll('button').forEach(function(b){var txt=b.textContent.trim().toLowerCase();var hide=client&&['messages','my profile','book now','comments'].includes(txt);b.style.display=hide?'none':'';});
+    if(drawer){drawer.querySelectorAll('button').forEach(function(b){var txt=b.textContent.trim().toLowerCase();var hide=false;b.style.display='';});
 
       var du=E('drawerClientUpgrade');if(client&&!du){du=document.createElement('button');du.id='drawerClientUpgrade';du.className='dl';du.innerHTML='<i class="fas fa-crown"></i> Upgrade to unlock';du.onclick=function(){if(typeof pxOpenUpgrade==='function')pxOpenUpgrade();if(typeof toggleDrawer==='function')toggleDrawer();};drawer.appendChild(du);}if(!client&&du)du.remove();
 
@@ -8972,9 +8972,9 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 
     var media=E('myMediaCard'),asset=E('assetRoomCTA');if(media)media.style.display=client?'none':'';if(asset)asset.style.display=client?'none':'';
 
-    ['screen-book','screen-messages','screen-comments','screen-me','screen-team','screen-tasks','screen-rewards','screen-raffle','screen-vault','screen-store','screen-groups','screen-premium','screen-vip','screen-queue'].forEach(function(id){var e=E(id);if(e&&client)e.classList.add('hidden');});
+    ['screen-book','screen-messages','screen-comments','screen-me','screen-team','screen-tasks','screen-rewards','screen-raffle','screen-vault','screen-store','screen-groups','screen-premium','screen-vip','screen-queue'].forEach(function(id){var e=E(id);if(e&&client)e.classList.remove('hidden');});
 
-    var me=E('screen-me');if(me&&client){me.classList.add('hidden');}
+    var me=E('screen-me');if(me&&client){me.classList.remove('hidden');}
 
   }
 
@@ -9000,7 +9000,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 
   }
 
-  var oldShowScreen14=window.showScreen;if(oldShowScreen14&&!oldShowScreen14.__guestGuard){window.showScreen=function(id){var u=currentUser();if(isClient(u)&&['screen-book','screen-messages','screen-comments','screen-me','screen-team','screen-tasks','screen-rewards','screen-raffle','screen-vault','screen-store','screen-groups','screen-premium','screen-vip','screen-queue'].indexOf(id)>-1){if(typeof pxOpenUpgrade==='function')pxOpenUpgrade();return;}return oldShowScreen14.apply(this,arguments);};window.showScreen.__guestGuard=true;}
+  var oldShowScreen14=window.showScreen;if(oldShowScreen14&&!oldShowScreen14.__guestGuard){window.showScreen=function(id){return oldShowScreen14.apply(this,arguments);};window.showScreen.__guestGuard=true;}
 
   function boot14(){patchRegistration();patchUpgrade();patchOpenProfile();clientAccountUI();}
 
@@ -9100,7 +9100,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 
     var drawer=document.querySelector('#drawer nav');
 
-    if(drawer){drawer.querySelectorAll('button').forEach(function(b){var m=b.getAttribute('onclick')||'';var match=m.match(/showScreen\(['\"]([^'\"]+)/);var id=match?match[1]:'';b.style.display=((isClient()||isRestrictedMember())&&['screen-home','screen-explore','screen-shop','screen-me','screen-wallet','screen-settings'].indexOf(id)===-1)?'none':'';});}
+    if(drawer){drawer.querySelectorAll('button').forEach(function(b){b.style.display='';});}
 
     /* Restricted members must still have a fully usable public/account shell.
        Only membership-dependent destinations are gated. Keep the core bottom
@@ -9427,9 +9427,8 @@ var origWithdraw=window.openWithdraw;
 window.openWithdraw=function(){
 
  if(client()){
-
-   var m=document.getElementById('withdrawModal');if(m){m.classList.remove('hidden');m.style.display='flex';var b=document.getElementById('withdrawBalance');if(b)b.textContent=formatMoney((U().wallet&&U().wallet.UGX)||0,'UGX');}return;
-
+   if(typeof window.showScreen==='function')window.showScreen('screen-aqe-withdraw');
+   return;
  }
 
  if(typeof origWithdraw==='function')return origWithdraw.apply(this,arguments);
@@ -13530,6 +13529,36 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
     var details=window.prompt("Add any details the Manager needs to review.");if(details===null)return;
     try{var b=await req("/api/support/troubleshoot",{method:"POST",body:JSON.stringify({requestedChange:requested,details:details})});var id=b.request&&b.request.id||b.id||"saved";proof("Troubleshoot request sent successfully. Reference: "+id);toast("Troubleshoot request sent successfully.","success")}catch(e){toast(e.message||"Troubleshoot request failed.","error")}
   };
+})();
+</script>
+
+
+<script id="aqe-final-launch-repair">
+(function(){
+  "use strict";
+  function E(id){return document.getElementById(id)}
+  function esc(v){return String(v==null?"":v).replace(/[&<>'"]/g,function(c){return({"&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;",'"':"&quot;"})[c]})}
+  function paymentMethod(){return window.pay&&window.pay.method==="AQE_MANAGER"?"AQE_MANAGER":"MukuruPay"}
+  function removeLegacyReceiverCards(){["aqeMukuruReceiverInfo","aqePaymentReceiverInfo"].forEach(function(id){var x=E(id);if(x)x.remove()})}
+  function removeReceiverFromStep1(){removeLegacyReceiverCards();var step=E("aqePayStep1"),box=E("aqeServerReceiver");if(step&&box&&step.contains(box))box.remove()}
+  async function renderFinalReceiver(){
+    var step=E("aqePayStep2");if(!step||!step.classList.contains("on"))return;
+    if(paymentMethod()==="AQE_MANAGER"){var old=E("aqeServerReceiver");if(old)old.remove();return}
+    var box=E("aqeServerReceiver");
+    if(!box){box=document.createElement("div");box.id="aqeServerReceiver";box.className="aqe-server-receiver";var anchor=E("aqeExactReference"),parent=anchor&&anchor.closest(".aqe-pay-card");if(parent&&parent.parentNode)parent.parentNode.insertBefore(box,parent.nextSibling);else step.insertBefore(box,step.firstChild)}
+    try{
+      var response=await fetch("/api/payments/receiver?ts="+Date.now(),{cache:"no-store"}),payload=await response.json(),r=payload.receiver||{};
+      if(!r.receiverPhone&&!r.receiverCard){box.innerHTML='<div class="xs ca5">Mukuru receiver details are not currently configured.</div>';return}
+      box.innerHTML='<div class="aqe-pay-small" style="color:#D4AF37;font-weight:800">Mukuru Global Money Transfer receiver</div><div class="aqe-server-receiver-row"><div><small>Receiver name</small><b>'+esc(r.receiverName||"—")+'</b></div></div><div class="aqe-server-receiver-row"><div><small>Receiver phone</small><b>'+esc(r.receiverPhone||"—")+'</b></div></div><div class="aqe-server-receiver-row"><div><small>Receiver card / account</small><b>'+esc(r.receiverCard||"—")+'</b></div></div><div class="xs ca5" style="margin-top:8px;white-space:pre-wrap">'+esc(r.instructions||"Include your AQE payment reference.")+'</div>';
+    }catch(e){box.innerHTML='<div class="xs ca5">Receiver details could not be loaded. Please try again.</div>'}
+  }
+  var oldOpen=window.aqeExactOpen;
+  if(oldOpen&&!oldOpen.__aqeLaunchRepair){window.aqeExactOpen=function(){removeReceiverFromStep1();var result=oldOpen.apply(this,arguments);[50,250,900].forEach(function(ms){setTimeout(removeReceiverFromStep1,ms)});return result};window.aqeExactOpen.__aqeLaunchRepair=true}
+  var oldMethod=window.aqeExactMethod;
+  if(oldMethod&&!oldMethod.__aqeLaunchRepair){window.aqeExactMethod=function(method){var result=oldMethod.apply(this,arguments);removeReceiverFromStep1();setTimeout(renderFinalReceiver,100);return result};window.aqeExactMethod.__aqeLaunchRepair=true}
+  var oldSubmit=window.aqeExactSaveAndContinue;
+  if(oldSubmit&&!oldSubmit.__aqeLaunchRepair){window.aqeExactSaveAndContinue=async function(){var result=await oldSubmit.apply(this,arguments);setTimeout(function(){removeLegacyReceiverCards();void renderFinalReceiver()},100);setTimeout(function(){removeLegacyReceiverCards();void renderFinalReceiver()},800);return result};window.aqeExactSaveAndContinue.__aqeLaunchRepair=true}
+  setInterval(function(){if(paymentMethod()==="AQE_MANAGER"){removeLegacyReceiverCards();var box=E("aqeServerReceiver"),step=E("aqePayStep2");if(box&&step&&step.classList.contains("on"))box.remove()}},1500);
 })();
 </script>
 
