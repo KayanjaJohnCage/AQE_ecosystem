@@ -1445,14 +1445,12 @@ export default function ManagerPage() {
                 <label>
                   Home filters (one label per line)
                   <textarea rows={5}
-                    value={Array.isArray(settings.customerContent.home.filters) ? (settings.customerContent.home.filters as string[]).join("
-") : ""}
+                    value={Array.isArray(settings.customerContent.home.filters) ? (settings.customerContent.home.filters as string[]).join("\n") : ""}
                     onChange={(event) => setSettings({
                       ...settings,
                       customerContent: {
                         ...settings.customerContent,
-                        home: { ...settings.customerContent.home, filters: event.target.value.split(/
-|,/).map((x)=>x.trim()).filter(Boolean).slice(0,20) }
+                        home: { ...settings.customerContent.home, filters: event.target.value.split(/\n|,/).map((x)=>x.trim()).filter(Boolean).slice(0,20) }
                       }
                     })}
                   />
@@ -1460,14 +1458,12 @@ export default function ManagerPage() {
                 <label>
                   Explore filters (one label per line)
                   <textarea rows={5}
-                    value={Array.isArray(settings.customerContent.explore.filters) ? (settings.customerContent.explore.filters as string[]).join("
-") : ""}
+                    value={Array.isArray(settings.customerContent.explore.filters) ? (settings.customerContent.explore.filters as string[]).join("\n") : ""}
                     onChange={(event) => setSettings({
                       ...settings,
                       customerContent: {
                         ...settings.customerContent,
-                        explore: { ...settings.customerContent.explore, filters: event.target.value.split(/
-|,/).map((x)=>x.trim()).filter(Boolean).slice(0,20) }
+                        explore: { ...settings.customerContent.explore, filters: event.target.value.split(/\n|,/).map((x)=>x.trim()).filter(Boolean).slice(0,20) }
                       }
                     })}
                   />
