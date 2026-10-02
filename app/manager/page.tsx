@@ -923,8 +923,7 @@ export default function ManagerPage() {
         "Services: " + (Array.isArray(p.services) ? p.services.join(", ") : "—"),
         "Role: " + roles,
         "User ID: " + body.user.id,
-      ].join("
-"));
+      ].join("\n"));
     } catch (error) { setReviewMessage(error instanceof Error ? error.message : "Customer details unavailable."); }
   }
 
