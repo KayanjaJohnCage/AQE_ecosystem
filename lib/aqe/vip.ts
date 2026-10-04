@@ -85,8 +85,8 @@ export const MIN_WITHDRAWAL_AMOUNT = 30_000;
 export const MAX_WITHDRAWAL_AMOUNT = 5_000_000;
 
 const WITHDRAWAL_COOLDOWN_HOURS: Record<WithdrawalTier, number> = {
-  basic: 168,
-  premium: 168,
+  basic: 0,
+  premium: 0,
   vip: 0,
 };
 
@@ -365,7 +365,7 @@ export async function createPersistedVipWithdrawalRequest({
     return { ok: false, status: "REJECTED", reason: lastWithdrawalError.message };
   }
 
-  // The CEO policy fixes the withdrawal service charge at 10%.
+  // The current AQE policy fixes the withdrawal service charge at 8%.
   // The database migration also enforces this value at the transaction boundary.
   const serviceChargeRate = DEFAULT_WITHDRAWAL_SERVICE_CHARGE_RATE;
 
