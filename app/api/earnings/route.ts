@@ -46,8 +46,18 @@ export async function GET(request: Request) {
     "INDIRECT_REFERRAL_EARNING",
   ]);
 
-  const otherEarnings = ledgerRows.filter(
-    (x: any) => !referralReferenceTypes.has(String(x.reference_type || "").toUpperCase()),
+  // Only income-producing ledger credits belong in the Earnings card.
+  // WALLET_DEPOSIT is customer cash funding, not earned income. Likewise,
+  // referral wallet credits are already represented by referral_earnings.
+  const earnedLedgerReferenceTypes = new Set([
+    "WELCOME_BONUS",
+    "VIP_SALARY",
+    "CREATOR_EARNING",
+    "CONTENT_EARNING",
+    "TEAM_LEADER_EARNING",
+  ]);
+  const otherEarnings = ledgerRows.filter((x: any) =>
+    earnedLedgerReferenceTypes.has(String(x.reference_type || "").toUpperCase()),
   );
 
   const totalCreator = creatorRows.reduce((n: number, x: any) => n + Number(x.net_amount || 0), 0);
