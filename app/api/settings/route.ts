@@ -8,6 +8,7 @@ export type AqePlatformSettings = {
   walletCurrency: string;
   qcExchangeRate: number;
   referralRates: { direct: number; indirect: number };
+  referralRatesByTier: { basic: { direct: number; indirect: number }; premium: { direct: number; indirect: number }; vip: { direct: number; indirect: number } };
   about: string;
   contact: string;
   withdrawal: {
@@ -26,9 +27,9 @@ export type AqePlatformSettings = {
     withdrawalBefore20th: boolean;
   };
   mediaLimits: {
-    basic: { imagesPerMonth: number; videosPerMonth: number; maxImageSizeMB: number; maxVideoSizeMB: number };
-    premium: { imagesPerMonth: number; videosPerMonth: number; maxImageSizeMB: number; maxVideoSizeMB: number };
-    vip: { imagesPerMonth: number; videosPerMonth: number; maxImageSizeMB: number; maxVideoSizeMB: number };
+    basic: { imagesPerMonth: number | null; videosPerMonth: number | null; maxImageSizeMB: number; maxVideoSizeMB: number };
+    premium: { imagesPerMonth: number | null; videosPerMonth: number | null; maxImageSizeMB: number; maxVideoSizeMB: number };
+    vip: { imagesPerMonth: number | null; videosPerMonth: number | null; maxImageSizeMB: number; maxVideoSizeMB: number };
   };
   commercial: {
     profileBoostPrices: { daily: number; weekly: number; monthly: number };
@@ -51,6 +52,7 @@ export type AqePlatformSettings = {
   };
   customerContent: {
     home: Record<string, unknown>;
+    explore: Record<string, unknown>;
     rewards: Record<string, unknown>;
     campaign: Record<string, unknown>;
     raffle: Record<string, unknown>;
@@ -64,7 +66,8 @@ const defaults: AqePlatformSettings = {
   renewalPrices: { basic: 2500, premium: 5000, vip: 8500 },
   walletCurrency: "UGX",
   qcExchangeRate: 1000,
-  referralRates: { direct: 0.1, indirect: 0.05 },
+  referralRates: { direct: 0.1, indirect: 0.12 },
+  referralRatesByTier: { basic: { direct: 0.10, indirect: 0 }, premium: { direct: 0.10, indirect: 0 }, vip: { direct: 0.12, indirect: 0.12 } },
   about: "AQE is a community ecosystem for connection, profiles, bookings, and trusted creator tools.",
   contact: "Contact an AQE manager for payment and account support.",
   withdrawal: {
@@ -83,9 +86,9 @@ const defaults: AqePlatformSettings = {
     withdrawalBefore20th: false,
   },
   mediaLimits: {
-    basic: { imagesPerMonth: 10, videosPerMonth: 2, maxImageSizeMB: 5, maxVideoSizeMB: 75 },
-    premium: { imagesPerMonth: 30, videosPerMonth: 10, maxImageSizeMB: 8, maxVideoSizeMB: 100 },
-    vip: { imagesPerMonth: 100, videosPerMonth: 30, maxImageSizeMB: 12, maxVideoSizeMB: 150 },
+    basic: { imagesPerMonth: 10, videosPerMonth: 10, maxImageSizeMB: 5, maxVideoSizeMB: 75 },
+    premium: { imagesPerMonth: 20, videosPerMonth: 20, maxImageSizeMB: 8, maxVideoSizeMB: 100 },
+    vip: { imagesPerMonth: null, videosPerMonth: null, maxImageSizeMB: 12, maxVideoSizeMB: 150 },
   },
   commercial: {
     profileBoostPrices: { daily: 0, weekly: 0, monthly: 0 },
@@ -113,6 +116,7 @@ const defaults: AqePlatformSettings = {
       heroDescription: "Verified professionals. Secure payments. Discreet experience.",
       featuredTitle: "Featured Profiles",
     },
+    explore: { filters: ["All","Photography","Video","Art","Styling","Audio"] },
     rewards: {
       title: "Rewards",
       eyebrow: "VIP ECOSYSTEM",
@@ -204,13 +208,37 @@ function normalizeSettings(value: Partial<AqePlatformSettings> = {}): AqePlatfor
       indirect: Number(value.referralRates?.indirect) >= 0 && Number(value.referralRates?.indirect) <= 1
         ? Number(value.referralRates?.indirect) : defaults.referralRates.indirect,
     },
-    about: String(value.about || defaults.about),
-    contact: String(value.contact || defaults.contact),
+    referralRatesByTier: {
+      basic: { direct: 0.10, indirect: 0 },
+      premium: { direct: 0.10, indirect: 0 },
+      vip: { direct: 0.12, indirect: 0.12 },
+    },
+    mediaLimits: {
+      basic: {
+        imagesPerMonth: value.mediaLimits?.basic?.imagesPerMonth === null ? null : Math.max(0, Math.round(positive(value.mediaLimits?.basic?.imagesPerMonth, defaults.mediaLimits.basic.imagesPerMonth ?? 10))),
+        videosPerMonth: value.mediaLimits?.basic?.videosPerMonth === null ? null : Math.max(0, Math.round(positive(value.mediaLimits?.basic?.videosPerMonth, defaults.mediaLimits.basic.videosPerMonth ?? 10))),
+        maxImageSizeMB: positive(value.mediaLimits?.basic?.maxImageSizeMB, defaults.mediaLimits.basic.maxImageSizeMB),
+        maxVideoSizeMB: positive(value.mediaLimits?.basic?.maxVideoSizeMB, defaults.mediaLimits.basic.maxVideoSizeMB),
+      },
+      premium: {
+        imagesPerMonth: value.mediaLimits?.premium?.imagesPerMonth === null ? null : Math.max(0, Math.round(positive(value.mediaLimits?.premium?.imagesPerMonth, defaults.mediaLimits.premium.imagesPerMonth ?? 20))),
+        videosPerMonth: value.mediaLimits?.premium?.videosPerMonth === null ? null : Math.max(0, Math.round(positive(value.mediaLimits?.premium?.videosPerMonth, defaults.mediaLimits.premium.videosPerMonth ?? 20))),
+        maxImageSizeMB: positive(value.mediaLimits?.premium?.maxImageSizeMB, defaults.mediaLimits.premium.maxImageSizeMB),
+        maxVideoSizeMB: positive(value.mediaLimits?.premium?.maxVideoSizeMB, defaults.mediaLimits.premium.maxVideoSizeMB),
+      },
+      vip: {
+        imagesPerMonth: value.mediaLimits?.vip?.imagesPerMonth === null ? null : Math.max(0, Math.round(positive(value.mediaLimits?.vip?.imagesPerMonth, defaults.mediaLimits.vip.imagesPerMonth ?? 0))),
+        videosPerMonth: value.mediaLimits?.vip?.videosPerMonth === null ? null : Math.max(0, Math.round(positive(value.mediaLimits?.vip?.videosPerMonth, defaults.mediaLimits.vip.videosPerMonth ?? 0))),
+        maxImageSizeMB: positive(value.mediaLimits?.vip?.maxImageSizeMB, defaults.mediaLimits.vip.maxImageSizeMB),
+        maxVideoSizeMB: positive(value.mediaLimits?.vip?.maxVideoSizeMB, defaults.mediaLimits.vip.maxVideoSizeMB),
+      },
+    },
+    about: String(value.about ?? defaults.about),
+    contact: String(value.contact ?? defaults.contact),
     withdrawal: {
-      // The CEO policy fixes withdrawals at a 10% service charge.
-      // Do not allow manager/API settings to silently change the financial rule.
-      serviceChargeRate: 0.10,
-      serviceChargeLabel: "10% withdrawal service charge",
+      serviceChargeRate: Number(withdrawal.serviceChargeRate) >= 0 && Number(withdrawal.serviceChargeRate) <= 1
+        ? Number(withdrawal.serviceChargeRate) : defaults.withdrawal.serviceChargeRate,
+      serviceChargeLabel: String(withdrawal.serviceChargeLabel ?? defaults.withdrawal.serviceChargeLabel),
     },
     pricing: {
       originalTierPrices: {
@@ -218,11 +246,15 @@ function normalizeSettings(value: Partial<AqePlatformSettings> = {}): AqePlatfor
         premium: positive(originalTierPrices.premium, defaults.pricing.originalTierPrices.premium),
         vip: positive(originalTierPrices.vip, defaults.pricing.originalTierPrices.vip),
       },
-      currentTierPrices: normalizedCurrentPrices,
+      currentTierPrices: {
+        basic: positive(currentTierPrices.basic, normalizedTierPrices.basic),
+        premium: positive(currentTierPrices.premium, normalizedTierPrices.premium),
+        vip: positive(currentTierPrices.vip, normalizedTierPrices.vip),
+      },
       promotionalLabels: {
-        basic: String(promotionalLabels.basic || defaults.pricing.promotionalLabels.basic),
-        premium: String(promotionalLabels.premium || defaults.pricing.promotionalLabels.premium),
-        vip: String(promotionalLabels.vip || defaults.pricing.promotionalLabels.vip),
+        basic: String(promotionalLabels.basic ?? defaults.pricing.promotionalLabels.basic),
+        premium: String(promotionalLabels.premium ?? defaults.pricing.promotionalLabels.premium),
+        vip: String(promotionalLabels.vip ?? defaults.pricing.promotionalLabels.vip),
       },
       welcomeBonus: positive(pricing.welcomeBonus, defaults.pricing.welcomeBonus),
       deduction: {
@@ -233,35 +265,10 @@ function normalizeSettings(value: Partial<AqePlatformSettings> = {}): AqePlatfor
       teamLeaderRenewalCommission: {
         basic: positive(teamLeaderRenewalCommission.basic, defaults.pricing.teamLeaderRenewalCommission.basic),
         premium: positive(teamLeaderRenewalCommission.premium, defaults.pricing.teamLeaderRenewalCommission.premium),
-        ...(teamLeaderRenewalCommission.vip !== undefined
-          ? { vip: positive(teamLeaderRenewalCommission.vip, 0) }
-          : {}),
       },
       vipSalary: positive(pricing.vipSalary, defaults.pricing.vipSalary),
-      vipSalaryDay: Math.min(31, Math.max(1, Math.round(positive(pricing.vipSalaryDay, defaults.pricing.vipSalaryDay)))),
-      withdrawalBefore20th: Boolean(
-        pricing.withdrawalBefore20th ?? defaults.pricing.withdrawalBefore20th,
-      ),
-    },
-    mediaLimits: {
-      basic: {
-        imagesPerMonth: Math.max(0, Math.round(positive(value.mediaLimits?.basic?.imagesPerMonth, defaults.mediaLimits.basic.imagesPerMonth))),
-        videosPerMonth: Math.max(0, Math.round(positive(value.mediaLimits?.basic?.videosPerMonth, defaults.mediaLimits.basic.videosPerMonth))),
-        maxImageSizeMB: positive(value.mediaLimits?.basic?.maxImageSizeMB, defaults.mediaLimits.basic.maxImageSizeMB),
-        maxVideoSizeMB: positive(value.mediaLimits?.basic?.maxVideoSizeMB, defaults.mediaLimits.basic.maxVideoSizeMB),
-      },
-      premium: {
-        imagesPerMonth: Math.max(0, Math.round(positive(value.mediaLimits?.premium?.imagesPerMonth, defaults.mediaLimits.premium.imagesPerMonth))),
-        videosPerMonth: Math.max(0, Math.round(positive(value.mediaLimits?.premium?.videosPerMonth, defaults.mediaLimits.premium.videosPerMonth))),
-        maxImageSizeMB: positive(value.mediaLimits?.premium?.maxImageSizeMB, defaults.mediaLimits.premium.maxImageSizeMB),
-        maxVideoSizeMB: positive(value.mediaLimits?.premium?.maxVideoSizeMB, defaults.mediaLimits.premium.maxVideoSizeMB),
-      },
-      vip: {
-        imagesPerMonth: Math.max(0, Math.round(positive(value.mediaLimits?.vip?.imagesPerMonth, defaults.mediaLimits.vip.imagesPerMonth))),
-        videosPerMonth: Math.max(0, Math.round(positive(value.mediaLimits?.vip?.videosPerMonth, defaults.mediaLimits.vip.videosPerMonth))),
-        maxImageSizeMB: positive(value.mediaLimits?.vip?.maxImageSizeMB, defaults.mediaLimits.vip.maxImageSizeMB),
-        maxVideoSizeMB: positive(value.mediaLimits?.vip?.maxVideoSizeMB, defaults.mediaLimits.vip.maxVideoSizeMB),
-      },
+      vipSalaryDay: Math.max(1, Math.min(31, Math.round(positive(pricing.vipSalaryDay, defaults.pricing.vipSalaryDay)))),
+      withdrawalBefore20th: Boolean(pricing.withdrawalBefore20th ?? defaults.pricing.withdrawalBefore20th),
     },
     commercial: {
       profileBoostPrices: {
@@ -310,6 +317,7 @@ function normalizeSettings(value: Partial<AqePlatformSettings> = {}): AqePlatfor
     },
     customerContent: {
       home: { ...defaults.customerContent.home, ...(value.customerContent?.home ?? {}) },
+      explore: { ...defaults.customerContent.explore, ...(value.customerContent?.explore ?? {}) },
       rewards: { ...defaults.customerContent.rewards, ...(value.customerContent?.rewards ?? {}) },
       campaign: { ...defaults.customerContent.campaign, ...(value.customerContent?.campaign ?? {}) },
       raffle: { ...defaults.customerContent.raffle, ...(value.customerContent?.raffle ?? {}) },

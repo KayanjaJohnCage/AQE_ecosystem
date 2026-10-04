@@ -132,27 +132,16 @@ export async function GET(request: Request) {
     const earnings = totalEarnings;
 
     if (session.role === "manager" || session.role === "admin") {
-      const [
-        users,
-        vip,
-        media,
-        transactions,
-        bookings,
-        messages,
-        products,
-        support,
-        withdrawals,
-      ] = await Promise.all([
-        countRows(client, "profiles"),
-        countRows(client, "profiles", "tier", "vip"),
-        countRows(client, "profile_media"),
-        countRows(client, "payment_orders"),
-        countRows(client, "bookings"),
-        countRows(client, "direct_messages"),
-        countRows(client, "marketplace_products"),
-        countRows(client, "support_ticket", "status", "OPEN"),
-        countRows(client, "vip_withdrawal_requests", "status", "PENDING"),
-      ]);
+      const countsResult = await client.rpc("aqe_manager_dashboard_counts");
+      if (countsResult.error) {
+        console.error("[AQE dashboard] manager counts RPC failed", countsResult.error);
+        return NextResponse.json(
+          { ok: false, reason: "Manager dashboard counts are temporarily unavailable." },
+          { status: 503 },
+        );
+      }
+      const counts = (countsResult.data ?? {}) as Record<string, unknown>;
+      const transactionCount = await countRows(client, "transaction_receipts");
 
       return NextResponse.json({
         ok: true,
@@ -169,15 +158,15 @@ export async function GET(request: Request) {
           currency: cashWallet.data?.currency ?? "UGX",
         },
         manager: {
-          users,
-          vip,
-          media,
-          transactions,
-          bookings,
-          messages,
-          products,
-          support,
-          withdrawals,
+          users: Number(counts.users ?? 0),
+          vip: Number(counts.vip ?? 0),
+          media: Number(counts.media ?? 0),
+          transactions: transactionCount,
+          bookings: Number(counts.bookings ?? 0),
+          messages: Number(counts.messages ?? 0),
+          products: Number(counts.products ?? 0),
+          support: Number(counts.support ?? 0),
+          withdrawals: Number(counts.withdrawals ?? 0),
         },
       });
     }

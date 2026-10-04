@@ -27,14 +27,19 @@ type ManagerProfile = {
   tag: string;
   status: string;
   tier?: string;
+  role?: string;
 };
 
 type ManagerRow = { id?: string; title: string; meta: string; value: string };
 type ReceiverDetails = {
+  id?: string;
   receiverName: string;
   receiverPhone: string;
   receiverCard: string;
+  network?: string;
   instructions: string;
+  status?: "available" | "busy" | "inactive";
+  updatedAt?: string;
 };
 
 type TroubleshootRequest = { id: string; user_id: string; requested_change: string; details: string; qc_charge: number; status: string; created_at: string };
@@ -52,6 +57,7 @@ type PlatformSettings = {
   walletCurrency: string;
   qcExchangeRate: number;
   referralRates: { direct: number; indirect: number };
+  referralRatesByTier: { basic: { direct: number; indirect: number }; premium: { direct: number; indirect: number }; vip: { direct: number; indirect: number } };
   about: string;
   contact: string;
   commercial: {
@@ -77,6 +83,7 @@ type PlatformSettings = {
   };
   customerContent: {
     home: Record<string, unknown>;
+    explore: Record<string, unknown>;
     rewards: Record<string, unknown>;
     campaign: Record<string, unknown>;
     raffle: Record<string, unknown>;
@@ -150,23 +157,31 @@ export default function ManagerPage() {
     support: 0,
     withdrawals: 0,
   });
+  const [managerAuthorized, setManagerAuthorized] = useState(false);
+  const [managerAccessChecking, setManagerAccessChecking] = useState(true);
   const [active, setActive] = useState("Dashboard");
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [managerLabel, setManagerLabel] = useState("Administrator");
   const [profiles, setProfiles] = useState<ManagerProfile[]>([]);
   const [liveRows, setLiveRows] = useState<Record<string, ManagerRow[]>>({});
   const [profileQuery, setProfileQuery] = useState("");
+  const [transactionUserFilter, setTransactionUserFilter] = useState("");
+  const [paymentQueueOnly, setPaymentQueueOnly] = useState(false);
   const [reviewMessage, setReviewMessage] = useState("");
   const [managerNumbers, setManagerNumbers] = useState<ManagerPaymentNumber[]>([]);
   const [troubleshootRequests, setTroubleshootRequests] = useState<TroubleshootRequest[]>([]);
-  const [urgentAlerts, setUrgentAlerts] = useState<string[]>([]);
+  const [urgentAlerts, setUrgentAlerts] = useState<Array<{text:string;target:string}>>([]);
   const [recentActivity, setRecentActivity] = useState<ManagerRow[]>([]);
+  const [selectedCustomer, setSelectedCustomer] = useState<string | null>(null);
   const [browserAlertsEnabled, setBrowserAlertsEnabled] = useState(() => {
     try {
-      return typeof Notification !== "undefined" && Notification.permission === "granted";
+      return typeof Notification !== "undefined" && Notification.permission === "granted" &&
+        localStorage.getItem("aqe-manager-browser-alerts") === "1";
     } catch {
       return false;
     }
   });
+  const [receivers, setReceivers] = useState<ReceiverDetails[]>([]);
   const [receiver, setReceiver] = useState<ReceiverDetails>({
     receiverName: "",
     receiverPhone: "",
@@ -178,7 +193,8 @@ export default function ManagerPage() {
     renewalPrices: { basic: 2500, premium: 5000, vip: 8500 },
     walletCurrency: "UGX",
     qcExchangeRate: 1000,
-    referralRates: { direct: 0.1, indirect: 0.05 },
+    referralRates: { direct: 0.1, indirect: 0.12 },
+    referralRatesByTier: { basic: { direct: 0.10, indirect: 0 }, premium: { direct: 0.10, indirect: 0 }, vip: { direct: 0.12, indirect: 0.12 } },
     about: "",
     contact: "",
     commercial: {
@@ -203,7 +219,8 @@ export default function ManagerPage() {
       withdrawalBefore20th: false,
     },
     customerContent: {
-      home: {},
+      home: { filters: ["All","Available","VIP","Premium","Kampala","Entebbe","Female","Male","Lesbian"] },
+      explore: { filters: ["All","Photography","Video","Art","Styling","Audio"] },
       rewards: {},
       campaign: {},
       raffle: {},
@@ -211,6 +228,29 @@ export default function ManagerPage() {
       vipContent: {},
     },
   });
+
+  useEffect(() => {
+    let cancelled = false;
+    const checkManagerAccess = async () => {
+      try {
+        const { session, user } = readStoredSession();
+        const headers: HeadersInit = {};
+        if (session.access_token) headers.authorization = "Bearer " + session.access_token;
+        if (user.id) headers["x-user-id"] = user.id;
+        const response = await fetch("/api/manager/access", { headers, cache: "no-store" });
+        const payload = await response.json().catch(() => ({}));
+        if (cancelled) return;
+        if (!response.ok || !payload.ok) { window.location.replace("/customer"); return; }
+        setManagerAuthorized(true);
+      } catch (_) {
+        if (!cancelled) window.location.replace("/customer");
+      } finally {
+        if (!cancelled) setManagerAccessChecking(false);
+      }
+    };
+    void checkManagerAccess();
+    return () => { cancelled = true; };
+  }, []);
 
   useEffect(() => {
     const { session, user } = readStoredSession();
@@ -467,13 +507,13 @@ export default function ManagerPage() {
             setRecentActivity(nextRows["Transactions & QC"].slice(0, 8));
           }
 
-          const alerts: string[] = [];
+          const alerts: Array<{text:string;target:string}> = [];
           const pendingPayments = (payments.payments || []).filter((p: { status?: string }) => ["initiated","pending"].includes(String(p.status)));
-          if (pendingPayments.length) alerts.push(`${pendingPayments.length} payment request${pendingPayments.length === 1 ? "" : "s"} awaiting action.`);
+          if (pendingPayments.length) alerts.push({text:`${pendingPayments.length} payment request${pendingPayments.length === 1 ? "" : "s"} awaiting action.`,target:"Payments & Approvals"});
           const pendingWithdrawals = (withdrawals.withdrawals || []).filter((w: { status?: string }) => ["PENDING","APPROVED"].includes(String(w.status)));
-          if (pendingWithdrawals.length) alerts.push(`${pendingWithdrawals.length} withdrawal request${pendingWithdrawals.length === 1 ? "" : "s"} need attention.`);
+          if (pendingWithdrawals.length) alerts.push({text:`${pendingWithdrawals.length} withdrawal request${pendingWithdrawals.length === 1 ? "" : "s"} need attention.`,target:"Withdrawals"});
           const openSupport = (support.tickets || []).filter((t: { status?: string }) => String(t.status).toUpperCase() === "OPEN");
-          if (openSupport.length) alerts.push(`${openSupport.length} open customer support ticket${openSupport.length === 1 ? "" : "s"} need attention.`);
+          if (openSupport.length) alerts.push({text:`${openSupport.length} open customer support ticket${openSupport.length === 1 ? "" : "s"} need attention.`,target:"Customer Support"});
           setUrgentAlerts(alerts);
           setLiveRows(nextRows);
         },
@@ -500,6 +540,7 @@ export default function ManagerPage() {
       .then(async (response) => {
         if (!response.ok) return;
         const payload = await response.json();
+        if (Array.isArray(payload.receivers)) setReceivers(payload.receivers);
         if (payload.receiver) setReceiver(payload.receiver);
       })
       .catch(() => undefined);
@@ -535,10 +576,10 @@ export default function ManagerPage() {
         const pendingPayments = (payments.payments || []).filter((p: { status?: string }) => ["initiated", "pending"].includes(String(p.status))).length;
         const pendingWithdrawals = (withdrawals.withdrawals || []).filter((w: { status?: string }) => ["PENDING", "APPROVED"].includes(String(w.status))).length;
         const openSupport = (support.tickets || []).filter((t: { status?: string }) => String(t.status).toUpperCase() === "OPEN").length;
-        const alerts: string[] = [];
-        if (pendingPayments) alerts.push(`${pendingPayments} payment request${pendingPayments === 1 ? "" : "s"} awaiting action.`);
-        if (pendingWithdrawals) alerts.push(`${pendingWithdrawals} withdrawal request${pendingWithdrawals === 1 ? "" : "s"} need attention.`);
-        if (openSupport) alerts.push(`${openSupport} open customer support ticket${openSupport === 1 ? "" : "s"} need attention.`);
+        const alerts: Array<{text:string;target:string}> = [];
+        if (pendingPayments) alerts.push({text:`${pendingPayments} payment request${pendingPayments === 1 ? "" : "s"} awaiting action.`,target:"Payments & Approvals"});
+        if (pendingWithdrawals) alerts.push({text:`${pendingWithdrawals} withdrawal request${pendingWithdrawals === 1 ? "" : "s"} need attention.`,target:"Withdrawals"});
+        if (openSupport) alerts.push({text:`${openSupport} open customer support ticket${openSupport === 1 ? "" : "s"} need attention.`,target:"Customer Support"});
         setUrgentAlerts(alerts);
 
         if (lastPending >= 0 && pendingPayments > lastPending && browserAlertsEnabled && "Notification" in window && Notification.permission === "granted") {
@@ -598,11 +639,38 @@ export default function ManagerPage() {
 
   const managerCreate = async () => {
     const resource = managerResourceForActive(active);
+    try {
+      if (active === "Announcements") {
+        const title = window.prompt("Announcement title") || "";
+        const message = window.prompt("Announcement message") || "";
+        if (!title || !message) return;
+        const response = await fetch("/api/announcements", { method: "POST", headers: managerHeaders(), body: JSON.stringify({ title, message, kind: window.prompt("Type", "general") || "general", priority: window.prompt("Priority", "normal") || "normal", published: true }) });
+        const body = await response.json().catch(() => ({}));
+        if (!response.ok || !body.ok) throw new Error(body.reason || "Announcement publish failed.");
+        setReviewMessage("Announcement published and is now visible to customers.");
+        return;
+      }
+      if (active === "Tasks & Rewards") {
+        const title = window.prompt("VIP task title") || "";
+        const description = window.prompt("Task description") || "";
+        if (!title) return;
+        const taskType = window.prompt("Task type", "general") || "general";
+        const rewardQc = Number(window.prompt("QC reward", "0") || 0);
+        const rewardCash = Number(window.prompt("Cash reward (UGX)", "0") || 0);
+        const startsAt = window.prompt("Start date/time (ISO, optional)", "") || null;
+        const endsAt = window.prompt("End date/time (ISO, optional)", "") || null;
+        const sortOrder = Number(window.prompt("Display order", "0") || 0);
+        const active = !/^no|false|0$/i.test(window.prompt("Publish active? yes/no", "yes") || "yes");
+        const response = await fetch("/api/vip/tasks", { method: "POST", headers: managerHeaders(), body: JSON.stringify({ managerAction: "create", title, description, taskType, rewardQc, rewardCash, startsAt, endsAt, sortOrder, active }) });
+        const body = await response.json().catch(() => ({}));
+        if (!response.ok || !body.ok) throw new Error(body.reason || "VIP task creation failed.");
+        setReviewMessage("VIP task published for verified VIP members.");
+        return;
+      }
     if (!resource || (!["notifications","bookings","direct_messages","marketplace_products","campaigns","aqe_prizes","support_ticket","profiles"].includes(resource))) {
       setReviewMessage("Create-new is not available for this financial/audit queue. Use its dedicated workflow.");
       return;
     }
-    try {
       if (resource === "profiles") {
         const email = window.prompt("Customer email") || "";
         const password = window.prompt("Temporary password (8+ characters)") || "";
@@ -661,6 +729,9 @@ export default function ManagerPage() {
   };
 
   const managerDelete = async (row: ManagerRow) => {
+    if (active === "Users & Profiles" && ["manager","admin"].includes(String((row as ManagerRow & { role?: string }).role || "").toLowerCase())) {
+      setReviewMessage("Manager/admin accounts cannot be deleted."); return;
+    }
     const resource = managerResourceForActive(active);
     if (!resource || !row.id) return;
     if (resource === "profile_media") {
@@ -673,8 +744,8 @@ export default function ManagerPage() {
       } catch (error) { setReviewMessage(error instanceof Error ? error.message : "Media deletion failed."); }
       return;
     }
-    if (resource === "transaction_receipts" || resource === "payment_orders" || resource === "referral_earnings") {
-      setReviewMessage("Financial records are immutable and cannot be deleted.");
+    if (resource === "referral_earnings") {
+      setReviewMessage("Referral earnings are protected financial records and cannot be deleted from Manager Control.");
       return;
     }
     if (!window.confirm(`Delete this ${active} record? This action cannot be undone.`)) return;
@@ -686,6 +757,9 @@ export default function ManagerPage() {
 
   const managerBlock = async (row: ManagerRow) => {
     if (!row.id || active !== "Users & Profiles") return;
+    if (String((row as ManagerRow & { role?: string }).role || "").toLowerCase() === "manager" || String((row as ManagerRow & { role?: string }).role || "").toLowerCase() === "admin") {
+      setReviewMessage("Manager/admin accounts cannot be blocked."); return;
+    }
     const currentlyBlocked = /blocked/i.test(row.value);
     try {
       await controlRequest(currentlyBlocked ? "unblock" : "block", "profiles", { userId: row.id });
@@ -695,8 +769,8 @@ export default function ManagerPage() {
 
   const managerClear = async () => {
     const resource = managerResourceForActive(active);
-    if (!resource || ["transaction_receipts","payment_orders","referral_earnings","cash_wallet","cash_wallet_ledger","qc_ledger","creator_earnings","audit_log"].includes(resource)) {
-      setReviewMessage("Clear-all is disabled for financial and audit data. Those records are retained for traceability.");
+    if (!resource || ["referral_earnings","cash_wallet","cash_wallet_ledger","qc_ledger","creator_earnings","audit_log"].includes(resource)) {
+      setReviewMessage("Clear-all is disabled for live financial ledgers and audit data. Transaction history/receipts can be cleared separately.");
       return;
     }
     if (!window.confirm(`Clear ALL records in ${active}? This cannot be undone.`)) return;
@@ -727,8 +801,12 @@ export default function ManagerPage() {
           "Payments & Approvals": "/api/payments/manager-direct",
           "Profile Media": "/api/media/manager",
           "Transactions & QC": "/api/receipts",
+  "VIP Salary": "/api/vip/salary?manager=1",
         };
-        const endpoint = endpoints[active];
+        let endpoint = endpoints[active];
+        if (active === "Transactions & QC" && transactionUserFilter.trim()) {
+          endpoint += "?userId=" + encodeURIComponent(transactionUserFilter.trim());
+        }
         if (!endpoint) return;
         const response = await fetch(endpoint, { headers, cache: "no-store" });
         if (!response.ok) return;
@@ -742,6 +820,7 @@ export default function ManagerPage() {
         if (active === "Payments & Approvals" && Array.isArray(payload.payments)) setLiveRows(x => ({...x,"Payments & Approvals":payload.payments.map((p:any)=>({id:p.id,title:`${p.currency||"UGX"} ${Number(p.amount||0).toLocaleString()} • ${p.senderName||p.user_id||"member"}`,meta:`${p.metadata?.paymentKind==="wallet_deposit"?"WALLET":"UPGRADE"} • ${p.created_at?new Date(p.created_at).toLocaleString():"Time unavailable"} • From ${p.senderPhone||"—"} → ${p.receiverName||"—"}`,value:`${p.displayStatus||p.status||"pending"} • ${p.locked?"LOCKED":"ACTION REQUIRED"}`}))}));
         if (active === "Profile Media" && Array.isArray(payload.media)) setLiveRows(x => ({...x,"Profile Media":payload.media.map((m:any)=>({id:m.id,title:`${String(m.type||"image").toUpperCase()} • ${m.isProfilePhoto?"PROFILE PHOTO":"PROFILE CONTENT"}`,meta:`Owner: ${m.ownerUserId||"member"}`,value:m.moderationStatus||"pending"}))}));
         if (active === "Transactions & QC" && Array.isArray(payload.receipts)) setLiveRows(x => ({...x,"Transactions & QC":payload.receipts.map((q:any)=>({id:q.id,title:q.description||q.transaction_type||"Transaction",meta:q.receipt_number||"Receipt",value:`${q.status||"COMPLETED"} • ${q.currency||"UGX"} ${Number(q.amount||0).toLocaleString()}`}))}));
+        if (active === "VIP Salary" && Array.isArray(payload.requests)) setLiveRows(x => ({...x,"VIP Salary":payload.requests.map((q:any)=>({id:q.id,title:`UGX ${Number(q.amount||0).toLocaleString()} • ${q.recipient_name||"VIP member"}`,meta:`${q.payment_method||"MOBILE_MONEY"} • ${q.recipient_account||"—"} • ${q.created_at?new Date(q.created_at).toLocaleString():"Time unavailable"}`,value:String(q.status||"PENDING")}))}));
       } catch (_) {}
     };
     refresh();
@@ -752,7 +831,7 @@ export default function ManagerPage() {
       if (timer) clearInterval(timer);
       window.removeEventListener("aqe-manager-live-event", liveEvent);
     };
-  }, [active]);
+  }, [active, transactionUserFilter]);
 
   /* Supabase Realtime wakes the manager immediately when a subscribed public table changes.
      The 3-second sync remains as a resilience fallback for missed websocket events. */
@@ -821,14 +900,48 @@ export default function ManagerPage() {
     title: profile.name,
     meta: `${profile.city} • ${profile.tag}`,
     value: `${profile.status} • ${(profile.tier || "basic").toUpperCase()}`,
+    role: profile.role,
   }));
-  const rows: ManagerRow[] =
+  const baseRows: ManagerRow[] =
     active === "Users & Profiles" && profileRows.length > 0
       ? profileRows
       : liveRows[active]?.length
         ? liveRows[active]
         : (tableSeeds[active] ?? []);
+  const rows: ManagerRow[] =
+    active === "Payments & Approvals" && paymentQueueOnly
+      ? baseRows.filter((row) => /pending|action required/i.test(row.value))
+      : baseRows;
   const paymentRows: ManagerRow[] = liveRows["Payments & Approvals"] ?? [];
+
+  async function viewCustomer(userId: string) {
+    try {
+      const response = await fetch("/api/manager/users?userId=" + encodeURIComponent(userId), { headers: managerHeaders(), cache: "no-store" });
+      const body = await response.json();
+      if (!response.ok || !body.ok) throw new Error(body.reason || "Customer details unavailable.");
+      const p = body.user?.profile || {};
+      const roles = (body.user?.roles || []).join(", ") || "customer";
+      window.alert([
+        "CUSTOMER ACCOUNT",
+        "Name: " + (p.display_name || "—"),
+        "Email: " + (body.user?.email || "—"),
+        "Phone: " + (p.phone || body.user?.phone || "—"),
+        "Country: " + (p.country || "—"),
+        "City/Region: " + (p.location || "—"),
+        "Area: " + (p.area || "—"),
+        "Category: " + (p.category || "—"),
+        "Tier: " + (p.tier || "—"),
+        "Verification: " + (p.verification_status || "—"),
+        "Account status: " + (p.account_status || "—"),
+        "Gender: " + (p.gender || "—"),
+        "Pronouns: " + (p.pronouns || "—"),
+        "Languages: " + (Array.isArray(p.languages) ? p.languages.join(", ") : "—"),
+        "Services: " + (Array.isArray(p.services) ? p.services.join(", ") : "—"),
+        "Role: " + roles,
+        "User ID: " + body.user.id,
+      ].join("\n"));
+    } catch (error) { setReviewMessage(error instanceof Error ? error.message : "Customer details unavailable."); }
+  }
 
   async function deleteCustomer(userId: string, name: string) {
     if (!userId) {
@@ -992,6 +1105,17 @@ export default function ManagerPage() {
     if (payload.ok) event.currentTarget.reset();
   }
 
+  async function reviewVipSalary(requestId: string, status: "APPROVED" | "REJECTED" | "PAID") {
+    const { session, user } = readStoredSession();
+    const headers: HeadersInit = { "Content-Type": "application/json" };
+    if (session.access_token) headers.authorization = "Bearer " + session.access_token;
+    if (user.id) headers["x-user-id"] = user.id;
+    const response = await fetch("/api/vip/salary", { method: "PATCH", headers, body: JSON.stringify({ requestId, status }) });
+    const payload = await response.json().catch(() => ({}));
+    setReviewMessage(payload.ok ? "VIP salary withdrawal " + status.toLowerCase() + "." : payload.reason || "VIP salary withdrawal review failed.");
+    if (payload.ok) window.dispatchEvent(new Event("aqe-manager-live-event"));
+  }
+
   async function updateTroubleshoot(requestId: string, status: string) {
     const response = await fetch("/api/support/troubleshoot", {
       method: "PATCH",
@@ -1024,21 +1148,41 @@ export default function ManagerPage() {
     event.preventDefault();
     const { session, user } = readStoredSession();
     const headers: HeadersInit = { "Content-Type": "application/json" };
-    if (session.access_token)
-      headers.authorization = `Bearer ${session.access_token}`;
+    if (session.access_token) headers.authorization = "Bearer " + session.access_token;
     if (user.id) headers["x-user-id"] = user.id;
+    const method = receiver.id ? "PATCH" : "POST";
     const response = await fetch("/api/payments/receiver", {
-      method: "PATCH",
+      method,
       headers,
       body: JSON.stringify(receiver),
     });
     const payload = await response.json().catch(() => ({}));
-    setReviewMessage(
-      payload.ok
-        ? "Mukuru receiver details saved."
-        : payload.reason || "Receiver details could not be saved.",
-    );
-    if (payload.receiver) setReceiver(payload.receiver);
+    setReviewMessage(payload.ok ? (receiver.id ? "Receiver details updated." : "Receiver details added.") : payload.reason || "Receiver details could not be saved.");
+    if (payload.ok) {
+      setReceiver({ receiverName:"", receiverPhone:"", receiverCard:"", network:"Mukuru", instructions:"", status:"available" });
+      const refreshed = await fetch("/api/payments/receiver", { cache:"no-store" });
+      const body = await refreshed.json().catch(() => ({}));
+      if (Array.isArray(body.receivers)) setReceivers(body.receivers);
+      if (body.receiver) setReceiver(body.receiver);
+    }
+  }
+
+  async function deleteReceiver(id: string) {
+    if (!window.confirm("Delete this payment receiver? Customers will no longer be able to select it.")) return;
+    const response = await fetch("/api/payments/receiver", {
+      method:"DELETE", headers:managerHeaders(), body:JSON.stringify({ id }),
+    });
+    const payload=await response.json().catch(()=>({}));
+    setReviewMessage(payload.ok ? "Receiver deleted." : payload.reason || "Receiver deletion failed.");
+    if(payload.ok) {
+      setReceivers((items)=>items.filter((item)=>item.id!==id));
+      if(receiver.id===id) setReceiver({receiverName:"",receiverPhone:"",receiverCard:"",network:"Mukuru",instructions:"",status:"available"});
+    }
+  }
+
+  function editReceiver(item: ReceiverDetails) {
+    setReceiver({...item});
+    window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
   async function saveSettings(event: React.FormEvent<HTMLFormElement>) {
@@ -1062,9 +1206,15 @@ export default function ManagerPage() {
     if (payload.settings) setSettings(payload.settings);
   }
 
+  if (managerAccessChecking || !managerAuthorized) {
+    return <div className="manager-access-loading">Checking Manager authorization…</div>;
+  }
+
+  if (managerAccessChecking || !managerAuthorized) return <div className="manager-access-loading">Checking Manager authorization…</div>;
+
   return (
     <div className="manager-shell">
-      <aside className="manager-shell-sidebar">
+      <aside className={`manager-shell-sidebar ${mobileMenuOpen ? "mobile-open" : ""}`}>
         <div className="manager-brand"><img src="/AQE-Nav&Icon.jpeg" alt="AQE" /><span>AQE ADMIN</span></div>
         {navGroups.map((group) => (
           <div key={group.title}>
@@ -1075,7 +1225,7 @@ export default function ManagerPage() {
                   className={active === item ? "active" : ""}
                   type="button"
                   key={item}
-                  onClick={() => setActive(item)}
+                  onClick={() => { setActive(item); setMobileMenuOpen(false); }}
                 >
                   <span className="manager-nav-icon">
                     {["▣", "♙", "▧", "✓", "◆", "◫", "✉", "▤", "♢"].at(
@@ -1089,9 +1239,13 @@ export default function ManagerPage() {
           </div>
         ))}
       </aside>
+      {mobileMenuOpen ? <button type="button" className="manager-mobile-backdrop" aria-label="Close Manager menu" onClick={() => setMobileMenuOpen(false)} /> : null}
 
       <main className="manager-shell-main">
         <header className="manager-shell-top">
+          <button type="button" className="manager-mobile-menu" onClick={() => setMobileMenuOpen((open) => !open)} aria-label={mobileMenuOpen ? "Close Manager menu" : "Open Manager menu"} aria-expanded={mobileMenuOpen}>
+            {mobileMenuOpen ? "✕" : "☰"} <span>MENU</span>
+          </button>
           <div>
             <strong>AQE Ecosystem Manager</strong>
             <span>Live ecosystem oversight & operational control</span>
@@ -1104,7 +1258,7 @@ export default function ManagerPage() {
             <button type="button" onClick={enableManagerNotifications} title="Enable urgent browser alerts">
               {browserAlertsEnabled ? "🔔" : "🔕"}
             </button>
-            <button type="button">⌄</button>
+            <button type="button" onClick={() => setMobileMenuOpen(false)}>⌄</button>
           </div>
         </header>
 
@@ -1121,9 +1275,25 @@ export default function ManagerPage() {
           {urgentAlerts.length ? (
             <div className="manager-urgent-alert" role="alert">
               <strong>Urgent attention required</strong>
-              {urgentAlerts.map((alert) => <span key={alert}>{alert}</span>)}
+              {urgentAlerts.map((alert) => (
+                <button key={alert.text} type="button" onClick={() => { setActive(alert.target); setMobileMenuOpen(false); }} title={`Open ${alert.target}`}>
+                  {alert.text} <span>Open {alert.target} →</span>
+                </button>
+              ))}
             </div>
           ) : null}
+
+          <div className="manager-page-actions">
+            <button type="button" onClick={() => { setReviewMessage("Refreshing live data…"); window.dispatchEvent(new Event("aqe-manager-live-event")); setTimeout(() => setReviewMessage("Live data refreshed."), 500); }}>Refresh live data</button>
+            {active === "Dashboard" ? <><button type="button" onClick={() => setActive("Payments & Approvals")}>Payment queue</button><button type="button" onClick={() => setActive("Withdrawals")}>Withdrawal queue</button><button type="button" onClick={() => setActive("Customer Support")}>Support queue</button></> : null}
+            {active === "Users & Profiles" ? <button type="button" onClick={() => setProfileQuery("")}>Clear profile search</button> : null}
+            {active === "Profile Media" ? <button type="button" onClick={() => setActive("Profile Media")}>Open moderation queue</button> : null}
+            {active === "Bookings & Requests" ? <button type="button" onClick={() => setActive("Bookings & Requests")}>Open booking queue</button> : null}
+            {active === "Payments & Approvals" ? <button type="button" onClick={() => { setPaymentQueueOnly(true); setReviewMessage("Showing pending payment approvals."); window.dispatchEvent(new Event("aqe-manager-live-event")); }}>{paymentQueueOnly ? "Showing pending payments" : "Open pending payments"}</button> : null}
+            {active === "Withdrawals" ? <button type="button" onClick={() => setActive("Withdrawals")}>Open withdrawal queue</button> : null}
+            {active === "Customer Support" ? <button type="button" onClick={() => setReviewMessage("Troubleshoot requests are listed below.")}>Troubleshoot queue</button> : null}
+            {active === "Transactions & QC" ? <><button type="button" onClick={() => setActive("Transactions & QC")}>Refresh history</button><button type="button" className="manager-danger-button" onClick={managerClear}>Clear transaction history</button></> : null}
+          </div>
 
           {active === "Dashboard" ? (
             <>
@@ -1282,6 +1452,47 @@ export default function ManagerPage() {
                       })
                     }
                     required
+                  />
+                </label>
+                <div className="manager-rule-box">
+                  <strong>Authoritative referral earnings</strong>
+                  <p className="manager-subtitle">These tier rules are protected in the payment confirmation calculation: Basic direct 10%; Premium direct 10%; VIP direct 12% + indirect 12%. The manager UI must not silently change the percentages used by confirmed payments.</p>
+                  <div className="manager-two-column">
+                    {(["basic","premium","vip"] as const).map((tier) => (
+                      <div key={tier} className="manager-rule-item">
+                        <strong>{tier.toUpperCase()}</strong>
+                        <span>Direct {settings.referralRatesByTier[tier].direct * 100}%</span>
+                        <span>Indirect {settings.referralRatesByTier[tier].indirect * 100}%</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <h4>Home & Explore filter buttons</h4>
+                <p className="manager-subtitle">Edit the labels/order shown on the customer Home and Explore pages. These labels do not grant access or alter financial calculations.</p>
+                <label>
+                  Home filters (one label per line)
+                  <textarea rows={5}
+                    value={Array.isArray(settings.customerContent.home.filters) ? (settings.customerContent.home.filters as string[]).join("\n") : ""}
+                    onChange={(event) => setSettings({
+                      ...settings,
+                      customerContent: {
+                        ...settings.customerContent,
+                        home: { ...settings.customerContent.home, filters: event.target.value.split(/\n|,/).map((x)=>x.trim()).filter(Boolean).slice(0,20) }
+                      }
+                    })}
+                  />
+                </label>
+                <label>
+                  Explore filters (one label per line)
+                  <textarea rows={5}
+                    value={Array.isArray(settings.customerContent.explore.filters) ? (settings.customerContent.explore.filters as string[]).join("\n") : ""}
+                    onChange={(event) => setSettings({
+                      ...settings,
+                      customerContent: {
+                        ...settings.customerContent,
+                        explore: { ...settings.customerContent.explore, filters: event.target.value.split(/\n|,/).map((x)=>x.trim()).filter(Boolean).slice(0,20) }
+                      }
+                    })}
                   />
                 </label>
                 <label>
@@ -1570,74 +1781,47 @@ export default function ManagerPage() {
               {reviewMessage ? (
                 <div className="manager-review-message">{reviewMessage}</div>
               ) : null}
+              <div className="manager-rule-box">
+                <div className="manager-table-header"><h3>Manager Troubleshoot</h3><span className="status-pill">Support operations</span></div>
+                <p className="manager-subtitle">Open the live troubleshoot queue to take customer account-change requests, move them to In Progress, resolve them, and review the customer details before applying an authorized change.</p>
+                <div className="manager-page-actions"><button type="button" onClick={() => setActive("Customer Support")}>Open troubleshoot queue</button></div>
+              </div>
             </section>
           ) : active === "Payments & Approvals" ? (
             <>
               <section className="manager-card manager-detail">
                 <div className="manager-table-header">
-                  <h3>Mukuru receiver details</h3>
-                  <span className="status-pill">Manager controlled</span>
+                  <h3>Mukuru receivers</h3>
+                  <span className="status-pill">Add · Edit · Delete</span>
                 </div>
-                <p className="manager-subtitle">
-                  Customers see these details and use them on Mukuru to send
-                  payment. They never edit the receiver account.
-                </p>
+                <p className="manager-subtitle">Manager-controlled receiver accounts. Customers only see receivers marked Available. Adding a receiver does not change or complete a customer payment; payment remains pending until Manager confirmation.</p>
+                <div className="manager-list-table">
+                  {receivers.length ? receivers.map((item) => (
+                    <div key={item.id} className="manager-row">
+                      <div>
+                        <strong>{item.receiverName} · {item.network || "Mukuru"}</strong>
+                        <span>{item.receiverPhone} · {item.receiverCard} · {item.status || "available"}</span>
+                        <small>{item.instructions}</small>
+                      </div>
+                      <div className="manager-row-actions">
+                        <button type="button" onClick={() => editReceiver(item)}>Edit</button>
+                        <button type="button" onClick={() => deleteReceiver(item.id || "")}>Delete</button>
+                      </div>
+                    </div>
+                  )) : <div className="manager-review-message">No receiver records yet. Add the first receiver below.</div>}
+                </div>
                 <form className="manager-settings-form" onSubmit={saveReceiver}>
-                  <label>
-                    Receiver name
-                    <input
-                      value={receiver.receiverName}
-                      onChange={(event) =>
-                        setReceiver({
-                          ...receiver,
-                          receiverName: event.target.value,
-                        })
-                      }
-                      required
-                    />
-                  </label>
-                  <label>
-                    Receiver phone number
-                    <input
-                      value={receiver.receiverPhone}
-                      onChange={(event) =>
-                        setReceiver({
-                          ...receiver,
-                          receiverPhone: event.target.value,
-                        })
-                      }
-                      required
-                    />
-                  </label>
-                  <label>
-                    Receiver card / account
-                    <input
-                      value={receiver.receiverCard}
-                      onChange={(event) =>
-                        setReceiver({
-                          ...receiver,
-                          receiverCard: event.target.value,
-                        })
-                      }
-                      required
-                    />
-                  </label>
-                  <label>
-                    Customer instructions
-                    <textarea
-                      value={receiver.instructions}
-                      onChange={(event) =>
-                        setReceiver({
-                          ...receiver,
-                          instructions: event.target.value,
-                        })
-                      }
-                      rows={3}
-                    />
-                  </label>
-                  <button type="submit" className="manager-action-button">
-                    Save receiver details
-                  </button>
+                  <h4>{receiver.id ? "Edit receiver" : "Add receiver"}</h4>
+                  <label>Receiver name<input value={receiver.receiverName} onChange={(event)=>setReceiver({...receiver,receiverName:event.target.value})} required /></label>
+                  <label>Receiver phone number<input value={receiver.receiverPhone} onChange={(event)=>setReceiver({...receiver,receiverPhone:event.target.value})} required /></label>
+                  <label>Receiver card / account<input value={receiver.receiverCard} onChange={(event)=>setReceiver({...receiver,receiverCard:event.target.value})} required /></label>
+                  <label>Network / channel<input value={receiver.network || "Mukuru"} onChange={(event)=>setReceiver({...receiver,network:event.target.value})} /></label>
+                  <label>Status<select value={receiver.status || "available"} onChange={(event)=>setReceiver({...receiver,status:event.target.value as ReceiverDetails["status"]})}><option value="available">Available</option><option value="busy">Busy</option><option value="inactive">Inactive</option></select></label>
+                  <label>Customer instructions<textarea value={receiver.instructions} onChange={(event)=>setReceiver({...receiver,instructions:event.target.value})} rows={3} /></label>
+                  <div className="manager-row-actions">
+                    <button type="submit" className="manager-action-button">{receiver.id ? "Update receiver" : "Add receiver"}</button>
+                    {receiver.id ? <button type="button" onClick={()=>setReceiver({receiverName:"",receiverPhone:"",receiverCard:"",network:"Mukuru",instructions:"",status:"available"})}>Cancel edit</button> : null}
+                  </div>
                 </form>
               </section>
               <section className="manager-card manager-detail">
@@ -1695,6 +1879,7 @@ export default function ManagerPage() {
                             <button type="button" onClick={() => reviewPayment(row.id!, "rejected")}>
                               Reject & Lock
                             </button>
+                            <button type="button" className="manager-danger-button" onClick={() => managerDelete(row)}>Delete approval</button>
                           </>
                         ) : row.id ? <span className="manager-locked-label">Locked</span> : null}
                       </div>
@@ -1765,6 +1950,20 @@ export default function ManagerPage() {
                     placeholder="Filter profiles"
                     aria-label="Filter profiles"
                   />
+                ) : null}
+                {active === "Transactions & QC" ? (
+                  <div className="manager-inline-filter">
+                    <input
+                      className="manager-search"
+                      value={transactionUserFilter}
+                      onChange={(event) => setTransactionUserFilter(event.target.value)}
+                      placeholder="Customer user ID (optional)"
+                      aria-label="Filter transaction receipts by customer user ID"
+                    />
+                    {transactionUserFilter ? (
+                      <button type="button" onClick={() => setTransactionUserFilter("")}>All customers</button>
+                    ) : null}
+                  </div>
                 ) : null}
                 <button
                   type="button"
@@ -1863,6 +2062,15 @@ export default function ManagerPage() {
                           Mark Succeed — payout sent
                         </button>
                       ) : null}
+                      {active === "VIP Salary" && row.id && /pending/i.test(row.value) ? (
+                        <>
+                          <button type="button" onClick={() => reviewVipSalary(row.id!, "APPROVED")}>Approve</button>
+                          <button type="button" onClick={() => reviewVipSalary(row.id!, "REJECTED")}>Reject</button>
+                        </>
+                      ) : null}
+                      {active === "VIP Salary" && row.id && /approved/i.test(row.value) ? (
+                        <button type="button" onClick={() => reviewVipSalary(row.id!, "PAID")}>Mark Succeed — payout sent</button>
+                      ) : null}
                       {active === "Withdrawals" &&
                       row.id &&
                       /pending/i.test(row.value) ? (
@@ -1887,6 +2095,7 @@ export default function ManagerPage() {
                       ) : null}
                       {active === "Users & Profiles" && row.id ? (
                         <>
+                          <button type="button" onClick={() => viewCustomer(row.id!)}>View</button>
                           <button type="button" onClick={() => managerEdit(row)}>Update</button>
                           <button type="button" onClick={() => managerBlock(row)}>{/blocked/i.test(row.value) ? "Unblock" : "Block"}</button>
                           <button
@@ -1898,7 +2107,10 @@ export default function ManagerPage() {
                           </button>
                         </>
                       ) : null}
-                      {active !== "Users & Profiles" && row.id && !["Payments & Approvals","Transactions & QC","Withdrawals"].includes(active) ? (
+                      {active === "Payments & Approvals" && row.id ? (
+                         <button type="button" className="manager-danger-button" onClick={() => managerDelete(row)}>Delete approval</button>
+                       ) : null}
+                       {active !== "Users & Profiles" && row.id && !["Payments & Approvals","Withdrawals"].includes(active) ? (
                         <>
                           <button type="button" onClick={() => managerEdit(row)}>Update</button>
                           <button type="button" onClick={() => managerDelete(row)}>Delete</button>

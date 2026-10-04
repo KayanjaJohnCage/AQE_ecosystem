@@ -23,6 +23,8 @@ export default function CampaignManager() {
     usageLimit: "", quantity: "", status: "draft"
   });
   const [message, setMessage] = useState("");
+  const [campaignImage, setCampaignImage] = useState<File | null>(null);
+  const [giftImage, setGiftImage] = useState<File | null>(null);
 
   const headers = () => {
     const { session, user } = readStoredSession();
@@ -47,34 +49,35 @@ export default function CampaignManager() {
 
   async function createCampaign(event: React.FormEvent) {
     event.preventDefault();
-    const response = await fetch("/api/campaigns", {
-      method: "POST", headers: headers(),
-      body: JSON.stringify({ action: "campaign", name: form.name, description: form.description, status: form.status })
-    });
+    const requestPayload = new FormData();
+    requestPayload.set("action","campaign"); requestPayload.set("name",form.name); requestPayload.set("description",form.description); requestPayload.set("status",form.status);
+    if (campaignImage) requestPayload.append("image",campaignImage);
+    const auth = headers(); delete (auth as Record<string,string>)["Content-Type"];
+    const response = await fetch("/api/campaigns", { method: "POST", headers: auth, body: requestPayload });
     const payload = await response.json().catch(() => ({}));
     setMessage(payload.ok ? "Campaign created." : payload.reason || "Campaign creation failed.");
-    if (payload.ok) { setForm({ ...form, name: "", description: "" }); await load(); if (payload.campaign?.id) setCampaignId(payload.campaign.id); }
+    if (payload.ok) { setForm({ ...form, name: "", description: "" }); setCampaignImage(null); await load(); if (payload.campaign?.id) setCampaignId(payload.campaign.id); }
   }
 
   async function createReward(action: "code" | "package") {
     if (!campaignId) { setMessage("Create/select a campaign first."); return; }
+    const rewardPayload = action === "package" ? new FormData() : null;
+    if (rewardPayload) {
+      rewardPayload.set("action","package"); rewardPayload.set("campaignId",campaignId); rewardPayload.set("name",form.packageName);
+      rewardPayload.set("qcAmount",String(form.qcAmount)); rewardPayload.set("cashAmount",String(form.cashAmount)); rewardPayload.set("boostDays",String(form.boostDays));
+      rewardPayload.set("boostLabel",form.boostLabel); rewardPayload.set("quantity",form.quantity);
+      if (giftImage) rewardPayload.append("image",giftImage);
+    }
     const response = await fetch("/api/campaigns", {
-      method: "POST", headers: headers(),
-      body: JSON.stringify({
-        action, campaignId,
-        code: action === "code" ? form.code : undefined,
-        name: action === "package" ? form.packageName : undefined,
-        qcAmount: form.qcAmount,
-        cashAmount: form.cashAmount,
-        boostDays: form.boostDays,
-        boostLabel: form.boostLabel,
-        usageLimit: form.usageLimit,
-        quantity: form.quantity,
+      method: "POST", headers: action === "package" ? (() => { const h = headers(); delete (h as Record<string,string>)["Content-Type"]; return h; })() : headers(),
+      body: rewardPayload || JSON.stringify({
+        action, campaignId, code: form.code, qcAmount: form.qcAmount, cashAmount: form.cashAmount,
+        boostDays: form.boostDays, boostLabel: form.boostLabel, usageLimit: form.usageLimit, quantity: form.quantity,
       })
     });
     const payload = await response.json().catch(() => ({}));
     setMessage(payload.ok ? `${action === "code" ? "Code" : "Gift package"} created.` : payload.reason || "Reward creation failed.");
-    if (payload.ok) { setForm({ ...form, code: "", packageName: "" }); await load(); }
+    if (payload.ok) { setForm({ ...form, code: "", packageName: "" }); if(action === "package") setGiftImage(null); await load(); }
   }
 
   async function toggle(type: "code" | "package", id: string, active: boolean) {
@@ -94,6 +97,7 @@ export default function CampaignManager() {
       <h4>Create campaign</h4>
       <label>Campaign name<input value={form.name} onChange={e => setForm({...form,name:e.target.value})} required /></label>
       <label>Description<textarea rows={2} value={form.description} onChange={e => setForm({...form,description:e.target.value})} /></label>
+      <label>Campaign image<input type="file" accept="image/jpeg,image/png,image/webp" onChange={e => setCampaignImage(e.target.files?.[0] || null)} /><span className="manager-field-help">{campaignImage ? campaignImage.name : "Optional image uploaded from the Manager device."}</span></label>
       <label>Status<select value={form.status} onChange={e => setForm({...form,status:e.target.value})}><option value="draft">Draft</option><option value="active">Active</option><option value="paused">Paused</option></select></label>
       <button className="manager-action-button" type="submit">Create campaign</button>
     </form>
@@ -119,6 +123,7 @@ export default function CampaignManager() {
         <label>Cash amount (UGX)<input type="number" min="0" value={form.cashAmount} onChange={e => setForm({...form,cashAmount:Number(e.target.value)})} /></label>
         <label>Boost time (days)<input type="number" min="0" max="365" value={form.boostDays} onChange={e => setForm({...form,boostDays:Number(e.target.value)})} /></label>
         <label>Boost label<input value={form.boostLabel} onChange={e => setForm({...form,boostLabel:e.target.value})} placeholder="Appreciation Boost" /></label>
+        <label>Gift image<input type="file" accept="image/jpeg,image/png,image/webp" onChange={e => setGiftImage(e.target.files?.[0] || null)} /><span className="manager-field-help">{giftImage ? giftImage.name : "Optional image uploaded from the Manager device."}</span></label>
         <label>Package quantity<input type="number" min="1" value={form.quantity} onChange={e => setForm({...form,quantity:e.target.value})} placeholder="Unlimited" /></label>
         <button className="manager-action-button" type="submit">Add gift package</button>
       </form>

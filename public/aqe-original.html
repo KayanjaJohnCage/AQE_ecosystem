@@ -1244,7 +1244,7 @@ body{
 
       <div class="di" onclick="showScreen('screen-download')"><i class="fas fa-download cb"></i><span>Download</span></div>
 
-      <div class="di" onclick="showScreen('screen-manager')"><i class="fas fa-shield-alt cg"></i><span>Manager</span></div>
+      <div class="di" onclick="showScreen('screen-manager')"><i class="fas fa-headset cg"></i><span>Manager Support</span></div>
 
       <div class="di" onclick="showScreen('screen-settings')"><i class="fas fa-cog ca4"></i><span>Settings</span></div>
 
@@ -1542,22 +1542,39 @@ body{
 
 
 
-<!-- MANAGER -->
+<!-- MANAGER SUPPORT -->
 
 <div id="screen-manager" class="screen hidden">
-
   <div class="px4 py4">
-
     <div class="flex aic g3 mb4">
-
-      <button onclick="showScreen('screen-me')" style="background:none;border:none;color:var(--a1);font-size:18px;cursor:pointer;"><i class="fas fa-arrow-left"></i></button>
-
-      <h3 class="xl fw8">Manager Panel</h3>
-
+      <button onclick="showScreen('screen-me')" style="background:none;border:none;color:var(--a1);font-size:18px;cursor:pointer;" aria-label="Back to profile"><i class="fas fa-arrow-left"></i></button>
+      <div>
+        <h3 class="xl fw8">Manager Support</h3>
+        <div class="xs ca5 mt1">Send a message or account-help request directly to the AQE Manager.</div>
+      </div>
     </div>
-
+    <div class="bga8 r2xl p4 b1 ba7 mb4">
+      <div class="flex aic g2 mb2"><i class="fas fa-headset cg"></i><strong>Need help?</strong></div>
+      <p class="sm ca4" style="line-height:1.55">Use this panel for payment help, account problems, profile corrections, verification questions, withdrawals, referrals, or any other AQE support request. Your request is sent to the Manager Support queue; it does not open the Manager administration site.</p>
+    </div>
+    <form id="aqeManagerSupportForm" class="bga8 r2xl p4 b1 ba7 mb4">
+      <div class="fw7 mb3">Send message to Manager</div>
+      <label class="xs ca5">Category</label>
+      <select id="aqeManagerSupportCategory" class="inp" style="margin-top:6px;margin-bottom:12px">
+        <option value="OTHER">General support</option><option value="PAYMENT">Payment / wallet</option><option value="UPGRADE">Membership / upgrade</option><option value="WITHDRAWAL">Withdrawal</option><option value="PROFILE">Profile / verification</option><option value="REFERRAL">Referral earnings</option><option value="TECHNICAL">Technical problem</option>
+      </select>
+      <label class="xs ca5">Subject</label>
+      <input id="aqeManagerSupportSubject" class="inp" style="margin-top:6px;margin-bottom:12px" maxlength="120" placeholder="What do you need help with?">
+      <label class="xs ca5">Message</label>
+      <textarea id="aqeManagerSupportMessage" class="inp" style="margin-top:6px;min-height:130px;resize:vertical" maxlength="2000" placeholder="Describe your issue or request..."></textarea>
+      <div class="flex aic jb mt3" style="gap:10px;flex-wrap:wrap"><span id="aqeManagerSupportStatus" class="xs ca5"></span><button type="submit" class="btn bp" style="width:auto;padding:11px 18px"><i class="fas fa-paper-plane"></i> Send to Manager</button></div>
+    </form>
+    <div class="bga8 r2xl p4 b1 ba7">
+      <div class="fw7 mb2">Account troubleshooting</div>
+      <p class="xs ca5 mb3">If your account needs a controlled change or correction, submit a troubleshooting request. The Manager will review it and process it from the secure Manager console.</p>
+      <button type="button" class="btn bs2" style="width:auto;padding:10px 16px" onclick="aqeOpenManagerTroubleshoot()">Request account troubleshooting</button>
+    </div>
   </div>
-
 </div>
 
 
@@ -4166,13 +4183,10 @@ function closeInvite() {
 
 
 
-function copyInvite() {
-
-  if (!state.currentUser || (state.currentUser.tier || 'basic') !== 'vip') { if(typeof pxOpenUpgrade==='function') pxOpenUpgrade(); return; }
 
   const code = state.currentUser.referralCode;
 
-  navigator.clipboard.writeText('Join AQE with my code: ' + code + ' at https://aqe.ug/join?ref=' + code);
+  navigator.clipboard.writeText('Join AfriQueer Escorts Ecosystem with my referral code: ' + code + ' https://afiqueerescortsecosystem.com/customer?ref=' + code);
 
   showToast('Referral link copied!');
 
@@ -4190,9 +4204,9 @@ function copyRef() {
 
 function shareTo(platform) {
 
-  const url = 'https://aqe.ug/join?ref=' + state.currentUser.referralCode;
+  const url = 'https://afiqueerescortsecosystem.com/customer?ref=' + state.currentUser.referralCode;
 
-  const text = 'Join AQE — Verified Independent Marketplace. Use my code: ' + state.currentUser.referralCode;
+  const text = 'Join AfriQueer Escorts Ecosystem — use my referral code: ' + state.currentUser.referralCode;
 
   if (platform === 'whatsapp') window.open('https://wa.me/?text=' + encodeURIComponent(text + ' ' + url));
 
@@ -6807,7 +6821,7 @@ window.addEventListener('DOMContentLoaded', init);
 
   const PLANS={basic:{name:'Basic',price:65000,wallet:5000,qc:25},premium:{name:'Premium',price:120000,wallet:15000,qc:50},vip:{name:'VIP',price:500000,wallet:25000,qc:150}};
 
-  const VIP_ONLY=['screen-team','screen-tasks','screen-rewards','screen-raffle','screen-vault','screen-store','screen-groups','screen-aqe-campaigns','screen-aqe-prizes','screen-aqe-referrals'];
+  const VIP_ONLY=['screen-tasks','screen-vault','screen-store','screen-groups'];
 
   function user(){return window.state&&state.currentUser}
 
@@ -7293,28 +7307,33 @@ window.addEventListener('DOMContentLoaded', init);
 
 
 
-  function renderReferrals(){
-
+  async function renderReferrals(){
     const u=current(), box=document.getElementById('aqeReferralSummary');if(!box)return;
-
     if(!u){box.innerHTML='<div class="aqe-update-card">Sign in to view referrals.</div>';return;}
-
-    const r=RULES[rawTier(u)]||null;
-
-    const count=Number(u.successfulReferrals)||0;
-
-    const salary=rawTier(u)==='vip'?10000+count*1000:0;
-
-    const earnings=(state.referrals?.[u.id]?.earnings)||0;
-
-    box.innerHTML=
-
-      '<div class="aqe-update-card"><div class="px-label">SUCCESSFUL REFERRALS</div><div class="aqe-update-price">'+count+'</div></div>'+
-
-      '<div class="aqe-update-card"><div class="px-label">REFERRAL EARNINGS</div><div class="aqe-update-price">'+money(earnings)+'</div></div>'+
-
-      '<div class="aqe-update-card"><div class="px-label">VIP CURRENT SALARY</div><div class="aqe-update-price">'+money(salary)+'</div><div class="xs ca5">Only applicable to VIP.</div></div>';
-
+    box.innerHTML='<div class="aqe-update-card">Loading your real referral network…</div>';
+    try{
+      const data=await api('/api/referrals');
+      if(!data||!data.ok)throw new Error(data&&data.reason||'Referral data unavailable.');
+      const direct=Array.isArray(data.team?.direct)?data.team.direct:[];
+      const indirect=Array.isArray(data.team?.indirect)?data.team.indirect:[];
+      const total=Number(data.totalEarnings||0);
+      const code=String(data.referralCode||'');
+      const link=String(data.referralLink||'');
+      const rows=direct.concat(indirect);
+      box.innerHTML=
+        '<div class="aqe-update-card"><div class="px-label">REFERRAL CODE</div><div class="aqe-update-price" style="font-size:20px">'+escapeHtml(code||'—')+'</div><button class="aqe-update-action" style="margin-top:8px" onclick="copyInvite()">Copy Referral Link</button></div>'+
+        '<div class="aqe-update-card"><div class="px-label">DIRECT REFERRALS</div><div class="aqe-update-price">'+direct.length+'</div></div>'+
+        '<div class="aqe-update-card"><div class="px-label">INDIRECT REFERRALS</div><div class="aqe-update-price">'+indirect.length+'</div></div>'+
+        '<div class="aqe-update-card"><div class="px-label">REFERRAL EARNINGS</div><div class="aqe-update-price">'+money(total)+'</div><div class="xs ca5">Credited after eligible membership payment confirmation.</div></div>'+
+        '<div class="aqe-update-card" style="grid-column:1/-1"><div class="px-label">YOUR REFERRAL LINK</div><div class="xs" style="word-break:break-all;margin-top:6px">'+escapeHtml(link||'—')+'</div><div style="margin-top:10px"><button class="aqe-update-action" onclick="copyInvite()">Copy</button></div></div>'+
+        '<div class="aqe-update-card" style="grid-column:1/-1"><div class="px-label">REFERRAL TEAM</div>'+
+        (rows.length?'<div style="display:grid;gap:8px;margin-top:8px">'+rows.map(function(row){
+          return '<div class="aqe-update-card" style="padding:10px"><div class="flex jb"><b>'+escapeHtml(row.name)+'</b><span class="px-pill '+(row.relationshipLevel===1?'ok':'warn')+'">'+(row.relationshipLevel===1?'DIRECT':'INDIRECT')+'</span></div><div class="xs ca5">'+escapeHtml(String(row.tier||'basic').toUpperCase())+' · '+escapeHtml(String(row.verificationStatus||'unverified'))+'</div><div class="xs ca5">Referral earnings: '+money(Number(row.earnings?.total||0))+'</div></div>';
+        }).join('')+'</div>':'<div class="xs ca5" style="margin-top:8px">No referrals yet. Share your link to invite members.</div>')+
+        '</div>';
+    }catch(e){
+      box.innerHTML='<div class="aqe-update-card">'+escapeHtml(e.message||'Referral data unavailable.')+'</div>';
+    }
   }
 
 
@@ -8945,7 +8964,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 
     var drawer=document.querySelector('#drawer nav');
 
-    if(drawer){drawer.querySelectorAll('button').forEach(function(b){var txt=b.textContent.trim().toLowerCase();var hide=client&&['messages','my profile','book now','comments'].includes(txt);b.style.display=hide?'none':'';});
+    if(drawer){drawer.querySelectorAll('button').forEach(function(b){var txt=b.textContent.trim().toLowerCase();var hide=false;b.style.display='';});
 
       var du=E('drawerClientUpgrade');if(client&&!du){du=document.createElement('button');du.id='drawerClientUpgrade';du.className='dl';du.innerHTML='<i class="fas fa-crown"></i> Upgrade to unlock';du.onclick=function(){if(typeof pxOpenUpgrade==='function')pxOpenUpgrade();if(typeof toggleDrawer==='function')toggleDrawer();};drawer.appendChild(du);}if(!client&&du)du.remove();
 
@@ -8955,9 +8974,9 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 
     var media=E('myMediaCard'),asset=E('assetRoomCTA');if(media)media.style.display=client?'none':'';if(asset)asset.style.display=client?'none':'';
 
-    ['screen-book','screen-messages','screen-comments','screen-me','screen-team','screen-tasks','screen-rewards','screen-raffle','screen-vault','screen-store','screen-groups','screen-premium','screen-vip','screen-queue'].forEach(function(id){var e=E(id);if(e&&client)e.classList.add('hidden');});
+    ['screen-book','screen-messages','screen-comments','screen-me','screen-team','screen-tasks','screen-rewards','screen-raffle','screen-vault','screen-store','screen-groups','screen-premium','screen-vip','screen-queue'].forEach(function(id){var e=E(id);if(e&&client)e.classList.remove('hidden');});
 
-    var me=E('screen-me');if(me&&client){me.classList.add('hidden');}
+    var me=E('screen-me');if(me&&client){me.classList.remove('hidden');}
 
   }
 
@@ -8983,7 +9002,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 
   }
 
-  var oldShowScreen14=window.showScreen;if(oldShowScreen14&&!oldShowScreen14.__guestGuard){window.showScreen=function(id){var u=currentUser();if(isClient(u)&&['screen-book','screen-messages','screen-comments','screen-me','screen-team','screen-tasks','screen-rewards','screen-raffle','screen-vault','screen-store','screen-groups','screen-premium','screen-vip','screen-queue'].indexOf(id)>-1){if(typeof pxOpenUpgrade==='function')pxOpenUpgrade();return;}return oldShowScreen14.apply(this,arguments);};window.showScreen.__guestGuard=true;}
+  var oldShowScreen14=window.showScreen;if(oldShowScreen14&&!oldShowScreen14.__guestGuard){window.showScreen=function(id){return oldShowScreen14.apply(this,arguments);};window.showScreen.__guestGuard=true;}
 
   function boot14(){patchRegistration();patchUpgrade();patchOpenProfile();clientAccountUI();}
 
@@ -9035,7 +9054,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 
   'use strict';
 
-  var CLIENT_SCREENS=['screen-book','screen-messages','screen-comments','screen-team','screen-tasks','screen-rewards','screen-raffle'];
+  var CLIENT_SCREENS=[];
 
   var MEMBER_SCREENS=['screen-premium','screen-vip','screen-queue','screen-vault','screen-store','screen-groups','screen-team','screen-tasks','screen-rewards','screen-raffle'];
 
@@ -9065,7 +9084,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 
       var id=b.dataset.screen;
 
-      b.style.display=((isClient()||isRestrictedMember())&&clientNav.indexOf(id)===-1)?'none':'';
+      b.style.display='';
 
     });
 
@@ -9083,7 +9102,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 
     var drawer=document.querySelector('#drawer nav');
 
-    if(drawer){drawer.querySelectorAll('button').forEach(function(b){var m=b.getAttribute('onclick')||'';var match=m.match(/showScreen\(['\"]([^'\"]+)/);var id=match?match[1]:'';b.style.display=((isClient()||isRestrictedMember())&&['screen-home','screen-explore','screen-shop','screen-me','screen-wallet','screen-settings'].indexOf(id)===-1)?'none':'';});}
+    if(drawer){drawer.querySelectorAll('button').forEach(function(b){b.style.display='';});}
 
     /* Restricted members must still have a fully usable public/account shell.
        Only membership-dependent destinations are gated. Keep the core bottom
@@ -9410,9 +9429,8 @@ var origWithdraw=window.openWithdraw;
 window.openWithdraw=function(){
 
  if(client()){
-
-   var m=document.getElementById('withdrawModal');if(m){m.classList.remove('hidden');m.style.display='flex';var b=document.getElementById('withdrawBalance');if(b)b.textContent=formatMoney((U().wallet&&U().wallet.UGX)||0,'UGX');}return;
-
+   if(typeof window.showScreen==='function')window.showScreen('screen-aqe-withdraw');
+   return;
  }
 
  if(typeof origWithdraw==='function')return origWithdraw.apply(this,arguments);
@@ -12863,5 +12881,687 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
   setInterval(syncRealCollections,10000);
 })();
 </script>
+<script id="aqe-final-system-navigation-media-filters">
+(function(){
+  "use strict";
+  function E(id){return document.getElementById(id)}
+  function sess(){try{return JSON.parse(localStorage.getItem("aqe_next_session")||"null")||null}catch(_){return null}}
+  function authHeaders(){var s=sess(),h={"Content-Type":"application/json"};if(s&&s.access_token)h.Authorization="Bearer "+s.access_token;return h}
+  function toastMsg(msg,type){if(typeof window.showToast==="function")window.showToast(msg,type||"success");else if(typeof window.toast==="function")window.toast(msg)}
+  function current(){return window.state&&state.currentUser?state.currentUser:null}
+  function profileFor(id){return (window.state&&Array.isArray(state.profiles)?state.profiles:[]).find(function(p){return String(p.id)===String(id)})}
+
+  /* One final navigation authority. It bypasses the accumulated legacy showScreen wrappers. */
+  window.aqeNavigate=function(id){
+    if(!id)return;
+    
+    var el=E(id);if(!el){toastMsg("That AQE page is not available yet.","error");return}
+    document.querySelectorAll(".screen").forEach(function(x){x.classList.add("hidden")});
+    el.classList.remove("hidden");
+    el.classList.add("fi");
+    window.scrollTo(0,0);
+    try{
+      if(id==="screen-home"&&typeof renderProfiles==="function")renderProfiles();
+      if(id==="screen-explore"&&typeof renderExplore==="function")renderExplore();
+      if(id==="screen-shop"&&typeof renderMarket==="function")renderMarket();
+      if(id==="screen-messages"&&typeof mxRenderInbox==="function")mxRenderInbox();
+      if(id==="screen-me"&&typeof renderMyProfileMedia==="function")renderMyProfileMedia();
+      if(id==="screen-bill"&&typeof renderBill==="function")renderBill();
+      if(id==="screen-notifications"&&typeof renderAqeNotificationPage==="function")renderAqeNotificationPage();
+      if(id==="screen-receipts"&&typeof renderAqeReceiptPage==="function")renderAqeReceiptPage();
+      if(id==="screen-aqe-payments"&&typeof renderPaymentHistory==="function")renderPaymentHistory();
+      if(id.indexOf("screen-aqe-")===0&&typeof pxRenderAll==="function")pxRenderAll();
+      if(id==="screen-manager"&&typeof managerSupport==="function")managerSupport();
+    }catch(_){}
+    document.dispatchEvent(new CustomEvent("aqe-screen-change",{detail:{id:id}}));
+    return el;
+  };
+
+  /* Intercept legacy inline showScreen() buttons before their old wrappers can cancel navigation. */
+  document.addEventListener("click",function(ev){
+    var target=ev.target&&ev.target.closest?ev.target.closest("[onclick]"):null;
+    if(!target)return;
+    var code=target.getAttribute("onclick")||"";
+    var match=code.match(/showScreen\s*\(\s*['"]([^'"]+)['"]\s*\)/);
+    if(!match)return;
+    var id=match[1];
+    ev.preventDefault();
+    ev.stopImmediatePropagation();
+    
+    window.aqeNavigate(id);
+    if(/toggleDrawer\s*\(/.test(code)&&typeof window.toggleDrawer==="function")try{window.toggleDrawer()}catch(_){}
+  },true);
+
+  /* Drawer and bottom-nav buttons that use data-screen are also routed through the same authority. */
+  document.addEventListener("click",function(ev){
+    var target=ev.target&&ev.target.closest?ev.target.closest("[data-screen]"):null;
+    if(!target)return;
+    var id=target.getAttribute("data-screen");if(!id)return;
+    ev.preventDefault();ev.stopImmediatePropagation();window.aqeNavigate(id);
+  },true);
+
+  /* Manager-editable discovery filters. */
+  var homeFilter="All",exploreFilter="All";
+  function filterMatch(p,label){
+    var q=String(label||"All").trim().toLowerCase();
+    if(!q||q==="all")return true;
+    if(q.indexOf("available")>=0)return String(p.availability||p.avail||"").toLowerCase().indexOf("available")>=0;
+    if(q.indexOf("vip")>=0)return String(p.tier||"").toLowerCase()==="vip";
+    if(q.indexOf("premium")>=0)return String(p.tier||"").toLowerCase()==="premium";
+    if(q.indexOf("basic")>=0)return String(p.tier||"").toLowerCase()==="basic";
+    if(q.indexOf("female")>=0||q.indexOf("woman")>=0)return String(p.gender||"").toLowerCase().indexOf("female")>=0;
+    if(q.indexOf("male")>=0||q.indexOf("man")>=0)return String(p.gender||"").toLowerCase().indexOf("male")>=0;
+    var hay=[p.location,p.city,p.area,p.country,p.category,p.headline].concat(p.services||[],p.contentCategories||[],p.languages||[]).join(" ").toLowerCase();
+    return hay.indexOf(q)>=0;
+  }
+  function applyFilter(screen,label){
+    var cards=document.querySelectorAll(screen==="home"?"#homeProfileGrid [data-aqe-profile-id]":"#exploreResults [data-aqe-profile-id]");
+    Array.prototype.forEach.call(cards,function(card){
+      var p=profileFor(card.getAttribute("data-aqe-profile-id"));
+      card.style.display=!p||filterMatch(p,label)?"":"none";
+    });
+  }
+  function bindFilterButtons(){
+    var home=E("screen-home"),explore=E("screen-explore");
+    if(home){
+      var buttons=home.querySelectorAll(".pill");
+      Array.prototype.forEach.call(buttons,function(btn){
+        btn.onclick=function(ev){
+          ev.preventDefault();ev.stopPropagation();
+          homeFilter=btn.textContent.trim()||"All";
+          buttons.forEach(function(x){x.classList.remove("on")});btn.classList.add("on");
+          applyFilter("home",homeFilter);
+        };
+      });
+    }
+    if(explore){
+      var buttons2=explore.querySelectorAll(".pill");
+      Array.prototype.forEach.call(buttons2,function(btn){
+        btn.onclick=function(ev){
+          ev.preventDefault();ev.stopPropagation();
+          exploreFilter=btn.textContent.trim()||"All";
+          buttons2.forEach(function(x){x.classList.remove("on")});btn.classList.add("on");
+          applyFilter("explore",exploreFilter);
+        };
+      });
+    }
+  }
+  function applySavedFilters(settings){
+    var cc=settings&&settings.customerContent||{};
+    var homeFilters=Array.isArray(cc.home&&cc.home.filters)?cc.home.filters:["All","Available","VIP","Premium","Kampala","Entebbe","Female","Male","Lesbian"];
+    var exploreFilters=Array.isArray(cc.explore&&cc.explore.filters)?cc.explore.filters:["All","Photography","Video","Art","Styling","Audio"];
+    var home=E("screen-home"),explore=E("screen-explore");
+    if(home){
+      var wrap=home.querySelector(".pill")&&home.querySelector(".pill").parentElement;
+      if(wrap){wrap.innerHTML=homeFilters.map(function(x){return '<button class="pill'+(String(x).toLowerCase()==="all"?' on':'')+'">'+String(x).replace(/[<>&"]/g,"")+"</button>"}).join("")}
+    }
+    if(explore){
+      var wrap2=explore.querySelector(".pill")&&explore.querySelector(".pill").parentElement;
+      if(wrap2){wrap2.innerHTML=exploreFilters.map(function(x){return '<button class="pill'+(String(x).toLowerCase()==="all"?' on':'')+'">'+String(x).replace(/[<>&"]/g,"")+"</button>"}).join("")}
+    }
+    bindFilterButtons();
+    applyFilter("home",homeFilter);
+    applyFilter("explore",exploreFilter);
+  }
+  async function loadCustomerFilters(){
+    try{
+      var r=await fetch("/api/settings",{cache:"no-store"}),p=await r.json();
+      if(r.ok&&p.settings)applySavedFilters(p.settings);
+    }catch(_){bindFilterButtons()}
+  }
+
+  /* Real customer media: server storage/database is authoritative; local data URLs are no longer treated as the upload result. */
+  function mediaUrl(item){return item&&item.url?String(item.url):""}
+  function renderServerMedia(media){
+    var p=typeof currentOwnProfile==="function"?currentOwnProfile():null;
+    if(!p)return;
+    p.media=media.map(function(m){return {
+      id:m.id,type:m.media_type||m.type,url:mediaUrl(m),name:m.name||m.storage_path||"AQE media",
+      profilePhoto:Boolean(m.is_profile_photo),profilePhotoId:m.is_profile_photo?m.id:null,
+      contentAccess:m.content_access||"public",moderationStatus:m.moderation_status||"pending"
+    }});
+    var grid=E("myProfileMediaGrid");if(grid){
+      grid.innerHTML=p.media.length?p.media.map(function(m){
+        var visual=m.type==="video"
+          ? '<video src="'+String(m.url).replace(/"/g,"&quot;")+'" controls playsinline preload="metadata" style="width:100%;height:140px;object-fit:cover;border-radius:10px;background:#09090d"></video>'
+          : '<img src="'+String(m.url).replace(/"/g,"&quot;")+'" alt="'+String(m.name).replace(/"/g,"&quot;")+'" style="width:100%;height:140px;object-fit:cover;border-radius:10px;display:block" onerror="this.style.opacity=.25">';
+        return '<div class="bga9/50 rxl p2 b1 ba7 aqe-media-card"><div style="position:relative">'+visual+(m.profilePhoto?'<span class="px-pill ok" style="position:absolute;left:6px;top:6px">PROFILE</span>':'')+'<span class="px-pill" style="position:absolute;right:6px;top:6px">'+String(m.moderationStatus||"pending").toUpperCase()+'</span></div><div class="flex g1 mt2"><button class="px-btn" onclick="aqeSetProfilePhotoServer(\''+m.id+'\')">'+(m.profilePhoto?"Profile Photo":"Set Profile")+'</button><button class="px-btn" onclick="aqeDeleteMediaServer(\''+m.id+'\')">Remove</button></div></div>';
+      }).join(""):'<div class="c2 tc ca5 xs py4">No photos or videos uploaded yet.</div>';
+    }
+    var actions=E("myMediaActions"),note=E("myMediaNote"),badge=E("myMediaTier");
+    var t=String((current()||{}).tier||"basic").toLowerCase();
+    var cap=t==="vip"?"Unlimited":t==="premium"?"20":"10";
+    if(badge)badge.textContent=t.toUpperCase();
+    if(actions)actions.innerHTML='<button class="px-btn primary" onclick="document.getElementById(\'profilePhotoInput\').click()"><i class="fas fa-plus"></i> Add Photos</button><button class="px-btn" onclick="document.getElementById(\'profileVideoInput\').click()"><i class="fas fa-video"></i> Upload Video</button>';
+    if(note)note.textContent="Media capacity: "+cap+" uploads. Every upload is stored in AQE and remains pending until Manager moderation.";
+  }
+  async function aqeRefreshServerMedia(){
+    var s=sess();if(!s||!s.access_token)return;
+    try{
+      var r=await fetch("/api/media/me",{headers:{Authorization:"Bearer "+s.access_token},cache:"no-store"});
+      var p=await r.json();if(r.ok&&Array.isArray(p.media))renderServerMedia(p.media);
+    }catch(_){}
+  }
+  window.aqeRefreshMediaDisplay=aqeRefreshServerMedia;
+
+  function uploadWithProgress(file){
+    return new Promise(function(resolve,reject){
+      var s=sess();if(!s||!s.access_token){reject(new Error("Please sign in first."));return}
+      var xhr=new XMLHttpRequest();xhr.open("POST","/api/media/upload-file",true);xhr.setRequestHeader("Authorization","Bearer "+s.access_token);
+      var card=document.createElement("div");card.className="bga9/50 rxl p3 b1 ba7";card.id="aqe-upload-progress-"+Date.now()+Math.random().toString(16).slice(2);
+      card.innerHTML='<div class="fw7">'+String(file.name).replace(/[<>&"]/g,"")+'</div><div class="xs ca5 mt1">Uploading…</div><div style="height:7px;background:var(--a7);border-radius:99px;margin-top:10px;overflow:hidden"><div class="aqe-upload-bar" style="height:100%;width:0;background:var(--g)"></div></div><div class="xs ca5 mt1 aqe-upload-percent">0%</div>';
+      var host=E("myProfileMediaGrid");if(host)host.prepend(card);
+      xhr.upload.onprogress=function(e){if(!e.lengthComputable)return;var pct=Math.round(e.loaded/e.total*100);var bar=card.querySelector(".aqe-upload-bar"),txt=card.querySelector(".aqe-upload-percent");if(bar)bar.style.width=pct+"%";if(txt)txt.textContent=pct+"%";};
+      xhr.onreadystatechange=function(){if(xhr.readyState!==4)return;var payload={};try{payload=JSON.parse(xhr.responseText||"{}")}catch(_){}
+        if(xhr.status>=200&&xhr.status<300&&payload.ok){card.querySelector(".xs.ca5.mt1").textContent="Uploaded · awaiting Manager moderation";resolve(payload.media)}else{card.remove();reject(new Error(payload.reason||"Upload failed."))}
+      };
+      xhr.onerror=function(){card.remove();reject(new Error("Upload interrupted. Check your connection and try again."))};
+      var fd=new FormData();fd.append("file",file);xhr.send(fd);
+    });
+  }
+  window.aqeUploadMedia=async function(){
+    var input=E("aqeMediaInput")||E("profilePhotoInput");var files=input&&input.files?Array.prototype.slice.call(input.files):[];
+    if(!files.length){toastMsg("Choose media first.","error");return}
+    var u=current();if(!u){toastMsg("Please sign in first.","error");return}
+    try{
+      for(var i=0;i<files.length;i++)await uploadWithProgress(files[i]);
+      if(input)input.value="";
+      await aqeRefreshServerMedia();
+      toastMsg(files.length+" media item(s) uploaded and queued for moderation.","success");
+    }catch(e){toastMsg(e.message||"Media upload failed.","error")}
+  };
+  window.handleProfileFiles=function(files,type){
+    var arr=Array.prototype.slice.call(files||[]);if(!arr.length)return;
+    var filtered=arr.filter(function(f){return type==="video"?/^video\//i.test(f.type):/^image\//i.test(f.type)});
+    if(!filtered.length){toastMsg("Choose a valid "+type+" file.","error");return}
+    (async function(){try{for(var i=0;i<filtered.length;i++)await uploadWithProgress(filtered[i]);await aqeRefreshServerMedia();toastMsg(filtered.length+" "+type+" upload(s) submitted.","success")}catch(e){toastMsg(e.message||"Upload failed.","error")}})();
+  };
+  window.aqeSetProfilePhotoServer=async function(id){try{var s=sess();var r=await fetch("/api/media/profile-photo",{method:"POST",headers:{"Content-Type":"application/json",Authorization:"Bearer "+s.access_token},body:JSON.stringify({mediaId:id})});var p=await r.json();if(!r.ok||!p.ok)throw new Error(p.reason||"Profile photo update failed.");await aqeRefreshServerMedia();toastMsg("Profile photo updated.","success")}catch(e){toastMsg(e.message||"Profile photo update failed.","error")}};
+  window.aqeDeleteMediaServer=async function(id){try{var s=sess();var r=await fetch("/api/media/item",{method:"DELETE",headers:{"Content-Type":"application/json",Authorization:"Bearer "+s.access_token},body:JSON.stringify({mediaId:id})});var p=await r.json();if(!r.ok||!p.ok)throw new Error(p.reason||"Media deletion failed.");await aqeRefreshServerMedia();toastMsg("Media removed.","success")}catch(e){toastMsg(e.message||"Media removal failed.","error")}};
+  var oldUpdate=window.updateUIForUser;
+  window.updateUIForUser=function(){try{if(oldUpdate)oldUpdate.apply(this,arguments)}catch(_){};aqeRefreshServerMedia();return undefined};
+
+  async function aqeSendManagerSupport(event){
+    event.preventDefault();
+    var form=E("aqeManagerSupportForm"),status=E("aqeManagerSupportStatus");
+    var subject=String((E("aqeManagerSupportSubject")||{}).value||"").trim();
+    var message=String((E("aqeManagerSupportMessage")||{}).value||"").trim();
+    var category=String((E("aqeManagerSupportCategory")||{}).value||"OTHER");
+    var session=jget("aqe_next_session");
+    if(!session||!session.access_token){if(status)status.textContent="Please sign in first.";return;}
+    if(!subject||!message){if(status)status.textContent="Enter a subject and message.";return;}
+    if(status)status.textContent="Sending…";
+    try{
+      var r=await fetch("/api/support/tickets",{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+session.access_token},body:JSON.stringify({category:category,subject:subject,message:message,priority:"MEDIUM"})});
+      var p=await r.json().catch(function(){return {}});
+      if(!r.ok||!p.ok)throw new Error(p.reason||p.message||"Support request failed.");
+      if(form)form.reset();
+      if(status)status.textContent="Sent to Manager Support. Your request is now in the support queue.";
+      if(typeof toastMsg==="function")toastMsg("Message sent to Manager Support.","success");
+    }catch(e){if(status)status.textContent=e.message||"Support request failed.";if(typeof toastMsg==="function")toastMsg(e.message||"Support request failed.","error")}
+  }
+  function aqeOpenManagerTroubleshoot(){
+    var requested=window.prompt("What account change or correction do you need?");
+    if(!requested)return;
+    var details=window.prompt("Add any details the Manager needs to review.");
+    if(details===null)return;
+    var session=jget("aqe_next_session");
+    if(!session||!session.access_token){if(typeof toastMsg==="function")toastMsg("Please sign in first.","error");return;}
+    fetch("/api/support/troubleshoot",{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+session.access_token},body:JSON.stringify({requestedChange:requested,details:details})})
+      .then(function(r){return r.json().then(function(p){if(!r.ok||!p.ok)throw new Error(p.reason||"Troubleshoot request failed.");return p})})
+      .then(function(){if(typeof toastMsg==="function")toastMsg("Account troubleshooting request sent to Manager Support.","success")})
+      .catch(function(e){if(typeof toastMsg==="function")toastMsg(e.message||"Account troubleshooting request failed.","error")});
+  }
+  window.aqeOpenManagerTroubleshoot=aqeOpenManagerTroubleshoot;
+  var managerSupportForm=E("aqeManagerSupportForm");
+  if(managerSupportForm&&!managerSupportForm.dataset.bound){managerSupportForm.dataset.bound="1";managerSupportForm.addEventListener("submit",aqeSendManagerSupport);}
+
+  loadCustomerFilters();
+  aqeRefreshServerMedia();
+  window.addEventListener("aqe-screen-change",function(ev){if(ev.detail&&ev.detail.id==="screen-me")aqeRefreshServerMedia();if(ev.detail&&ev.detail.id==="screen-home")applyFilter("home",homeFilter);if(ev.detail&&ev.detail.id==="screen-explore")applyFilter("explore",exploreFilter)});
+  if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",function(){setTimeout(function(){loadCustomerFilters();aqeRefreshServerMedia()},200)});
+})();
+</script><script src="https://cdn.jsdelivr.net/npm/tus-js-client@4.3.1/dist/tus.min.js" defer></script>
+<script src="/aqe-production-final.js" defer></script>
+
+<style id="aqe-final-production-approval-fix">
+  .aqe-announcement-overlay{position:fixed;inset:0;z-index:99990;display:flex;align-items:center;justify-content:center;padding:18px;background:rgba(0,0,0,.78);backdrop-filter:blur(10px)}
+  .aqe-announcement-card{width:min(760px,100%);max-height:88vh;overflow:auto;border:1px solid rgba(212,175,55,.55);border-radius:26px;background:linear-gradient(145deg,rgba(22,18,35,.98),rgba(8,8,15,.98));box-shadow:0 30px 90px rgba(0,0,0,.6),0 0 50px rgba(212,175,55,.12);padding:26px}
+  .aqe-announcement-card h2{margin:0;font-size:clamp(24px,5vw,38px);line-height:1.1;color:#f9e076}.aqe-announcement-card p{color:#ddd;line-height:1.7;white-space:pre-wrap}
+  .aqe-media-lightbox{position:fixed;inset:0;z-index:99995;background:rgba(0,0,0,.94);display:flex;align-items:center;justify-content:center;padding:16px}
+  .aqe-media-lightbox img,.aqe-media-lightbox video{max-width:96vw;max-height:88vh;object-fit:contain;border-radius:14px}
+  .aqe-media-lightbox button{position:absolute;right:16px;top:16px;width:44px;height:44px;border:1px solid rgba(255,255,255,.2);border-radius:50%;background:rgba(0,0,0,.55);color:#fff;font-size:22px}
+  #aqeVipSalaryRoom{margin-top:14px}
+  .aqe-proof{margin-top:10px;padding:10px 12px;border-radius:12px;border:1px solid rgba(34,197,94,.25);background:rgba(34,197,94,.08);color:#b9f6c8;font-size:12px}
+  .aqe-offline-queue{font-size:11px;color:#f9e076;margin-top:8px}
+</style>
+<script id="aqe-final-production-approval-fix-js">
+(function(){
+  "use strict";
+  function E(id){return document.getElementById(id)}
+  function session(){try{return JSON.parse(localStorage.getItem("aqe_next_session")||"null")}catch(_){return null}}
+  function headers(extra){var h={"Content-Type":"application/json"},s=session();if(s&&s.access_token)h.Authorization="Bearer "+s.access_token;return Object.assign(h,extra||{})}
+  async function api(path,opt){
+    var o=opt||{};o.headers=Object.assign(headers(),o.headers||{});
+    var r=await fetch(path,o),b=await r.json().catch(function(){return {}});
+    if(!r.ok||b.ok===false)throw new Error(b.reason||b.message||("Request failed ("+r.status+")"));
+    return b;
+  }
+  function toast(msg,type){if(typeof window.showToast==="function")window.showToast(msg,type||"success");else if(typeof window.toast==="function")window.toast(msg,type)}
+  function current(){return window.state&&state.currentUser?state.currentUser:null}
+  function profileById(id){return (window.state&&state.profiles||[]).find(function(p){return String(p.id)===String(id)||String(p.userId)===String(id)})}
+
+  /* A) Every customer sidebar destination is routable. VIP/Premium locking remains inside the feature itself. */
+  function repairCustomerNavigation(){
+    try{
+      document.querySelectorAll(".px-nav[data-screen],#drawer nav [data-screen]").forEach(function(b){
+        b.style.display="";
+        b.style.pointerEvents="auto";
+        b.style.cursor="pointer";
+      });
+      document.querySelectorAll(".px-sec").forEach(function(s){s.style.display=""});
+      document.querySelectorAll("[data-screen]").forEach(function(b){var id=b.getAttribute("data-screen");if(id&&document.getElementById(id)){b.onclick=function(ev){if(ev){ev.preventDefault();ev.stopPropagation()}if(typeof window.aqeLiveShowScreen==="function")window.aqeLiveShowScreen(id);else if(typeof window.showScreen==="function")window.showScreen(id);return false};}});
+      if(typeof window.aqeRepairNavigation==="function")window.aqeRepairNavigation();
+    }catch(_){}
+  }
+  window.aqeRepairNavigation=window.aqeRepairNavigation||repairCustomerNavigation;
+
+  /* B) Referral links use the real production domain and preserve the code into registration. */
+  function referralCode(){
+    var u=current();return u&&u.referralCode?String(u.referralCode).toUpperCase():"";
+  }
+  window.copyInvite=function(){
+    var u=current();if(!u){if(typeof openAuth==="function")openAuth();return}
+    var code=referralCode(),url="https://afiqueerescortsecosystem.com/customer?ref="+encodeURIComponent(code),text="Join AQE with my code: "+code+" at "+url;
+    function done(){toast("Referral link copied. Code "+code+" is attached to the registration link.","success")}
+    if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(text).then(done).catch(function(){toast(url,"success")});else{var ta=document.createElement("textarea");ta.value=text;document.body.appendChild(ta);ta.select();document.execCommand("copy");ta.remove();done()}
+  };
+  window.copyRef=window.copyInvite;
+  window.shareTo=function(platform){
+    var code=referralCode(),url="https://afiqueerescortsecosystem.com/customer?ref="+encodeURIComponent(code),text="Join AQE — use my referral code: "+code;
+    if(platform==="whatsapp")window.open("https://wa.me/?text="+encodeURIComponent(text+" "+url),"_blank");
+    else if(platform==="telegram")window.open("https://t.me/share/url?url="+encodeURIComponent(url)+"&text="+encodeURIComponent(text),"_blank");
+    else window.copyInvite();
+  };
+  function applyReferralFromUrl(){
+    try{
+      var code=new URLSearchParams(location.search).get("ref");if(!code)return;
+      var input=E("regRef");if(input)input.value=String(code).toUpperCase();
+      if(typeof openAuth==="function" && !current())setTimeout(function(){if(E("regRef"))E("regRef").value=String(code).toUpperCase()},250);
+    }catch(_){}
+  }
+
+  /* C) Server notifications are authoritative; read state is persisted in Supabase. */
+  window.markNotifRead=async function(id){
+    try{
+      var b=await api("/api/notifications",{method:"PATCH",body:JSON.stringify({notificationId:String(id)})});
+      var n=(window.state.notifications||[]).find(function(x){return String(x.id)===String(id)});
+      if(n)n.read=true;
+      if(typeof saveState==="function")saveState();
+      if(typeof renderNotifications==="function")renderNotifications();
+      toast("Notification marked as read.","success");
+      return b;
+    }catch(e){toast(e.message||"Could not mark notification as read.","error")}
+  };
+  window.markAllRead=async function(){
+    try{
+      await api("/api/notifications",{method:"PATCH",body:JSON.stringify({markAll:true})});
+      (window.state.notifications||[]).forEach(function(n){n.read=true});
+      if(typeof saveState==="function")saveState();
+      if(typeof renderNotifications==="function")renderNotifications();
+      toast("All notifications marked as read.","success");
+    }catch(e){toast(e.message||"Could not update notifications.","error")}
+  };
+
+  /* D) Real chat: conversations are grouped by the actual database user IDs. */
+  async function syncRealMessages(){
+    var u=current();if(!u)return;
+    try{
+      var b=await api("/api/messages"),groups={};
+      (b.messages||[]).forEach(function(m){
+        var other=String(m.senderId)===String(u.id)?String(m.recipientId):String(m.senderId);
+        if(!groups[other])groups[other]={id:other,withName:"AQE Member",withAvatar:"AQ",lastMsg:"",time:"",unread:0,messages:[]};
+        var g=groups[other],mine=String(m.senderId)===String(u.id);
+        g.messages.unshift({from:mine?"me":"them",text:m.body||m.preview||"",time:m.time||new Date(m.createdAt).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"}),messageId:m.id});
+        if(!mine&&!m.read)g.unread++;
+        g.lastMsg=m.body||m.preview||"";g.time=m.time||"Now";
+        var p=profileById(other);if(p){g.withName=p.name||"AQE Member";g.withAvatar=(p.name||"AQ").split(" ").map(function(x){return x[0]}).join("").slice(0,2).toUpperCase()}
+      });
+      window.state.conversations=Object.keys(groups).map(function(k){return groups[k]});
+      if(typeof renderConversations==="function")renderConversations();
+      if(typeof activeChatId!=="undefined"&&activeChatId){
+        var c=groups[String(activeChatId)];if(c){window.state.conversations=Object.keys(groups).map(function(k){return groups[k]});if(typeof renderChatMessages==="function")renderChatMessages()}
+      }
+    }catch(e){console.warn("[AQE] message sync",e)}
+  }
+  window.sendMessage=async function(){
+    var input=E("chatInput"),text=String(input&&input.value||"").trim();
+    if(!text||typeof activeChatId==="undefined"||!activeChatId){toast("Choose a real member before sending.","error");return}
+    try{
+      var b=await api("/api/messages",{method:"POST",body:JSON.stringify({recipientId:String(activeChatId),body:text})});
+      if(input)input.value="";
+      toast("Message sent successfully.","success");
+      await syncRealMessages();
+      return b;
+    }catch(e){toast(e.message||"Message failed.","error")}
+  };
+
+  /* E) Real friend request from the profile detail button. */
+  window.aqeSendFriendRequest=async function(){
+    var id=window.activeProfileId, p=profileById(id);
+    var target=p&&p.userId?p.userId:id;
+    if(!current()){if(typeof openAuth==="function")openAuth();return}
+    if(!target||String(target)===String(current().id)){toast("Choose another registered member.","error");return}
+    try{
+      var b=await api("/api/community/friends",{method:"POST",body:JSON.stringify({recipientId:String(target)})});
+      toast(b.message||"Friend request sent successfully.","success");
+    }catch(e){toast(e.message||"Friend request failed.","error")}
+  };
+
+  /* F) Real booking/comment targets use auth user IDs behind the profile row. */
+  window.bookFromProfile=function(){
+    var p=profileById(window.activeProfileId);if(typeof closeProfile==="function")closeProfile();
+    if(typeof showScreen==="function")showScreen("screen-book");
+    var sel=E("pxBookTarget");if(sel&&p)sel.value=String(p.id);
+    if(sel&&p&&p.userId)sel.dataset.userId=String(p.userId);
+    toast("Booking target selected. Review the request and submit.","success");
+  };
+  window.commentFromProfile=function(){
+    var p=profileById(window.activeProfileId);if(typeof closeProfile==="function")closeProfile();
+    if(typeof showScreen==="function")showScreen("screen-comments");
+    var sel=E("pxCommentTarget");if(sel&&p)sel.value=String(p.id);
+    if(sel&&p&&p.userId)sel.dataset.userId=String(p.userId);
+    toast("Comment target selected.","success");
+  };
+  window.pxSendBooking=async function(){
+    var sel=E("pxBookTarget"),p=profileById(sel&&sel.value),u=current();
+    if(!u){if(typeof openAuth==="function")openAuth();return}
+    if(!p||!p.userId){toast("Select a real registered member.","error");return}
+    var type=String((E("pxBookType")||{}).value||"dm"),note=String((E("pxBookNote")||{}).value||"").trim();
+    var qc={dm:5,photo:10,video:20}[type]||5;
+    try{
+      var b=await api("/api/bookings",{method:"POST",body:JSON.stringify({providerId:p.userId,service:type,amount:0,currency:"UGX",notes:note,qcCost:0})});
+      toast("Booking request sent successfully. Reference: "+String(b.booking?.id||"saved"),"success");
+      if(E("pxBookNote"))E("pxBookNote").value="";
+    }catch(e){toast(e.message||"Booking request failed.","error")}
+  };
+  window.pxPostComment=async function(){
+    var sel=E("pxCommentTarget"),p=profileById(sel&&sel.value),text=String((E("pxCommentText")||{}).value||"").trim();
+    if(!current()){if(typeof openAuth==="function")openAuth();return}
+    if(!p||!p.id||!text){toast("Choose a real member and write a comment.","error");return}
+    try{
+      var b=await api("/api/community/comments",{method:"POST",body:JSON.stringify({profileId:String(p.id),body:text})});
+      if(E("pxCommentText"))E("pxCommentText").value="";
+      toast(b.message||"Comment posted successfully.","success");
+    }catch(e){toast(e.message||"Comment failed.","error")}
+  };
+
+  /* G) Full-size profile media viewer + real profile photo. */
+  function lightbox(url,type){
+    var old=E("aqeMediaLightbox");if(old)old.remove();
+    var box=document.createElement("div");box.id="aqeMediaLightbox";box.className="aqe-media-lightbox";
+    var visual=type==="video"?document.createElement("video"):document.createElement("img");
+    visual.src=url;if(type==="video"){visual.controls=true;visual.autoplay=true;visual.playsInline=true}
+    var close=document.createElement("button");close.innerHTML="&times;";close.onclick=function(){box.remove()};
+    box.onclick=function(e){if(e.target===box)box.remove()};box.appendChild(visual);box.appendChild(close);document.body.appendChild(box);
+  }
+  function bindMediaViewer(){
+    document.querySelectorAll("#profileMediaGallery img,#profileMediaGallery video,.aqe-media-card img,.aqe-media-card video").forEach(function(el){
+      if(el.dataset.aqeLightbox)return;el.dataset.aqeLightbox="1";el.style.cursor="zoom-in";
+      el.addEventListener("click",function(e){e.stopPropagation();lightbox(el.currentSrc||el.src,el.tagName.toLowerCase()==="video"?"video":"image")});
+    });
+  }
+  function repairProfilePhoto(){
+    var p=profileById(window.activeProfileId),img=p&&p.image;
+    var avatar=E("profileAvatar");
+    if(avatar&&img)avatar.innerHTML='<img src="'+String(img).replace(/"/g,"&quot;")+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%" alt="Profile photo">';
+    bindMediaViewer();
+  }
+  var oldOpen=window.openProfile;
+  if(oldOpen&&!oldOpen.__aqeApprovalFix){
+    window.openProfile=function(id){var r=oldOpen.apply(this,arguments);setTimeout(function(){repairProfilePhoto();bindMediaViewer();addProfileActions()},80);return r};
+    window.openProfile.__aqeApprovalFix=true;
+  }
+  function addProfileActions(){
+    var host=E("profileDetail");if(!host)return;
+    var p=profileById(window.activeProfileId);if(!p||!p.userId)return;
+    var row=host.querySelector(".aqe-real-actions");if(!row){
+      row=document.createElement("div");row.className="aqe-real-actions flex g2 mb4";row.innerHTML='<button class="btn bp" type="button" id="aqeRealMessageBtn"><i class="fas fa-comment-dots"></i> Message</button>';
+      var anchor=host.querySelector("#profileMediaGallery");if(anchor)anchor.parentNode.insertBefore(row,anchor);
+    }
+    var btn=E("aqeRealMessageBtn");if(btn)btn.onclick=function(){
+      if(!current()){if(typeof openAuth==="function")openAuth();return}
+      window.state.conversations=window.state.conversations||[];
+      if(!window.state.conversations.some(function(x){return String(x.id)===String(p.userId)}))window.state.conversations.push({id:p.userId,withName:p.name,withAvatar:(p.name||"AQ").split(" ").map(function(x){return x[0]}).join("").slice(0,2),messages:[],lastMsg:"",time:"Now",unread:0});
+      if(typeof closeProfile==="function")closeProfile();if(typeof showScreen==="function")showScreen("screen-messages");setTimeout(function(){if(typeof openChat==="function")openChat(String(p.userId))},50);
+    };
+  }
+
+  /* H) Mukuru receiver: show manager-configured name, phone, card and instructions in the payment flow. */
+  async function renderConfiguredReceiver(){
+    var box=E("aqeServerReceiver");if(!box)return;
+    try{
+      var b=await fetch("/api/payments/receiver?ts="+Date.now(),{cache:"no-store"}).then(function(r){return r.json()});
+      var r=b.receiver||{};
+      if(!r.receiverPhone&&!r.receiverCard){box.innerHTML='<div class="aqe-proof">Mukuru receiver is not configured yet.</div>';return}
+      box.innerHTML='<div class="aqe-pay-small" style="color:#D4AF37;font-weight:800">Mukuru Global Money Transfer receiver</div>'+
+        '<div style="margin-top:8px;display:grid;gap:7px">'+
+        '<div><small>Receiver name</small><div class="aqe-pay-input" style="margin-top:3px">'+String(r.receiverName||"—")+'</div></div>'+
+        '<div><small>Receiver phone</small><div class="aqe-pay-input" style="margin-top:3px">'+String(r.receiverPhone||"—")+'</div></div>'+
+        '<div><small>Receiver card / account</small><div class="aqe-pay-input" style="margin-top:3px;word-break:break-word">'+String(r.receiverCard||"—")+'</div></div>'+
+        '<div class="xs ca5" style="white-space:pre-wrap;margin-top:4px">'+String(r.instructions||"")+'</div></div>';
+    }catch(e){console.warn("[AQE] receiver",e)}
+  }
+
+  /* I) Customer-facing announcements: manager-published messages appear on fresh page visits and can be dismissed. */
+  async function loadAnnouncements(){
+    try{
+      var b=await fetch("/api/announcements?published=true&limit=10",{cache:"no-store"});
+      if(!b.ok)return;var x=await b.json();var list=x.announcements||x.items||[];
+      if(!list.length)return;
+      var key="aqe-announcements-seen-v1",seen={};try{seen=JSON.parse(localStorage.getItem(key)||"{}")}catch(_){}
+      var fresh=list.find(function(a){return !a.dismissed&&!seen[String(a.id)]});
+      if(!fresh)return;
+      var old=E("aqeAnnouncementOverlay");if(old)old.remove();
+      var box=document.createElement("div");box.id="aqeAnnouncementOverlay";box.className="aqe-announcement-overlay";
+      box.innerHTML='<article class="aqe-announcement-card"><div class="flex aic jb g3"><span class="px-pill ok">'+String(fresh.kind||"AQE ANNOUNCEMENT").toUpperCase()+'</span><button id="aqeAnnouncementClose" class="mx-iconbtn" type="button"><i class="fas fa-times"></i></button></div><h2 style="margin-top:18px">'+String(fresh.title||"AQE Update")+'</h2><p style="margin-top:14px">'+String(fresh.message||fresh.body||"")+'</p><div class="xs ca5">Published '+(fresh.created_at?new Date(fresh.created_at).toLocaleString():"")+'</div><button id="aqeAnnouncementContinue" class="px-btn primary" style="width:100%;margin-top:20px">Continue to AQE</button></article>';
+      document.body.appendChild(box);
+      async function close(){seen[String(fresh.id)]=true;try{localStorage.setItem(key,JSON.stringify(seen))}catch(_){}try{await fetch("/api/announcements",{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+((session()||{}).access_token||"")},body:JSON.stringify({action:"dismiss",id:String(fresh.id)})})}catch(_){}box.remove()}
+      E("aqeAnnouncementClose").onclick=close;E("aqeAnnouncementContinue").onclick=close;
+    }catch(e){console.warn("[AQE] announcements",e)}
+  }
+
+  /* J) Manager-configured VIP tasks are loaded from the database. */
+  async function loadVipTasks(){
+    var u=current();if(!u||String(u.tier||"").toLowerCase()!=="vip")return;
+    var host=E("tasksList");if(!host)return;
+    try{
+      var b=await api("/api/vip/tasks");var tasks=b.tasks||[];
+      host.innerHTML=tasks.length?tasks.map(function(t){
+        return '<div class="bga8 rxl p4 b1 ba7"><div class="flex aic jb"><div><div class="sm fw8 ca1">'+String(t.title||"VIP Task")+'</div><div class="xs ca4 mt1">'+String(t.description||"")+'</div><div class="xs cg mt1">QC '+Number(t.rewardQc||0)+' · UGX '+Number(t.rewardCash||0).toLocaleString()+'</div></div><button class="px-btn primary" data-vip-task="'+String(t.id)+'">'+(t.completed?"Completed":"Complete")+'</button></div></div>';
+      }).join(""):'<div class="xs ca5">No active VIP tasks have been published.</div>';
+      host.querySelectorAll("[data-vip-task]").forEach(function(btn){btn.onclick=async function(){
+        if(btn.textContent==="Completed")return;btn.disabled=true;btn.textContent="Submitting…";
+        try{var r=await api("/api/vip/tasks",{method:"POST",body:JSON.stringify({managerAction:"complete",taskId:btn.getAttribute("data-vip-task")})});toast(r.message||"VIP task completed successfully.","success");await loadVipTasks()}catch(e){btn.disabled=false;btn.textContent="Complete";toast(e.message||"VIP task failed.","error")}
+      }});
+    }catch(e){console.warn("[AQE] VIP tasks",e)}
+  }
+
+  /* K) VIP salary room: real balance, 20th-of-month unlock, recipient fields, proof. */
+  async function loadVipSalaryRoom(){
+    var u=current();if(!u||String(u.tier||"").toLowerCase()!=="vip")return;
+    var anchor=E("screen-vip");if(!anchor)return;
+    var room=E("aqeVipSalaryRoom");if(!room){
+      room=document.createElement("div");room.id="aqeVipSalaryRoom";room.className="aqe-update-card";
+      room.innerHTML='<div class="flex aic jb"><div><div class="px-label">VIP SALARY</div><div class="px-metric" id="aqeVipSalaryAmount">UGX 0</div></div><span id="aqeVipSalaryLock" class="px-pill warn">LOCKED</span></div><div class="xs ca5" id="aqeVipSalaryNote" style="margin-top:8px"></div><div style="display:grid;gap:8px;margin-top:12px"><input id="aqeVipSalaryRecipientName" class="inp" placeholder="Receiver name"><input id="aqeVipSalaryRecipientAccount" class="inp" placeholder="Phone or card number"><input id="aqeVipSalaryAmountInput" class="inp" type="number" min="30000" placeholder="Salary withdrawal amount"><button id="aqeVipSalaryWithdrawBtn" class="px-btn primary">Withdraw VIP salary</button></div><div id="aqeVipSalaryProof"></div>';
+      anchor.querySelector(".px4")?.appendChild(room);
+      var btn=E("aqeVipSalaryWithdrawBtn");if(btn)btn.onclick=async function(){
+        var amount=Number(E("aqeVipSalaryAmountInput")?.value||0),name=String(E("aqeVipSalaryRecipientName")?.value||"").trim(),account=String(E("aqeVipSalaryRecipientAccount")?.value||"").trim();
+        if(!name||!account){toast("Enter receiver name and phone/card number.","error");return}
+        try{var r=await api("/api/vip/salary",{method:"POST",body:JSON.stringify({amount,recipientName:name,recipientAccount:account,paymentMethod:"MOBILE_MONEY"})});if(E("aqeVipSalaryProof"))E("aqeVipSalaryProof").innerHTML='<div class="aqe-proof">'+String(r.message||"VIP salary withdrawal submitted.")+" Reference: "+String(r.request?.id||"saved")+"</div>";toast(r.message||"VIP salary withdrawal submitted.","success");await loadVipSalaryRoom()}catch(e){toast(e.message||"VIP salary withdrawal failed.","error")}
+      };
+    }
+    try{
+      var b=await api("/api/vip/salary"),amount=Number(b.salary||0),open=Boolean(b.unlocked);
+      if(E("aqeVipSalaryAmount"))E("aqeVipSalaryAmount").textContent="UGX "+amount.toLocaleString();
+      if(E("aqeVipSalaryLock")){E("aqeVipSalaryLock").textContent=open?"UNLOCKED":"LOCKED UNTIL 20TH";E("aqeVipSalaryLock").className="px-pill "+(open?"ok":"warn")}
+      if(E("aqeVipSalaryNote"))E("aqeVipSalaryNote").textContent=b.message||"";
+      if(E("aqeVipSalaryWithdrawBtn"))E("aqeVipSalaryWithdrawBtn").disabled=!open;
+    }catch(e){console.warn("[AQE] salary",e)}
+  }
+
+  /* L) Customer financial proof after actions. */
+  function proof(text){var host=E("aqeCustomerProof");if(!host){host=document.createElement("div");host.id="aqeCustomerProof";host.style.cssText="position:fixed;right:12px;bottom:12px;z-index:99999;max-width:min(420px,calc(100vw - 24px))";document.body.appendChild(host)}host.innerHTML='<div class="aqe-proof">'+text+"</div>";setTimeout(function(){if(host)host.remove()},7000)}
+
+  /* M) Offline-first media upload. Files are held in IndexedDB until Supabase confirms the upload. */
+  var dbPromise;
+  function openDb(){return new Promise(function(resolve,reject){var req=indexedDB.open("aqe-upload-cache-v1",1);req.onupgradeneeded=function(){req.result.createObjectStore("files",{keyPath:"id"})};req.onsuccess=function(){resolve(req.result)};req.onerror=function(){reject(req.error)}})}
+  async function queueFile(file,kind){
+    var db=await openDb(),id="u_"+Date.now()+"_"+Math.random().toString(36).slice(2);
+    return new Promise(function(resolve,reject){var tx=db.transaction("files","readwrite"),s=tx.objectStore("files");s.put({id,file:file,name:file.name,type:file.type,size:file.size,kind:kind,createdAt:Date.now()});tx.oncomplete=function(){resolve(id)};tx.onerror=function(){reject(tx.error)}});
+  }
+  async function allQueued(){var db=await openDb();return new Promise(function(resolve,reject){var tx=db.transaction("files","readonly"),req=tx.objectStore("files").getAll();req.onsuccess=function(){resolve(req.result||[])};req.onerror=function(){reject(req.error)}})}
+  async function removeQueued(id){var db=await openDb();return new Promise(function(resolve,reject){var tx=db.transaction("files","readwrite");tx.objectStore("files").delete(id);tx.oncomplete=function(){resolve()};tx.onerror=function(){reject(tx.error)}})}
+  async function directUpload(item){
+    var b=await api("/api/media/upload-url",{method:"POST",body:JSON.stringify({fileName:item.name,kind:item.kind,mimeType:item.type,sizeBytes:item.size})});
+    if(!b.token||!b.objectPath)throw new Error("Upload session could not be prepared.");
+    if(!window.supabase||!window.supabase.createClient)throw new Error("Upload engine is not ready.");
+    var config=await fetch("/api/public-config",{cache:"no-store"}).then(function(r){return r.json()});
+    var client=window.supabase.createClient(config.url,config.key);
+    var result=await client.storage.from(b.bucket||"profile-media").uploadToSignedUrl(b.objectPath,b.token,item.file,{contentType:item.type});
+    if(result.error)throw result.error;
+    await removeQueued(item.id);
+    return b;
+  }
+  async function flushUploadQueue(){
+    if(!navigator.onLine)return;
+    var list=[];try{list=await allQueued()}catch(_){return}
+    for(var i=0;i<list.length;i++){try{var b=await directUpload(list[i]);toast("Upload completed: "+list[i].name,"success");if(list[i].kind==="image"&&current()&&(!current().profilePhotoId||i===0))await api("/api/media/profile-photo",{method:"POST",body:JSON.stringify({mediaId:b.mediaId})});}catch(e){console.warn("[AQE] queued upload",e);break}}
+    if(list.length&&typeof window.aqeRefreshServerMedia==="function")window.aqeRefreshServerMedia();
+  }
+  async function queueAndUpload(files,kind){
+    var arr=Array.prototype.slice.call(files||[]);if(!arr.length)return;
+    var u=current();if(!u){if(typeof openAuth==="function")openAuth();return}
+    if(String(u.tier||"basic").toLowerCase()==="basic"){toast("Upgrade to Premium or VIP to upload media.","error");return}
+    if(kind==="video"&&String(u.tier||"").toLowerCase()!=="vip"){toast("Video uploads are VIP only.","error");return}
+    for(var i=0;i<arr.length;i++){var id=await queueFile(arr[i],kind);if(!navigator.onLine){toast("Network offline. "+arr[i].name+" is safely queued for upload.","error");continue}try{var item=(await allQueued()).find(function(x){return x.id===id});await directUpload(item);toast(arr[i].name+" uploaded successfully.","success")}catch(e){toast(arr[i].name+" is safely queued; upload will retry when the network returns.","error")}}
+    await flushUploadQueue();if(typeof window.aqeRefreshServerMedia==="function")await window.aqeRefreshServerMedia();
+  }
+  function replaceMediaInputs(){
+    ["profilePhotoInput","profileVideoInput"].forEach(function(id){
+      var old=E(id);if(!old||old.dataset.aqeOfflineBound)return;
+      var clone=old.cloneNode(true);old.parentNode.replaceChild(clone,old);clone.dataset.aqeOfflineBound="1";
+      clone.addEventListener("change",function(){queueAndUpload(clone.files,id==="profileVideoInput"?"video":"image");clone.value=""});
+    });
+  }
+
+  /* N) Withdrawal form gets explicit recipient fields and server proof. */
+  function ensureWithdrawFields(){
+    var amount=E("aqeWithdrawAmount");if(!amount)return;
+    var box=amount.parentElement;if(!box)return;
+    if(!E("aqeWithdrawName")){var n=document.createElement("input");n.id="aqeWithdrawName";n.className="inp";n.placeholder="Receiver registered name";n.style.marginTop="10px";box.insertBefore(n,amount.nextSibling)}
+    if(!E("aqeWithdrawAccount")){var a=document.createElement("input");a.id="aqeWithdrawAccount";a.className="inp";a.placeholder="Phone or card number";a.style.marginTop="10px";var name=E("aqeWithdrawName");name.parentNode.insertBefore(a,name.nextSibling)}
+    var btn=box.querySelector("button");if(btn)btn.textContent="Request withdrawal";
+  }
+
+  /* O) Live manager settings reflection and announcements/task refresh. */
+  async function refreshCustomerControlPlane(){
+    try{var s=await fetch("/api/settings?ts="+Date.now(),{cache:"no-store"}).then(function(r){return r.json()});window.aqeManagerSettings=s.settings||s}
+    catch(_){}
+    await loadAnnouncements();await loadVipTasks();await loadVipSalaryRoom();await renderConfiguredReceiver();
+  }
+
+  async function boot(){
+    repairCustomerNavigation();applyReferralFromUrl();ensureWithdrawFields();replaceMediaInputs();
+    setTimeout(function(){repairCustomerNavigation();applyReferralFromUrl();ensureWithdrawFields();replaceMediaInputs()},500);
+    await syncRealMessages();
+    await refreshCustomerControlPlane();
+    if(typeof window.renderNotifications==="function")window.renderNotifications();
+  }
+  if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",function(){setTimeout(boot,350)});else setTimeout(boot,350);
+  window.addEventListener("online",function(){flushUploadQueue()});
+  setInterval(function(){syncRealMessages();loadAnnouncements();loadVipTasks();loadVipSalaryRoom()},20000);
+  document.addEventListener("click",function(e){
+    var t=e.target&&e.target.closest?e.target.closest("#profileMediaGallery img,#profileMediaGallery video,.aqe-media-card img,.aqe-media-card video"):null;
+    if(t){e.preventDefault();e.stopPropagation();lightbox(t.currentSrc||t.src,t.tagName.toLowerCase()==="video"?"video":"image")}
+  },true);
+})();
+</script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js" defer></script>
+
+
+<script id="aqe-final-proof-fix">
+(function(){
+  "use strict";
+  function session(){try{return JSON.parse(localStorage.getItem("aqe_next_session")||"null")}catch(_){return null}}
+  async function req(path,options){
+    var o=options||{},h=Object.assign({"Content-Type":"application/json"},o.headers||{}),s=session();
+    if(s&&s.access_token)h.Authorization="Bearer "+s.access_token;o.headers=h;
+    var r=await fetch(path,o),b=await r.json().catch(function(){return {}});
+    if(!r.ok||b.ok===false)throw new Error(b.reason||b.message||("Request failed ("+r.status+")"));return b;
+  }
+  function proof(text){var old=document.getElementById("aqeCustomerProof");if(old)old.remove();var x=document.createElement("div");x.id="aqeCustomerProof";x.style.cssText="position:fixed;right:12px;bottom:12px;z-index:99999;max-width:min(430px,calc(100vw - 24px))";x.innerHTML='<div class="aqe-proof">'+String(text)+'</div>';document.body.appendChild(x);setTimeout(function(){x.remove()},8000)}
+  window.aqeSendSupport=async function(){
+    var subject=String((document.getElementById("aqeSupportSubject")||{}).value||"Account support"),message=String((document.getElementById("aqeSupportMessage")||{}).value||"").trim();
+    if(!message){toast("Write a message first.","error");return}
+    try{var b=await req("/api/support/tickets",{method:"POST",body:JSON.stringify({subject:subject,message:message,category:"OTHER",priority:"MEDIUM"})});if(document.getElementById("aqeSupportMessage"))document.getElementById("aqeSupportMessage").value="";var id=b.ticket&&b.ticket.ticketId||b.ticketId||"saved";proof("Manager Support message sent successfully. Ticket reference: "+id);toast("Support request sent successfully.","success")}catch(e){toast(e.message||"Support request failed.","error")}
+  };
+  async function refreshReceiverAfterPaymentOpen(){
+    try{
+      var box=document.getElementById("aqeServerReceiver");if(!box)return;
+      var b=await fetch("/api/payments/receiver?ts="+Date.now(),{cache:"no-store"}).then(function(r){return r.json()});
+      var r=b.receiver||{};if(!r.receiverPhone&&!r.receiverCard)return;
+      box.innerHTML='<div class="aqe-pay-small" style="color:#D4AF37;font-weight:800">Mukuru Global Money Transfer receiver</div>'+
+        '<div style="display:grid;gap:7px;margin-top:8px">'+
+        '<div><small>Receiver name</small><div class="aqe-pay-input" style="margin-top:3px">'+String(r.receiverName||"—")+'</div></div>'+
+        '<div><small>Receiver phone</small><div class="aqe-pay-input" style="margin-top:3px">'+String(r.receiverPhone||"—")+'</div></div>'+
+        '<div><small>Receiver card / account</small><div class="aqe-pay-input" style="margin-top:3px;word-break:break-word">'+String(r.receiverCard||"—")+'</div></div>'+
+        '<div class="xs ca5" style="white-space:pre-wrap">'+String(r.instructions||"")+'</div></div>';
+    }catch(_){}
+  }
+  var aqeOldPaymentOpen=window.aqeExactOpen;
+  if(aqeOldPaymentOpen&&!aqeOldPaymentOpen.__aqeReceiverProof){
+    window.aqeExactOpen=function(){var r=aqeOldPaymentOpen.apply(this,arguments);setTimeout(refreshReceiverAfterPaymentOpen,250);setTimeout(refreshReceiverAfterPaymentOpen,900);return r};
+    window.aqeExactOpen.__aqeReceiverProof=true;
+  }
+
+  window.aqeOpenManagerTroubleshoot=async function(){
+    var requested=window.prompt("What account change or correction do you need?");if(!requested)return;
+    var details=window.prompt("Add any details the Manager needs to review.");if(details===null)return;
+    try{var b=await req("/api/support/troubleshoot",{method:"POST",body:JSON.stringify({requestedChange:requested,details:details})});var id=b.request&&b.request.id||b.id||"saved";proof("Troubleshoot request sent successfully. Reference: "+id);toast("Troubleshoot request sent successfully.","success")}catch(e){toast(e.message||"Troubleshoot request failed.","error")}
+  };
+})();
+</script>
+
+
+<script id="aqe-final-launch-repair">
+(function(){
+  "use strict";
+  function E(id){return document.getElementById(id)}
+  function esc(v){return String(v==null?"":v).replace(/[&<>'"]/g,function(c){return({"&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;",'"':"&quot;"})[c]})}
+  function paymentMethod(){return window.pay&&window.pay.method==="AQE_MANAGER"?"AQE_MANAGER":"MukuruPay"}
+  function removeLegacyReceiverCards(){["aqeMukuruReceiverInfo","aqePaymentReceiverInfo"].forEach(function(id){var x=E(id);if(x)x.remove()})}
+  function removeReceiverFromStep1(){removeLegacyReceiverCards();var step=E("aqePayStep1"),box=E("aqeServerReceiver");if(step&&box&&step.contains(box))box.remove()}
+  async function renderFinalReceiver(){
+    var step=E("aqePayStep2");if(!step||!step.classList.contains("on"))return;
+    if(paymentMethod()==="AQE_MANAGER"){var old=E("aqeServerReceiver");if(old)old.remove();return}
+    var box=E("aqeServerReceiver");
+    if(!box){box=document.createElement("div");box.id="aqeServerReceiver";box.className="aqe-server-receiver";var anchor=E("aqeExactReference"),parent=anchor&&anchor.closest(".aqe-pay-card");if(parent&&parent.parentNode)parent.parentNode.insertBefore(box,parent.nextSibling);else step.insertBefore(box,step.firstChild)}
+    try{
+      var response=await fetch("/api/payments/receiver?ts="+Date.now(),{cache:"no-store"}),payload=await response.json(),r=payload.receiver||{};
+      if(!r.receiverPhone&&!r.receiverCard){box.innerHTML='<div class="xs ca5">Mukuru receiver details are not currently configured.</div>';return}
+      box.innerHTML='<div class="aqe-pay-small" style="color:#D4AF37;font-weight:800">Mukuru Global Money Transfer receiver</div><div class="aqe-server-receiver-row"><div><small>Receiver name</small><b>'+esc(r.receiverName||"—")+'</b></div></div><div class="aqe-server-receiver-row"><div><small>Receiver phone</small><b>'+esc(r.receiverPhone||"—")+'</b></div></div><div class="aqe-server-receiver-row"><div><small>Receiver card / account</small><b>'+esc(r.receiverCard||"—")+'</b></div></div><div class="xs ca5" style="margin-top:8px;white-space:pre-wrap">'+esc(r.instructions||"Include your AQE payment reference.")+'</div>';
+    }catch(e){box.innerHTML='<div class="xs ca5">Receiver details could not be loaded. Please try again.</div>'}
+  }
+  var oldOpen=window.aqeExactOpen;
+  if(oldOpen&&!oldOpen.__aqeLaunchRepair){window.aqeExactOpen=function(){removeReceiverFromStep1();var result=oldOpen.apply(this,arguments);[50,250,900].forEach(function(ms){setTimeout(removeReceiverFromStep1,ms)});return result};window.aqeExactOpen.__aqeLaunchRepair=true}
+  var oldMethod=window.aqeExactMethod;
+  if(oldMethod&&!oldMethod.__aqeLaunchRepair){window.aqeExactMethod=function(method){var result=oldMethod.apply(this,arguments);removeReceiverFromStep1();setTimeout(renderFinalReceiver,100);return result};window.aqeExactMethod.__aqeLaunchRepair=true}
+  var oldSubmit=window.aqeExactSaveAndContinue;
+  if(oldSubmit&&!oldSubmit.__aqeLaunchRepair){window.aqeExactSaveAndContinue=async function(){var result=await oldSubmit.apply(this,arguments);setTimeout(function(){removeLegacyReceiverCards();void renderFinalReceiver()},100);setTimeout(function(){removeLegacyReceiverCards();void renderFinalReceiver()},800);return result};window.aqeExactSaveAndContinue.__aqeLaunchRepair=true}
+  setInterval(function(){if(paymentMethod()==="AQE_MANAGER"){removeLegacyReceiverCards();var box=E("aqeServerReceiver"),step=E("aqePayStep2");if(box&&step&&step.classList.contains("on"))box.remove()}},1500);
+})();
+</script>
+
 </body>
 </html>

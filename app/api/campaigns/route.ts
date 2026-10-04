@@ -35,22 +35,45 @@ export async function POST(request: Request) {
   try {
     const access = await manager(request);
     if (!access.ok) return NextResponse.json({ ok: false, reason: access.reason }, { status: 403 });
-    const body = await request.json().catch(() => ({}));
+    const contentType = request.headers.get("content-type") || "";
+    let body: Record<string, any> = {};
+    let imageFile: File | null = null;
+    if (contentType.includes("multipart/form-data")) {
+      const form = await request.formData();
+      const candidate = form.get("image");
+      if (candidate instanceof File) imageFile = candidate;
+      form.forEach((value, key) => { if (!(value instanceof File)) body[key] = value; });
+    } else {
+      body = await request.json().catch(() => ({}));
+    }
     const client = createServerSupabaseClient();
     if (!client) return NextResponse.json({ ok: false, reason: "Campaign database is unavailable." }, { status: 503 });
     const action = String(body.action || "campaign").toLowerCase();
+    if (imageFile) {
+      if (!imageFile.type.startsWith("image/")) return NextResponse.json({ ok:false, reason:"Campaign/gift image must be an image file." }, { status:400 });
+      if (imageFile.size > 8 * 1024 * 1024) return NextResponse.json({ ok:false, reason:"Campaign/gift images must be 8 MB or smaller." }, { status:400 });
+    }
 
     if (action === "campaign") {
       const name = String(body.name || "").trim();
       if (!name) return NextResponse.json({ ok: false, reason: "Campaign name is required." }, { status: 400 });
-      const { data, error } = await client.from("campaigns").insert({
+      const insert: Record<string, unknown> = {
         name,
         description: body.description ? String(body.description) : null,
         starts_at: body.startsAt || null,
         ends_at: body.endsAt || null,
         status: ["draft","active","paused","completed"].includes(body.status) ? body.status : "draft",
         created_by: access.session?.userId || null,
-      }).select("*").single();
+      };
+      if (imageFile) {
+        const ext=(imageFile.name.split(".").pop()||"jpg").replace(/[^a-z0-9]/gi,"").toLowerCase()||"jpg";
+        const imagePath=`manager/campaigns/${access.session?.userId || "manager"}/${crypto.randomUUID()}.${ext}`;
+        const stored=await client.storage.from("manager-media").upload(imagePath,new Uint8Array(await imageFile.arrayBuffer()),{contentType:imageFile.type,upsert:false});
+        if(stored.error)return NextResponse.json({ok:false,reason:stored.error.message},{status:400});
+        insert.image_path=imagePath;
+        insert.image_url=client.storage.from("manager-media").getPublicUrl(imagePath).data.publicUrl;
+      }
+      const { data, error } = await client.from("campaigns").insert(insert).select("*").single();
       if (error) return NextResponse.json({ ok: false, reason: error.message }, { status: 500 });
       return NextResponse.json({ ok: true, campaign: data });
     }
@@ -78,7 +101,16 @@ export async function POST(request: Request) {
       }
       const name = String(body.name || "").trim();
       if (!name) return NextResponse.json({ ok: false, reason: "Package name is required." }, { status: 400 });
-      const { data, error } = await client.from("campaign_gift_packages").insert({ ...common, name, description: body.description ? String(body.description) : null, quantity: body.quantity == null || body.quantity === "" ? null : Math.max(1, Number(body.quantity)) }).select("*").single();
+      const packageInsert: Record<string, unknown> = { ...common, name, description: body.description ? String(body.description) : null, quantity: body.quantity == null || body.quantity === "" ? null : Math.max(1, Number(body.quantity)) };
+      if (imageFile) {
+        const ext=(imageFile.name.split(".").pop()||"jpg").replace(/[^a-z0-9]/gi,"").toLowerCase()||"jpg";
+        const imagePath=`manager/gifts/${access.session?.userId || "manager"}/${crypto.randomUUID()}.${ext}`;
+        const stored=await client.storage.from("manager-media").upload(imagePath,new Uint8Array(await imageFile.arrayBuffer()),{contentType:imageFile.type,upsert:false});
+        if(stored.error)return NextResponse.json({ok:false,reason:stored.error.message},{status:400});
+        packageInsert.image_path=imagePath;
+        packageInsert.image_url=client.storage.from("manager-media").getPublicUrl(imagePath).data.publicUrl;
+      }
+      const { data, error } = await client.from("campaign_gift_packages").insert(packageInsert).select("*").single();
       if (error) return NextResponse.json({ ok: false, reason: error.message }, { status: 500 });
       return NextResponse.json({ ok: true, package: data });
     }

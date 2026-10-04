@@ -31,6 +31,7 @@ export default function PrizeManager() {
   const [claims, setClaims] = useState<Claim[]>([]);
   const [editing, setEditing] = useState<Prize | null>(null);
   const [message, setMessage] = useState("");
+  const [imageFile, setImageFile] = useState<File | null>(null);
 
   const headers = () => {
     const { session, user } = readStoredSession();
@@ -57,26 +58,26 @@ export default function PrizeManager() {
   async function save(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!editing) return;
-    const response = await fetch("/api/prizes", {
-      method: "POST",
-      headers: headers(),
-      body: JSON.stringify({
-        id: editing.id || undefined,
-        refCode: editing.ref_code,
-        title: editing.title,
-        inviteRequirement: editing.invite_requirement,
-        tierScope: editing.tier_scope,
-        rewardType: editing.reward_type,
-        rewardDescription: editing.reward_description,
-        cashValue: editing.cash_value ?? null,
-        imageUrl: editing.image_url ?? null,
-        active: editing.active,
-        sortOrder: editing.sort_order,
-      }),
-    });
+    const form = new FormData();
+    form.set("action", editing.id ? "update" : "create");
+    if (editing.id) form.set("id", editing.id);
+    form.set("refCode", editing.ref_code);
+    form.set("title", editing.title);
+    form.set("inviteRequirement", String(editing.invite_requirement));
+    form.set("tierScope", editing.tier_scope);
+    form.set("rewardType", editing.reward_type);
+    form.set("rewardDescription", editing.reward_description || "");
+    form.set("cashValue", editing.cash_value == null ? "" : String(editing.cash_value));
+    form.set("active", String(editing.active !== false));
+    form.set("sortOrder", String(editing.sort_order || 0));
+    if (imageFile) form.append("image", imageFile);
+    const { session } = readStoredSession();
+    const authHeaders: HeadersInit = {};
+    if (session.access_token) authHeaders.authorization = "Bearer " + session.access_token;
+    const response = await fetch("/api/prizes", { method: "POST", headers: authHeaders, body: form });
     const payload = await response.json().catch(() => ({}));
     setMessage(payload.ok ? "Prize saved." : payload.reason || "Prize save failed.");
-    if (payload.ok) { setEditing(null); await load(); }
+    if (payload.ok) { setEditing(null); setImageFile(null); await load(); }
   }
 
   async function remove(id: string) {
@@ -129,7 +130,11 @@ export default function PrizeManager() {
             <label>Reward type<select value={editing.reward_type} onChange={(e) => setEditing({ ...editing, reward_type: e.target.value })}><option value="physical">Physical prize</option><option value="cash">Cash</option><option value="none">Not available</option></select></label>
             <label>Prize description<textarea value={editing.reward_description || ""} onChange={(e) => setEditing({ ...editing, reward_description: e.target.value })} /></label>
             <label>Prize cash value (UGX)<input type="number" min="0" value={editing.cash_value ?? ""} onChange={(e) => setEditing({ ...editing, cash_value: e.target.value === "" ? null : Number(e.target.value) })} /></label>
-            <label>Image URL<input value={editing.image_url || ""} onChange={(e) => setEditing({ ...editing, image_url: e.target.value })} placeholder="Supabase/public image URL" /></label>
+            <label>Prize image
+              <input type="file" accept="image/jpeg,image/png,image/webp" onChange={(e) => setImageFile(e.target.files?.[0] || null)} />
+              {editing.image_url ? <img src={editing.image_url} alt="Current prize" style={{width:96,height:96,objectFit:"cover",borderRadius:12,marginTop:8}} /> : null}
+              <span className="manager-field-help">{imageFile ? imageFile.name : "Choose an image from the Manager device. AQE stores the image securely and generates the display URL automatically."}</span>
+            </label>
             <div className="manager-row-actions"><button type="submit">Save prize</button><button type="button" onClick={() => setEditing(null)}>Cancel</button></div>
           </form>
         ) : null}

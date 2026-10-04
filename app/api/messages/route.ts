@@ -55,6 +55,10 @@ export async function GET(request: Request) {
             ? message.recipient_id
             : message.sender_id,
         preview: message.body,
+        body: message.body,
+        senderId: message.sender_id,
+        recipientId: message.recipient_id,
+        createdAt: message.created_at,
         time: new Date(message.created_at).toLocaleTimeString([], {
           hour: "2-digit",
           minute: "2-digit",
@@ -89,6 +93,13 @@ export async function POST(request: Request) {
 
     const recipientId = String(body.recipientId ?? "").trim();
     const text = validateCommunityText(body.body, "Message");
+    const client = createServerSupabaseClient();
+    if (client) {
+      const recipient = await client.from("profiles").select("user_id,verification_status,account_status").eq("user_id", recipientId).maybeSingle();
+      if (recipient.error || !recipient.data) return NextResponse.json({ ok: false, reason: "Recipient is not a registered user." }, { status: 404 });
+      if (String(recipient.data.verification_status || "").toLowerCase() !== "approved" || String(recipient.data.account_status || "").toLowerCase() !== "active") return NextResponse.json({ ok: false, reason: "Messages are only available to verified active members." }, { status: 403 });
+    }
+
     if (!recipientId || recipientId === identity.userId || !text.ok) {
       const reason =
         recipientId === identity.userId
@@ -101,18 +112,27 @@ export async function POST(request: Request) {
 
     // The server is the source of truth for chat charging. The client cannot
     // bypass QC by calling the message endpoint directly.
-    const supabaseConfigured = Boolean(
-      process.env.NEXT_PUBLIC_SUPABASE_URL &&
-      process.env.SUPABASE_SERVICE_ROLE_KEY,
-    );
+    const supabaseConfigured = Boolean(client);
 
-    if (supabaseConfigured) {
-      const charge = await chargeChatQcFromDatabase(identity.userId, 1);
-      if (!charge.ok) {
-        return NextResponse.json(
-          { ...charge, ok: false, reason: charge.reason ?? "Chat charge failed." },
-          { status: 402 },
-        );
+    if (supabaseConfigured && client) {
+      const membership = await client
+        .from("profiles")
+        .select("tier,verification_status")
+        .eq("user_id", identity.userId)
+        .maybeSingle();
+
+      const tier = String(membership.data?.tier ?? "").toLowerCase();
+      const subscribed = ["basic", "premium", "vip"].includes(tier) &&
+        String(membership.data?.verification_status ?? "").toLowerCase() === "approved";
+
+      if (!subscribed) {
+        const charge = await chargeChatQcFromDatabase(identity.userId, 1);
+        if (!charge.ok) {
+          return NextResponse.json(
+            { ...charge, ok: false, reason: charge.reason ?? "Chat charge failed." },
+            { status: 402 },
+          );
+        }
       }
     }
 

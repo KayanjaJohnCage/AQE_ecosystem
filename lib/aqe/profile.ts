@@ -34,6 +34,8 @@ export type ProfileRecord = {
     | "rejected"
     | "resubmission_required";
   profilePhotoId?: string;
+  referredBy?: string;
+  referralCode?: string;
   createdAt: string;
   updatedAt: string;
 };
@@ -62,6 +64,8 @@ export function createProfileRecord({
   visibility,
   socialPlatforms,
   contactMethods,
+  referredBy,
+  referralCode,
 }: {
   userId: string;
   displayName: string;
@@ -86,6 +90,8 @@ export function createProfileRecord({
   visibility?: string;
   socialPlatforms?: Record<string, string>;
   contactMethods?: Record<string, string>;
+  referredBy?: string;
+  referralCode?: string;
 }): { ok: boolean; profile?: ProfileRecord; reason?: string } {
   if (!userId || !displayName) {
     return { ok: false, reason: "User ID and display name are required." };
@@ -118,6 +124,8 @@ export function createProfileRecord({
       visibility,
       socialPlatforms,
       contactMethods,
+      referredBy,
+      referralCode,
       tier,
       verificationStatus,
       createdAt: now,
@@ -156,6 +164,8 @@ export async function persistProfileRecord(profile: ProfileRecord) {
       visibility: profile.visibility ?? "public",
       social_platforms: profile.socialPlatforms ?? {},
       contact_methods: profile.contactMethods ?? {},
+      referral_code: profile.referralCode ?? null,
+      referred_by: profile.referredBy ?? null,
       tier: profile.tier,
       verification_status: profile.verificationStatus,
       profile_photo_id: profile.profilePhotoId ?? null,
@@ -268,6 +278,8 @@ export async function getProfileByUserId(userId: string) {
           (data.verification_status as ProfileRecord["verificationStatus"]) ??
           "pending",
         profilePhotoId: data.profile_photo_id ?? undefined,
+        referralCode: data.referral_code ?? undefined,
+        referredBy: data.referred_by ?? undefined,
         createdAt: data.created_at ?? new Date().toISOString(),
         updatedAt: data.updated_at ?? new Date().toISOString(),
       },
