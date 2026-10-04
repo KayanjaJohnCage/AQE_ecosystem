@@ -4185,25 +4185,14 @@ function closeInvite() {
 
 
 function copyInvite() {
-
   if (!state.currentUser) { openAuth(); return; }
-
-  const code = state.currentUser.referralCode || '';
-
+  const code = String(state.currentUser.referralCode || '').trim().toUpperCase();
   const url = 'https://afiqueerescortsecosystem.com/customer?ref=' + encodeURIComponent(code);
-
   const text = 'Join AfriQueer Escorts Ecosystem with my referral code: ' + code + ' ' + url;
-
   if (navigator.clipboard && navigator.clipboard.writeText) {
     navigator.clipboard.writeText(text).then(function(){ showToast('Referral link copied!'); }).catch(function(){ showToast(url); });
   } else {
-    const ta = document.createElement('textarea');
-    ta.value = text;
-    document.body.appendChild(ta);
-    ta.select();
-    document.execCommand('copy');
-    ta.remove();
-    showToast('Referral link copied!');
+    const ta = document.createElement('textarea'); ta.value = text; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); showToast('Referral link copied!');
   }
 }
 
@@ -13185,18 +13174,17 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
   function referralCode(){
     var u=current();return u&&u.referralCode?String(u.referralCode).toUpperCase():"";
   }
-  window.copyInvite=function(){
-    var u=current();if(!u){if(typeof openAuth==="function")openAuth();return}
-    var code=referralCode(),url="https://afiqueerescortsecosystem.com/customer?ref="+encodeURIComponent(code),text="Join AQE with my code: "+code+" at "+url;
-    function done(){toast("Referral link copied. Code "+code+" is attached to the registration link.","success")}
-    if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(text).then(done).catch(function(){toast(url,"success")});else{var ta=document.createElement("textarea");ta.value=text;document.body.appendChild(ta);ta.select();document.execCommand("copy");ta.remove();done()}
-  };
-  window.copyRef=window.copyInvite;
-  window.shareTo=function(platform){
-    var code=referralCode(),url="https://afiqueerescortsecosystem.com/customer?ref="+encodeURIComponent(code),text="Join AQE — use my referral code: "+code;
-    if(platform==="whatsapp")window.open("https://wa.me/?text="+encodeURIComponent(text+" "+url),"_blank");
-    else if(platform==="telegram")window.open("https://t.me/share/url?url="+encodeURIComponent(url)+"&text="+encodeURIComponent(text),"_blank");
-    else window.copyInvite();
+  // Canonical referral sharing is defined once above; keep all share buttons on that handler.
+  window.copyInvite = copyInvite;
+  window.copyRef = copyInvite;
+  window.shareTo = function(platform){
+    var u=current(); if(!u){openAuth();return;}
+    var code=String(u.referralCode||'').trim().toUpperCase();
+    var url="https://afiqueerescortsecosystem.com/customer?ref="+encodeURIComponent(code);
+    var text="Join AfriQueer Escorts Ecosystem with my referral code: "+code;
+    if(platform==="whatsapp") window.open("https://wa.me/?text="+encodeURIComponent(text+" "+url),"_blank");
+    else if(platform==="telegram") window.open("https://t.me/share/url?url="+encodeURIComponent(url)+"&text="+encodeURIComponent(text),"_blank");
+    else copyInvite();
   };
   function applyReferralFromUrl(){
     try{
