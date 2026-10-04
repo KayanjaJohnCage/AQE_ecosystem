@@ -13798,8 +13798,43 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
     window.scrollTo(0,0);
     if(id==="screen-team"&&typeof window.renderTeam==="function")window.renderTeam();
     if(id==="screen-aqe-referrals"&&typeof window.renderReferrals==="function")window.renderReferrals();
-    if(id==="screen-aqe-earnings"&&typeof window.renderEarningsReal==="function")window.renderEarningsReal();
     if(id==="screen-aqe-withdraw"&&typeof window.renderWithdraw==="function")window.renderWithdraw();
+
+    /* The authoritative router intentionally bypasses legacy showScreen wrappers.
+       Therefore financial screens must invoke their own server refresh here. */
+    if(id==="screen-wallet"){
+      var walletRefresh=window.aqeRefreshFinancialState;
+      if(typeof walletRefresh==="function"){
+        walletRefresh().then(function(){
+          if(typeof window.pxRenderAll==="function")window.pxRenderAll();
+          if(typeof window.updateUIForUser==="function")window.updateUIForUser();
+        }).catch(function(){});
+      }
+    }
+    if(id==="screen-aqe-wallet"){
+      var walletRefresh2=window.aqeRefreshFinancialState;
+      if(typeof walletRefresh2==="function"){
+        walletRefresh2().then(function(){
+          var u=window.state&&window.state.currentUser;
+          var w=u&&u.wallet?Number(u.wallet.UGX||0):0,q=u?Number(u.qc||0):0;
+          var a=el("aqeWalletValue"),b=el("aqeQcValue");
+          if(a)a.textContent=w.toLocaleString();if(b)b.textContent=q.toLocaleString();
+        }).catch(function(){});
+      }
+    }
+    if(id==="screen-aqe-earnings"){
+      var earningsRefresh=window.aqeRefreshFinancialState;
+      if(typeof earningsRefresh==="function"){
+        earningsRefresh().then(function(){
+          var load=window.aqeSyncAuthoritativeEarnings;
+          if(typeof load==="function")return load();
+        }).then(function(){
+          if(typeof window.renderEarningsReal==="function")window.renderEarningsReal();
+        }).catch(function(){});
+      }else if(typeof window.renderEarningsReal==="function"){
+        window.renderEarningsReal();
+      }
+    }
     return true;
   };
 
