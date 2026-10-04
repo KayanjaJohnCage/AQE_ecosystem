@@ -148,6 +148,9 @@ export async function POST(request: Request) {
         );
       }
       referredBy = referrer.data.user_id;
+      if (referredBy === null) {
+        return NextResponse.json({ ok: false, reason: "Referral attribution could not be established." }, { status: 400 });
+      }
     }
 
     // Supabase Auth enforces email uniqueness, but checking the server-side Auth index
@@ -270,6 +273,8 @@ export async function POST(request: Request) {
       visibility: String(body.visibility ?? "public").trim(),
       socialPlatforms,
       contactMethods,
+      referredBy: referredBy ?? undefined,
+      referralCode: undefined,
       tier: "basic",
       verificationStatus: "pending",
     });
