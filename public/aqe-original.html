@@ -12868,7 +12868,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 
   window.renderEarningsReal=function(){
     var root=E("screen-aqe-earnings");if(!root)return;
-    var e=state.realEarnings||{},total=Number(e.totalEarnings||0),ref=Number(e.totalReferral||0),other=Number(e.totalOther||0)+Number(e.totalCreator||0);
+    var e=state.realEarnings||{},total=Number(e.totalEarnings||0),ref=Number(e.totalReferral||0),other=Number(e.totalOther||0)+Number(e.totalCreator||0),salary=Number(e.vipSalary&&e.vipSalary.lockedBalance||0),salaryReleased=Number(e.vipSalary&&e.vipSalary.withdrawableBalance||0);
     var rows=[].concat(e.referralEarnings||[],e.otherEarnings||[],e.creatorEarnings||[]).sort(function(a,b){return String(b.created_at||'').localeCompare(String(a.created_at||''));});
     root.innerHTML='<div class="px4 py4"><div class="xs cg fw8 up">ACCOUNT EARNINGS</div><h3 class="xl fw8">Earnings</h3><div class="xs ca5 mt1">Credited earnings are separate from wallet cash and follow AQE withdrawal policy.</div>'+
       '<div class="g g3c g3" style="margin-top:14px"><div class="aqe-update-card"><div class="px-label">TOTAL EARNINGS</div><div class="aqe-update-price">'+money(total)+'</div></div><div class="aqe-update-card"><div class="px-label">REFERRAL EARNINGS</div><div class="aqe-update-price">'+money(ref)+'</div></div><div class="aqe-update-card"><div class="px-label">OTHER EARNINGS</div><div class="aqe-update-price">'+money(other)+'</div></div></div>'+
@@ -12905,28 +12905,84 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
   function profileFor(id){return (window.state&&Array.isArray(state.profiles)?state.profiles:[]).find(function(p){return String(p.id)===String(id)})}
 
   /* One final navigation authority. It bypasses the accumulated legacy showScreen wrappers. */
+  var AQE_PROTECTED_SCREENS={
+    "screen-wallet":1,"screen-bill":1,"screen-receipts":1,"screen-notifications":1,
+    "screen-messages":1,"screen-me":1,"screen-team":1,"screen-tasks":1,"screen-rewards":1,
+    "screen-raffle":1,"screen-manager":1,"screen-book":1,"screen-comments":1,
+    "screen-aqe-wallet":1,"screen-aqe-earnings":1,"screen-aqe-referrals":1,
+    "screen-aqe-withdraw":1,"screen-aqe-payments":1,"screen-aqe-media":1
+  };
+  var aqeAuthHydrationPromise=null;
+  async function ensureAqeAuthenticated(){
+    if(current())return current();
+    var s=sess();
+    if(!s||!s.access_token)return null;
+    if(!aqeAuthHydrationPromise){
+      aqeAuthHydrationPromise=(async function(){
+        try{
+          if(typeof window.hydrateUser==="function"){
+            var u=await window.hydrateUser();
+            if(u&&typeof window.syncCollections==="function")await window.syncCollections();
+            return u;
+          }
+        }catch(_){}
+        return null;
+      })().finally(function(){aqeAuthHydrationPromise=null});
+    }
+    return aqeAuthHydrationPromise;
+  }
+
   window.aqeNavigate=function(id){
     if(!id)return;
-    
     var el=E(id);if(!el){toastMsg("That AQE page is not available yet.","error");return}
-    document.querySelectorAll(".screen").forEach(function(x){x.classList.add("hidden")});
-    el.classList.remove("hidden");
-    el.classList.add("fi");
-    window.scrollTo(0,0);
-    try{
-      if(id==="screen-home"&&typeof renderProfiles==="function")renderProfiles();
-      if(id==="screen-explore"&&typeof renderExplore==="function")renderExplore();
-      if(id==="screen-shop"&&typeof renderMarket==="function")renderMarket();
-      if(id==="screen-messages"&&typeof mxRenderInbox==="function")mxRenderInbox();
-      if(id==="screen-me"&&typeof renderMyProfileMedia==="function")renderMyProfileMedia();
-      if(id==="screen-bill"&&typeof renderBill==="function")renderBill();
-      if(id==="screen-notifications"&&typeof renderAqeNotificationPage==="function")renderAqeNotificationPage();
-      if(id==="screen-receipts"&&typeof renderAqeReceiptPage==="function")renderAqeReceiptPage();
-      if(id==="screen-aqe-payments"&&typeof renderPaymentHistory==="function")renderPaymentHistory();
-      if(id.indexOf("screen-aqe-")===0&&typeof pxRenderAll==="function")pxRenderAll();
-      if(id==="screen-manager"&&typeof managerSupport==="function")managerSupport();
-    }catch(_){}
-    document.dispatchEvent(new CustomEvent("aqe-screen-change",{detail:{id:id}}));
+
+    var render=function(){
+      document.querySelectorAll(".screen").forEach(function(x){x.classList.add("hidden")});
+      el.classList.remove("hidden");
+      el.classList.add("fi");
+      window.scrollTo(0,0);
+      try{
+        if(id==="screen-home"&&typeof renderProfiles==="function")renderProfiles();
+        if(id==="screen-explore"&&typeof renderExplore==="function")renderExplore();
+        if(id==="screen-shop"&&typeof renderMarket==="function")renderMarket();
+        if(id==="screen-messages"&&typeof mxRenderInbox==="function")mxRenderInbox();
+        if(id==="screen-me"&&typeof renderMyProfileMedia==="function")renderMyProfileMedia();
+        if(id==="screen-bill"&&typeof renderBill==="function")renderBill();
+        if(id==="screen-notifications"&&typeof renderAqeNotificationPage==="function")renderAqeNotificationPage();
+        if(id==="screen-receipts"&&typeof renderAqeReceiptPage==="function")renderAqeReceiptPage();
+        if(id==="screen-aqe-payments"&&typeof renderPaymentHistory==="function")renderPaymentHistory();
+        if(id.indexOf("screen-aqe-")===0&&typeof pxRenderAll==="function")pxRenderAll();
+        if(id==="screen-manager"&&typeof managerSupport==="function")managerSupport();
+      }catch(_){}
+      document.dispatchEvent(new CustomEvent("aqe-screen-change",{detail:{id:id}}));
+
+      if(id==="screen-wallet"||id==="screen-aqe-wallet"||id==="screen-aqe-earnings"||id==="screen-aqe-withdraw"||id==="screen-aqe-payments"||id==="screen-receipts"){
+        if(typeof window.aqeRefreshFinancialState==="function")window.aqeRefreshFinancialState().then(function(){
+          if(id==="screen-aqe-earnings"&&typeof window.renderEarningsReal==="function")window.renderEarningsReal();
+          if(id==="screen-aqe-payments"&&typeof window.renderPaymentHistory==="function")window.renderPaymentHistory();
+          if(id==="screen-receipts"&&typeof window.renderAqeReceiptPage==="function")window.renderAqeReceiptPage();
+          if(id==="screen-wallet"&&typeof window.pxRenderAll==="function")window.pxRenderAll();
+          if(id==="screen-aqe-wallet"){
+            var u=current(),w=E("aqeWalletValue"),q=E("aqeQcValue");
+            if(w)w.textContent=Number(u&&u.wallet&&u.wallet.UGX||0).toLocaleString();
+            if(q)q.textContent=Number(u&&u.qc||0);
+          }
+        }).catch(function(){});
+      }
+    };
+
+    if(AQE_PROTECTED_SCREENS[id]&&!current()){
+      ensureAqeAuthenticated().then(function(u){
+        if(!u){
+          toastMsg("Your AQE session could not be restored. Please sign in again.","error");
+          if(typeof window.openAuth==="function")window.openAuth();
+          return;
+        }
+        render();
+      });
+      return el;
+    }
+    render();
     return el;
   };
 
