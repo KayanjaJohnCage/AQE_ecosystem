@@ -6824,7 +6824,7 @@ window.addEventListener('DOMContentLoaded', init);
 
   const PLANS={basic:{name:'Basic',price:65000,wallet:5000,qc:25},premium:{name:'Premium',price:120000,wallet:15000,qc:50},vip:{name:'VIP',price:500000,wallet:25000,qc:150}};
 
-  const VIP_ONLY=['screen-team','screen-tasks','screen-rewards','screen-raffle','screen-vault','screen-store','screen-groups','screen-aqe-campaigns','screen-aqe-prizes','screen-aqe-referrals'];
+  const VIP_ONLY=['screen-tasks','screen-vault','screen-store','screen-groups'];
 
   function user(){return window.state&&state.currentUser}
 
@@ -13170,14 +13170,13 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
   }
   window.copyInvite=function(){
     var u=current();if(!u){if(typeof openAuth==="function")openAuth();return}
-    if(String(u.tier||"").toLowerCase()!=="vip"){if(typeof pxOpenUpgrade==="function")pxOpenUpgrade();return}
-    var code=referralCode(),url=location.origin+"/customer?ref="+encodeURIComponent(code),text="Join AQE with my code: "+code+" at "+url;
+    var code=referralCode(),url="https://afiqueerescortsecosystem.com/customer?ref="+encodeURIComponent(code),text="Join AQE with my code: "+code+" at "+url;
     function done(){toast("Referral link copied. Code "+code+" is attached to the registration link.","success")}
     if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(text).then(done).catch(function(){toast(url,"success")});else{var ta=document.createElement("textarea");ta.value=text;document.body.appendChild(ta);ta.select();document.execCommand("copy");ta.remove();done()}
   };
   window.copyRef=window.copyInvite;
   window.shareTo=function(platform){
-    var code=referralCode(),url=location.origin+"/customer?ref="+encodeURIComponent(code),text="Join AQE — use my referral code: "+code;
+    var code=referralCode(),url="https://afiqueerescortsecosystem.com/customer?ref="+encodeURIComponent(code),text="Join AQE — use my referral code: "+code;
     if(platform==="whatsapp")window.open("https://wa.me/?text="+encodeURIComponent(text+" "+url),"_blank");
     else if(platform==="telegram")window.open("https://t.me/share/url?url="+encodeURIComponent(url)+"&text="+encodeURIComponent(text),"_blank");
     else window.copyInvite();
