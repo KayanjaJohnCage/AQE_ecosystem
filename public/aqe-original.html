@@ -6781,6 +6781,8 @@ window.addEventListener('DOMContentLoaded', init);
 
 
 
+<div id="screen-aqe-earnings" class="screen hidden"></div>
+
 <div id="screen-aqe-referrals" class="screen hidden"><div class="px4 py4">
 
   <div class="px-title">Invites & Referrals</div><div class="px-sub">Referral performance is settled only after the referred member's subscription payment is confirmed.</div>
@@ -6925,7 +6927,7 @@ window.addEventListener('DOMContentLoaded', init);
 
       nav.dataset.aqe2026='1';
 
-      [['screen-aqe-plans','fa-layer-group','Membership Plans'],['screen-aqe-payments','fa-receipt','Payment Activity'],['screen-aqe-wallet','fa-wallet','AQE Money Account'],['screen-aqe-media','fa-photo-video','My Uploaded Media'],['screen-aqe-gifts','fa-gift','Gifts Hall'],['screen-aqe-referrals','fa-user-friends','Invites & Referrals'],['screen-aqe-campaigns','fa-bullhorn','Campaigns'],['screen-aqe-prizes','fa-trophy','Prizes'],['screen-aqe-withdraw','fa-money-bill-wave','Withdraw']].forEach(function(x){
+      [['screen-aqe-plans','fa-layer-group','Membership Plans'],['screen-aqe-earnings','fa-coins','Earnings'],['screen-aqe-payments','fa-receipt','Payment Activity'],['screen-aqe-wallet','fa-wallet','AQE Money Account'],['screen-aqe-media','fa-photo-video','My Uploaded Media'],['screen-aqe-gifts','fa-gift','Gifts Hall'],['screen-aqe-referrals','fa-user-friends','Invites & Referrals'],['screen-aqe-campaigns','fa-bullhorn','Campaigns'],['screen-aqe-prizes','fa-trophy','Prizes'],['screen-aqe-withdraw','fa-money-bill-wave','Withdraw']].forEach(function(x){
 
         const b=document.createElement('button'); b.className='dl'; b.innerHTML='<i class="fas '+x[1]+'"></i> '+x[2]; b.onclick=function(){ if(VIP_ONLY.includes(x[0])&&!aqeUpgradeGate(x[2]))return; showScreen(x[0]);toggleDrawer();render();}; nav.appendChild(b);
 
@@ -12780,7 +12782,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
   if(show&&!show.__aqeDedicatedPages){
     window.showScreen=function(id){
       var result=show.apply(this,arguments);
-      if(id==="screen-receipts"){window.renderAqeReceiptPage();if(window.aqeRefreshFinancialState)window.aqeRefreshFinancialState().then(window.renderAqeReceiptPage).catch(function(){});}
+      if(id==="screen-aqe-earnings"){if(window.aqeRefreshFinancialState)window.aqeRefreshFinancialState().then(function(){if(typeof renderEarningsReal==="function")renderEarningsReal();}).catch(function(){});}if(id==="screen-aqe-referrals"){if(typeof renderReferrals==="function")renderReferrals();}if(id==="screen-receipts"){window.renderAqeReceiptPage();if(window.aqeRefreshFinancialState)window.aqeRefreshFinancialState().then(window.renderAqeReceiptPage).catch(function(){});}
       if(id==="screen-notifications"){window.renderAqeNotificationPage();if(window.aqeRefreshFinancialState)window.aqeRefreshFinancialState().then(window.renderAqeNotificationPage).catch(function(){});}
       return result;
     };
