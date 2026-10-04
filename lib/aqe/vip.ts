@@ -80,7 +80,7 @@ export function isVipWithdrawalAllowed(
   };
 }
 
-export const DEFAULT_WITHDRAWAL_SERVICE_CHARGE_RATE = 0.10;
+export const DEFAULT_WITHDRAWAL_SERVICE_CHARGE_RATE = 0.08;
 export const MIN_WITHDRAWAL_AMOUNT = 30_000;
 export const MAX_WITHDRAWAL_AMOUNT = 5_000_000;
 
