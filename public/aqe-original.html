@@ -4184,12 +4184,27 @@ function closeInvite() {
 
 
 
-  const code = state.currentUser.referralCode;
+function copyInvite() {
 
-  navigator.clipboard.writeText('Join AfriQueer Escorts Ecosystem with my referral code: ' + code + ' https://afiqueerescortsecosystem.com/customer?ref=' + code);
+  if (!state.currentUser) { openAuth(); return; }
 
-  showToast('Referral link copied!');
+  const code = state.currentUser.referralCode || '';
 
+  const url = 'https://afiqueerescortsecosystem.com/customer?ref=' + encodeURIComponent(code);
+
+  const text = 'Join AfriQueer Escorts Ecosystem with my referral code: ' + code + ' ' + url;
+
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(function(){ showToast('Referral link copied!'); }).catch(function(){ showToast(url); });
+  } else {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    ta.remove();
+    showToast('Referral link copied!');
+  }
 }
 
 
