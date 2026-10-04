@@ -23,7 +23,7 @@ export default function CustomerPage() {
       <iframe
         title="AfriQueer Escorts Ecosystem"
         className="aqe-original-frame"
-        src="/aqe-original.html?v=20261005-financial-refresh-7"
+        src="/aqe-original.html?v=20261005-financial-data-8"
       />
     </main>
   );
