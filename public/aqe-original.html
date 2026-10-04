@@ -12816,7 +12816,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
       if(typeof renderRewardsReal==="function")renderRewardsReal();
     }catch(_){}
     try{
-      var e=await j("/api/earnings");state.realEarnings=e;if(U())U().earnings=Number(e.totalCreator||0)+Number(e.totalReferral||0);
+      var e=await j("/api/earnings");state.realEarnings=e;if(U())U().earnings=Number(e.totalEarnings||0);if(typeof renderEarningsReal==="function")renderEarningsReal();
       if(typeof updateUIForUser==="function")updateUIForUser();
     }catch(_){}
   }
@@ -12866,6 +12866,17 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
   window.claimDailyReward=async function(){
     try{var b=await j("/api/rewards",{method:"POST",body:JSON.stringify({action:"daily"})});await aqeRefreshFinancialState();await syncRealCollections();toast2("Daily reward claimed: "+b.amount+" QC.");}
     catch(e){toast2(e.message,"error")}
+  };
+
+  window.renderEarningsReal=function(){
+    var root=E("screen-aqe-earnings");if(!root)return;
+    var e=state.realEarnings||{},total=Number(e.totalEarnings||0),ref=Number(e.totalReferral||0),other=Number(e.totalOther||0)+Number(e.totalCreator||0);
+    var rows=[].concat(e.referralEarnings||[],e.otherEarnings||[],e.creatorEarnings||[]).sort(function(a,b){return String(b.created_at||'').localeCompare(String(a.created_at||''));});
+    root.innerHTML='<div class="px4 py4"><div class="xs cg fw8 up">ACCOUNT EARNINGS</div><h3 class="xl fw8">Earnings</h3><div class="xs ca5 mt1">Credited earnings are separate from wallet cash and follow AQE withdrawal policy.</div>'+
+      '<div class="g g3c g3" style="margin-top:14px"><div class="aqe-update-card"><div class="px-label">TOTAL EARNINGS</div><div class="aqe-update-price">'+money(total)+'</div></div><div class="aqe-update-card"><div class="px-label">REFERRAL EARNINGS</div><div class="aqe-update-price">'+money(ref)+'</div></div><div class="aqe-update-card"><div class="px-label">OTHER EARNINGS</div><div class="aqe-update-price">'+money(other)+'</div></div></div>'+
+      '<div class="aqe-update-card" style="margin-top:14px"><div class="px-label">EARNING ACTIVITY</div>'+
+      (rows.length?'<div style="display:grid;gap:8px;margin-top:8px">'+rows.slice(0,50).map(function(x){var type=String(x.reference_type||x.transaction_type||x.source||'earning').replaceAll('_',' '),amount=Number(x.amount||x.net_amount||0);return '<div class="aqe-update-row"><span>'+escapeHtml(type.toUpperCase())+'<span class="xs ca5" style="display:block">'+escapeHtml(x.created_at?new Date(x.created_at).toLocaleString():'')+'</span></span><b class="cgr">'+money(amount)+'</b></div>';}).join('')+'</div>':'<div class="xs ca5" style="margin-top:8px">No credited earnings yet.</div>')+
+      '</div></div>';
   };
 
   window.renderRewardsReal=function(){
