@@ -1,6 +1,6 @@
 (function(){
   "use strict";
-  var DOMAIN="https://afriqueerescortsecosystem.com";
+  var DOMAIN="https://afiqueerescortsecosystem.com";
   function el(id){return document.getElementById(id)}
   function session(){try{return JSON.parse(localStorage.getItem("aqe_next_session")||"null")}catch(_){return null}}
   function headers(json){var h=json?{"Content-Type":"application/json"}:{};var s=session();if(s&&s.access_token)h.Authorization="Bearer "+s.access_token;return h}

@@ -85,7 +85,7 @@ These are not being hidden as "complete" because they depend on production confi
 - [ ] Configure Vercel production environment variables.
 - [ ] Configure CRON and verify scheduled jobs.
 - [ ] Verify production health endpoint.
-- [ ] Verify Cloudflare DNS, Vercel domain assignment and HTTPS for `afriqueerescortsecosystem.com`.
+- [ ] Verify Cloudflare DNS, Vercel domain assignment and HTTPS for `afiqueerescortsecosystem.com`.
 - [ ] Verify the production Google OAuth redirect URL.
 
 ## Business rules locked in current code

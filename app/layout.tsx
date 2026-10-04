@@ -2,7 +2,7 @@ import './globals.css'
 import { ReactNode } from 'react'
 
 export const metadata = {
-  metadataBase: new URL("https://afriqueerescortsecosystem.com"),
+  metadataBase: new URL("https://afiqueerescortsecosystem.com"),
   title: {
     default: "AfriQueer Escorts Ecosystem",
     template: "%s | AfriQueer Escorts Ecosystem",
@@ -22,7 +22,7 @@ export const metadata = {
   openGraph: {
     title: "AfriQueer Escorts Ecosystem",
     description: "A growing ecosystem of love, peace, happiness, opportunities, pleasure and confidence.",
-    url: "https://afriqueerescortsecosystem.com/",
+    url: "https://afiqueerescortsecosystem.com/",
     siteName: "AfriQueer Escorts Ecosystem",
     type: "website",
   },
