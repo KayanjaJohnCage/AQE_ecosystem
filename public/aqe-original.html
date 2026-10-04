@@ -13776,5 +13776,105 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
   }
 })();
 </script>
+
+<script id="aqe-final-authoritative-team-routing">
+(function(){
+  "use strict";
+  function el(id){return document.getElementById(id)}
+  function esc(v){return String(v==null?"":v).replace(/[&<>'"]/g,function(c){return ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'})[c]})}
+  window.escapeHtml=window.escapeHtml||esc;
+
+  window.aqeNavigate=function(id){
+    var target=el(id);
+    if(!target)return false;
+    if(typeof window.aqeCloseTransientOverlays==="function")window.aqeCloseTransientOverlays();
+    document.querySelectorAll(".screen").forEach(function(s){s.classList.add("hidden");s.classList.remove("fi")});
+    target.classList.remove("hidden");target.classList.add("fi");
+    document.querySelectorAll(".nb").forEach(function(b){
+      var active=b.dataset&&b.dataset.screen===id;
+      b.classList.toggle("on",active);b.classList.toggle("active",active);
+    });
+    var drawer=el("drawer");if(drawer)drawer.classList.add("hidden");
+    window.scrollTo(0,0);
+    if(id==="screen-team"&&typeof window.renderTeam==="function")window.renderTeam();
+    if(id==="screen-aqe-referrals"&&typeof window.renderReferrals==="function")window.renderReferrals();
+    if(id==="screen-aqe-earnings"&&typeof window.renderEarningsReal==="function")window.renderEarningsReal();
+    if(id==="screen-aqe-withdraw"&&typeof window.renderWithdraw==="function")window.renderWithdraw();
+    return true;
+  };
+
+  /* Rebind every current and future drawer button to one route function.
+     This deliberately bypasses the accumulated showScreen wrappers. */
+  function bindDrawer(){
+    var nav=document.querySelector("#drawer nav");if(!nav)return;
+    nav.querySelectorAll("button.dl").forEach(function(b){
+      if(b.dataset.aqeBound==="1")return;
+      var inline=b.getAttribute("onclick")||"";
+      var m=inline.match(/showScreen\(['"]([^'"]+)['"]\)/);
+      var id=b.dataset.screen|| (m?m[1]:"");
+      if(!id){
+        var txt=(b.textContent||"").trim().toLowerCase();
+        var map={
+          "home":"screen-home","explore":"screen-explore","marketplace":"screen-shop",
+          "notifications":"screen-notifications","receipts & transactions":"screen-bill",
+          "messages":"screen-messages","my profile":"screen-me","settings":"screen-settings",
+          "manager":"screen-manager","book now":"screen-book","comments":"screen-comments",
+          "wallet":"screen-wallet","premium hub":"screen-premium","vip hub":"screen-vip",
+          "booking queue":"screen-queue","media vault":"screen-vault","my store":"screen-store",
+          "groups":"screen-groups","upgrade level":"__upgrade__","membership plans":"screen-aqe-plans",
+          "earnings":"screen-aqe-earnings","payment activity":"screen-aqe-payments",
+          "aqe money account":"screen-aqe-wallet","my uploaded media":"screen-aqe-media",
+          "gifts hall":"screen-aqe-gifts","invites & referrals":"screen-aqe-referrals",
+          "campaigns":"screen-aqe-campaigns","prizes":"screen-aqe-prizes","withdraw":"screen-aqe-withdraw"
+        };
+        id=map[txt]||"";
+      }
+      if(!id)return;
+      b.dataset.aqeScreen=id;b.dataset.aqeBound="1";
+      b.removeAttribute("onclick");
+      b.addEventListener("click",function(e){
+        e.preventDefault();e.stopPropagation();
+        if(id==="__upgrade__"){if(typeof window.pxOpenUpgrade==="function")window.pxOpenUpgrade();el("drawer")?.classList.add("hidden");return}
+        window.aqeNavigate(id);
+      });
+      b.addEventListener("touchend",function(e){
+        e.preventDefault();e.stopPropagation();
+        if(id==="__upgrade__"){if(typeof window.pxOpenUpgrade==="function")window.pxOpenUpgrade();el("drawer")?.classList.add("hidden");return}
+        window.aqeNavigate(id);
+      },{passive:false});
+    });
+  }
+  bindDrawer();
+  setTimeout(bindDrawer,250);
+  setTimeout(bindDrawer,1000);
+  setTimeout(bindDrawer,2500);
+  new MutationObserver(bindDrawer).observe(document.body,{childList:true,subtree:true});
+
+  /* My Team must never depend on the obsolete local/demo referral state. */
+  window.renderTeam=async function(){
+    var box=el("teamList"),earn=el("teamEarnings"),direct=el("teamDirect"),indirect=el("teamIndirect"),active=el("teamActive"),code=el("refCodeDisplay");
+    if(!box)return;
+    var u=window.state&&state.currentUser;
+    if(!u){box.innerHTML='<div class="tc ca5 xs py4">Sign in to view your referral team.</div>';return}
+    box.innerHTML='<div class="tc ca5 xs py4">Loading your live referral team…</div>';
+    try{
+      var data=await fetch("/api/referrals",{headers:(function(){var h={"Cache-Control":"no-store"};try{var s=JSON.parse(localStorage.getItem("aqe_next_session")||"null");if(s&&s.access_token)h.Authorization="Bearer "+s.access_token}catch(_){}return h})()}).then(function(r){return r.json()});
+      if(!data.ok)throw new Error(data.reason||"Referral data unavailable.");
+      var ds=Array.isArray(data.team?.direct)?data.team.direct:[],is=Array.isArray(data.team?.indirect)?data.team.indirect:[],rows=ds.concat(is);
+      if(earn)earn.textContent="UGX "+Number(data.totalEarnings||0).toLocaleString();
+      if(direct)direct.textContent=String(ds.length);
+      if(indirect)indirect.textContent=String(is.length);
+      if(active)active.textContent=String(rows.filter(function(x){return String(x.accountStatus||"active").toLowerCase()==="active"}).length);
+      if(code)code.textContent=String(data.referralCode||"—");
+      box.innerHTML=rows.length?rows.map(function(row){
+        var directRel=Number(row.relationshipLevel)===1;
+        return '<div class="bga8 rxl p3 b1 ba7 flex aic g3 mb2"><div class="f1"><div class="sm fw7 ca1">'+esc(row.name||"AQE Member")+'</div><div class="xs ca4">'+esc(String(row.tier||"basic").toUpperCase())+' · '+(directRel?"DIRECT":"INDIRECT")+' · '+esc(row.accountStatus||"active")+'</div><div class="xs ca5">Referral earnings generated: UGX '+Number(row.earnings?.total||0).toLocaleString()+'</div></div><span class="xs '+(directRel?"cgr":"cg")+' fw7">'+(directRel?"DIRECT":"INDIRECT")+'</span></div>';
+      }).join(""):'<div class="tc ca5 xs py4">No referrals yet. Share your referral link to build your team.</div>';
+    }catch(e){
+      box.innerHTML='<div class="tc cr xs py4">'+esc(e.message||"Referral team unavailable.")+'</div>';
+    }
+  };
+})();
+</script>
 </body>
 </html>
