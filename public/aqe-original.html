@@ -10851,7 +10851,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
           state.px.wallet=u.wallet.UGX;
           state.px.qc=u.qc;
         }
-        u.earnings=Number(c.earnings||0);
+        u.earnings=Number(c.earnings||0);\n        try{var er=await request("/api/earnings");u.earnings=Number(er.totalEarnings||0);}catch(_){}
         if(typeof window.updateUIForUser==="function")window.updateUIForUser();
       }
       var w=document.getElementById("aqeWalletValue"),q=document.getElementById("aqeQcValue");
@@ -12383,7 +12383,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
       u.wallet.UGX=Number(wallet.available_balance||0);
       u.walletPending=Number(wallet.pending_balance||0);
       u.qc=Number(qc.balance||dash.qcBalance||0);
-      u.earnings=Number(dash.earnings||u.earnings||0);
+      u.earnings=Number(dash.earnings||u.earnings||0);\n      try{var er=await api("/api/earnings");u.earnings=Number(er.totalEarnings||0);}catch(_){}
       u.tier=String(dash.tier||u.tier||'basic').toLowerCase();
       u.tierVerified=Boolean(u.tierVerified||dash.tierVerified||['basic','premium','vip'].indexOf(u.tier)>-1&&u.verified);
       state.currentUser=u;
@@ -13579,5 +13579,165 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 })();
 </script>
 
+
+<script id="aqe-final-customer-routing-financial-withdrawal-fix">
+(function(){
+  "use strict";
+  function E(id){return document.getElementById(id)}
+  function U(){return window.state&&state.currentUser?state.currentUser:null}
+  function sess(){try{return JSON.parse(localStorage.getItem("aqe_next_session")||"null")}catch(_){return null}}
+  function hdr(){var s=sess(),h={"Content-Type":"application/json","Cache-Control":"no-store"};if(s&&s.access_token)h.Authorization="Bearer "+s.access_token;return h}
+  async function api(path,opt){var o=opt||{};o.headers=Object.assign({},hdr(),o.headers||{});var r=await fetch(path,o),b=await r.json().catch(function(){return {}});if(!r.ok||b.ok===false)throw new Error(b.reason||b.message||("Request failed ("+r.status+")"));return b}
+  function toast(m,t){if(typeof showToast==="function")showToast(m,t||"error");else if(typeof notify==="function")notify(m,t||"error")}
+  function money(n){return "UGX "+Number(n||0).toLocaleString()}
+
+  window.aqeCloseTransientOverlays=function(){
+    ["assetRoomScreen","assetRoomGate","profileDetail","depositModal","withdrawModal","inviteModal","authModal","pxUpgrade","pxRechargeModal","pxChatWarn"].forEach(function(id){var e=E(id);if(e)e.classList.add("hidden")});
+    try{if(typeof currentPin!=="undefined")currentPin="";}catch(_){}
+  };
+
+  var live=window.aqeLiveShowScreen;
+  if(live&&!live.__aqeUnifiedRoute){
+    window.aqeLiveShowScreen=function(id){
+      window.aqeCloseTransientOverlays();
+      var r=live.apply(this,arguments);
+      if(id==="screen-team"){setTimeout(function(){window.renderTeam&&window.renderTeam()},0)}
+      if(id==="screen-aqe-referrals"){setTimeout(function(){window.renderReferrals&&window.renderReferrals()},0)}
+      if(id==="screen-aqe-earnings"){setTimeout(function(){window.renderEarningsReal&&window.renderEarningsReal()},0)}
+      return r;
+    };
+    window.aqeLiveShowScreen.__aqeUnifiedRoute=true;
+  }
+  var show=window.showScreen;
+  if(show&&!show.__aqeUnifiedRoute){
+    window.showScreen=function(id){
+      window.aqeCloseTransientOverlays();
+      var r=show.apply(this,arguments);
+      if(id==="screen-team"){setTimeout(function(){window.renderTeam&&window.renderTeam()},0)}
+      if(id==="screen-aqe-referrals"){setTimeout(function(){window.renderReferrals&&window.renderReferrals()},0)}
+      if(id==="screen-aqe-earnings"){setTimeout(function(){window.renderEarningsReal&&renderEarningsReal()},0)}
+      return r;
+    };
+    window.showScreen.__aqeUnifiedRoute=true;
+  }
+
+  window.renderTeam=async function(){
+    var box=E("teamList"),earn=E("teamEarnings"),direct=E("teamDirect"),indirect=E("teamIndirect"),active=E("teamActive"),code=E("refCodeDisplay");
+    if(!box)return;
+    var u=U();
+    if(!u){if(earn)earn.textContent="UGX 0";if(direct)direct.textContent="0";if(indirect)indirect.textContent="0";if(active)active.textContent="0";if(code)code.textContent="—";box.innerHTML='<div class="tc ca5 xs py4">Sign in to view your referral team.</div>';return;}
+    box.innerHTML='<div class="tc ca5 xs py4">Loading your live referral team…</div>';
+    try{
+      var d=await api("/api/referrals");
+      var directRows=Array.isArray(d.team&&d.team.direct)?d.team.direct:[];
+      var indirectRows=Array.isArray(d.team&&d.team.indirect)?d.team.indirect:[];
+      var all=directRows.concat(indirectRows);
+      var activeCount=all.filter(function(x){return String(x.accountStatus||"active").toLowerCase()==="active"}).length;
+      if(earn)earn.textContent=money(d.totalEarnings||0);
+      if(direct)direct.textContent=String(directRows.length);
+      if(indirect)indirect.textContent=String(indirectRows.length);
+      if(active)active.textContent=String(activeCount);
+      if(code)code.textContent=String(d.referralCode||"—");
+      if(!all.length){box.innerHTML='<div class="tc ca5 xs py4">No referrals yet. Share your referral link to build your team.</div>';return;}
+      box.innerHTML=all.map(function(row){
+        var rel=Number(row.relationshipLevel)===1?"DIRECT":"INDIRECT";
+        var earned=Number(row.earnings&&row.earnings.total||0);
+        var initials=String(row.name||"AQE Member").split(" ").map(function(x){return x[0]}).join("").slice(0,2).toUpperCase();
+        return '<div class="bga8 rxl p3 b1 ba7 flex aic g3 mb2"><div style="width:38px;height:38px;border-radius:50%;background:var(--a7);display:flex;align-items:center;justify-content:center;font-weight:800;flex-shrink:0">'+escapeHtml(initials)+'</div><div class="f1"><div class="sm fw7 ca1">'+escapeHtml(row.name||"AQE Member")+'</div><div class="xs ca4">'+escapeHtml(String(row.tier||"basic").toUpperCase())+' · '+rel+' · '+escapeHtml(String(row.accountStatus||"active"))+'</div><div class="xs ca5">Referral reward generated: '+money(earned)+'</div></div><span class="xs '+(rel==="DIRECT"?"cgr":"cg")+' fw7">'+rel+'</span></div>';
+      }).join("");
+    }catch(e){box.innerHTML='<div class="tc cr xs py4">'+escapeHtml(e.message||"Referral team unavailable.")+'</div>';}
+  };
+
+  window.aqeSyncAuthoritativeEarnings=async function(){
+    var u=U();if(!u)return;
+    try{
+      var e=await api("/api/earnings");
+      u.earnings=Number(e.totalEarnings||0);
+      if(E("dashEarnings"))E("dashEarnings").textContent=money(u.earnings);
+      var overview=E("aqeMemberOverview");
+      if(overview){var vals=overview.querySelectorAll(".sm.fw8");if(vals.length>1)vals[1].textContent=money(u.earnings);}
+      state.currentUser=u;
+      return e;
+    }catch(err){return null}
+  };
+
+  function installWithdrawalModal(){
+    var amount=E("withdrawAmount"),phone=E("withdrawPhone"),box=amount&&amount.parentElement;
+    if(!amount||!box)return;
+    if(!E("withdrawName")){var n=document.createElement("input");n.id="withdrawName";n.className="inp mb3";n.placeholder="Receiver registered name";n.autocomplete="name";box.insertBefore(n,amount.nextSibling);}
+    if(!E("withdrawMethod")){var s=document.createElement("select");s.id="withdrawMethod";s.className="inp mb3";s.innerHTML='<option value="MOBILE_MONEY">Mobile Money</option><option value="AIRTEL_MONEY">Airtel Money</option><option value="CARD">Card</option>';box.insertBefore(s,phone||null);}
+    var preview=E("withdrawPreview");
+    if(!preview){preview=document.createElement("div");preview.id="withdrawPreview";preview.className="xs ca5 mb3";box.insertBefore(preview,E("withdrawName"))}
+    function updatePreview(){
+      var n=Number(amount.value||0),bal=Number(U()&&U().wallet&&U().wallet.UGX||0);
+      if(!n){preview.textContent="Withdrawal: minimum UGX 30,000 · maximum UGX 5,000,000 · service charge 8%.";return}
+      if(n<30000){preview.textContent="Minimum withdrawal is UGX 30,000.";return}
+      if(n>5000000){preview.textContent="Maximum withdrawal is UGX 5,000,000.";return}
+      if(n>bal){preview.textContent="Insufficient wallet balance. Available: "+money(bal)+".";return}
+      preview.textContent="Service charge 8%: "+money(n*0.08)+" · You receive: "+money(n*0.92)+".";
+    }
+    amount.oninput=updatePreview;updatePreview();
+  }
+  window.openWithdraw=function(){
+    var u=U();if(!u){if(typeof openAuth==="function")openAuth();return;}
+    installWithdrawalModal();
+    var m=E("withdrawModal");if(m)m.classList.remove("hidden");
+    var b=E("withdrawBalance");if(b)b.textContent=money(Number(u.wallet&&u.wallet.UGX||0));
+    api("/api/wallet").then(function(x){var w=x.wallet||{};u.wallet=u.wallet||{};u.wallet.UGX=Number(w.available_balance||0);if(E("withdrawBalance"))E("withdrawBalance").textContent=money(u.wallet.UGX);installWithdrawalModal()}).catch(function(){});
+  };
+
+  window.processWithdraw=async function(){
+    var u=U();if(!u){toast("Please sign in first.");return}
+    installWithdrawalModal();
+    var amount=Number(E("withdrawAmount")&&E("withdrawAmount").value||0);
+    var name=String(E("withdrawName")&&E("withdrawName").value||"").trim();
+    var account=String(E("withdrawPhone")&&E("withdrawPhone").value||"").trim();
+    var method=String(E("withdrawMethod")&&E("withdrawMethod").value||"MOBILE_MONEY");
+    var balance=Number(u.wallet&&u.wallet.UGX||0);
+    if(!Number.isFinite(amount)||amount<=0){toast("Enter a valid withdrawal amount.");return}
+    if(amount<30000){toast("Minimum withdrawal amount is UGX 30,000.");return}
+    if(amount>5000000){toast("Maximum withdrawal amount is UGX 5,000,000.");return}
+    if(amount>balance){toast("Insufficient wallet balance. Available: "+money(balance)+".");return}
+    if(!name){toast("Enter the receiver registered name.");return}
+    if(!account){toast("Enter the receiver phone or card number.");return}
+    try{
+      await api("/api/vip/withdrawals",{method:"POST",body:JSON.stringify({amount:amount,currency:"UGX",tier:String(u.tier||"basic").toLowerCase(),recipientName:name,recipientAccount:account,paymentMethod:method})});
+      if(E("withdrawModal"))E("withdrawModal").classList.add("hidden");
+      toast("Withdrawal request submitted for Manager review.","success");
+      if(window.aqeRefreshFinancialState)await window.aqeRefreshFinancialState();
+    }catch(e){toast(e.message||"Withdrawal request failed.");}
+  };
+
+  function installDedicatedWithdrawal(){
+    var amount=E("aqeWithdrawAmount");if(!amount)return;
+    var box=amount.parentElement;
+    if(!E("aqeWithdrawName")){var n=document.createElement("input");n.id="aqeWithdrawName";n.className="inp";n.style.marginTop="10px";n.placeholder="Receiver registered name";n.autocomplete="name";box.insertBefore(n,amount.nextSibling);}
+    if(!E("aqeWithdrawAccount")){var a=E("aqeWithdrawPhone");if(a){a.id="aqeWithdrawAccount";a.placeholder="Phone or card number";}}
+    if(!E("aqeWithdrawMethod")){var s=document.createElement("select");s.id="aqeWithdrawMethod";s.className="inp";s.style.marginTop="10px";s.innerHTML='<option value="MOBILE_MONEY">Mobile Money</option><option value="AIRTEL_MONEY">Airtel Money</option><option value="CARD">Card</option>';box.insertBefore(s,box.querySelector("button"));}
+  }
+  window.aqeConfirmWithdraw=async function(){
+    installDedicatedWithdrawal();
+    var u=U();if(!u){toast("Please sign in first.");return}
+    var amount=Number(E("aqeWithdrawAmount")&&E("aqeWithdrawAmount").value||0),name=String(E("aqeWithdrawName")&&E("aqeWithdrawName").value||"").trim(),account=String(E("aqeWithdrawAccount")&&E("aqeWithdrawAccount").value||"").trim(),method=String(E("aqeWithdrawMethod")&&E("aqeWithdrawMethod").value||"MOBILE_MONEY");
+    var balance=Number(u.wallet&&u.wallet.UGX||0);
+    if(!Number.isFinite(amount)||amount<=0){toast("Enter a valid withdrawal amount.");return}
+    if(amount<30000){toast("Minimum withdrawal amount is UGX 30,000.");return}
+    if(amount>5000000){toast("Maximum withdrawal amount is UGX 5,000,000.");return}
+    if(amount>balance){toast("Insufficient wallet balance. Available: "+money(balance)+".");return}
+    if(!name){toast("Enter the receiver registered name.");return}
+    if(!account){toast("Enter the receiver phone or card number.");return}
+    try{
+      await api("/api/vip/withdrawals",{method:"POST",body:JSON.stringify({amount:amount,currency:"UGX",tier:String(u.tier||"basic").toLowerCase(),recipientName:name,recipientAccount:account,paymentMethod:method})});
+      toast("Withdrawal request submitted for Manager review.","success");
+      if(window.aqeRefreshFinancialState)await window.aqeRefreshFinancialState();
+    }catch(e){toast(e.message||"Withdrawal request failed.");}
+  };
+
+  installWithdrawalModal();installDedicatedWithdrawal();
+  setTimeout(function(){installWithdrawalModal();installDedicatedWithdrawal()},500);
+  setTimeout(function(){installWithdrawalModal();installDedicatedWithdrawal()},1500);
+  setInterval(function(){if(U()){window.aqeSyncAuthoritativeEarnings();installWithdrawalModal();installDedicatedWithdrawal()}},15000);
+})();
+</script>
 </body>
 </html>
