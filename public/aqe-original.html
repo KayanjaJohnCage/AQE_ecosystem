@@ -12925,8 +12925,11 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
     "screen-wallet":1,"screen-bill":1,"screen-receipts":1,"screen-notifications":1,
     "screen-messages":1,"screen-me":1,"screen-team":1,"screen-tasks":1,"screen-rewards":1,
     "screen-raffle":1,"screen-manager":1,"screen-book":1,"screen-comments":1,
+    "screen-booking":1,"screen-booking-inbox":1,"screen-queue":1,"screen-vault":1,
+    "screen-store":1,"screen-groups":1,"screen-premium":1,"screen-vip":1,
     "screen-aqe-wallet":1,"screen-aqe-earnings":1,"screen-aqe-referrals":1,
-    "screen-aqe-withdraw":1,"screen-aqe-payments":1,"screen-aqe-media":1
+    "screen-aqe-withdraw":1,"screen-aqe-payments":1,"screen-aqe-media":1,
+    "screen-aqe-plans":1,"screen-aqe-gifts":1,"screen-aqe-campaigns":1,"screen-aqe-prizes":1
   };
   var aqeAuthHydrationPromise=null;
   async function ensureAqeAuthenticated(){
@@ -13001,6 +13004,16 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
     render();
     return el;
   };
+
+  /* Restore the authenticated customer once after the iframe boots. This prevents
+     protected pages from reading the pre-hydration guest state on a hard refresh. */
+  setTimeout(function(){
+    if(sess() && !current()){
+      ensureAqeAuthenticated().then(function(u){
+        if(u&&typeof window.aqeRefreshFinancialState==="function")window.aqeRefreshFinancialState().catch(function(){});
+      });
+    }
+  },250);
 
   /* Intercept legacy inline showScreen() buttons before their old wrappers can cancel navigation. */
   document.addEventListener("click",function(ev){
