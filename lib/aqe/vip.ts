@@ -85,9 +85,9 @@ export const MIN_WITHDRAWAL_AMOUNT = 30_000;
 export const MAX_WITHDRAWAL_AMOUNT = 5_000_000;
 
 const WITHDRAWAL_COOLDOWN_HOURS: Record<WithdrawalTier, number> = {
-  basic: 24,
-  premium: 48,
-  vip: 24,
+  basic: 168,
+  premium: 168,
+  vip: 0,
 };
 
 export function getWithdrawalCooldownHours(tier: WithdrawalTier) {
@@ -106,17 +106,17 @@ export function getWithdrawalPolicy(tier: WithdrawalTier) {
   }
   if (tier === "premium") {
     return {
-      allowedDays: [0, 1, 2, 3, 4, 5, 6],
-      labels: ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
+      allowedDays: [0, 6],
+      labels: ["Sunday", "Saturday"],
       cooldownHours,
-      rule: "Premium withdrawals are available once every 2 days.",
+      rule: "Premium withdrawals are available on weekends only.",
     };
   }
   return {
     allowedDays: [0, 1, 2, 3, 4, 5, 6],
     labels: ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
     cooldownHours,
-    rule: "VIP withdrawals are available once every day, with at least 1 day between withdrawal applications.",
+    rule: "VIP withdrawals are limited to 3 applications in a rolling 7-day period.",
   };
 }
 
@@ -400,6 +400,25 @@ export async function createPersistedVipWithdrawalRequest({
   });
 
   if (!validation.ok) return { ...validation, source: "supabase" };
+
+  if (resolvedTier === "vip") {
+    const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+    const { count: recentVipWithdrawals, error: recentVipError } = await client
+      .from("vip_withdrawal_requests")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", userId)
+      .gte("created_at", weekAgo);
+    if (recentVipError) return { ok: false, status: "REJECTED", reason: recentVipError.message };
+    if ((recentVipWithdrawals ?? 0) >= 3) {
+      return {
+        ok: false,
+        status: "REJECTED",
+        reason: "VIP withdrawals are limited to 3 applications in a rolling 7-day period.",
+        weeklyWithdrawalCount: recentVipWithdrawals ?? 0,
+        weeklyWithdrawalLimit: 3,
+      };
+    }
+  }
 
   const { data: withdrawalData, error: withdrawalError } = await client.rpc(
     "request_cash_withdrawal_atomic",
