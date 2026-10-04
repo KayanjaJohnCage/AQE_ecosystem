@@ -6798,12 +6798,28 @@ window.addEventListener('DOMContentLoaded', init);
 <div id="screen-aqe-withdraw" class="screen hidden"><div class="px4 py4">
 
   <div class="px-title">Withdraw</div>
+  <div class="xs ca5 mt1">Withdraw ordinary available cash earnings. VIP salary is kept separate until the 20th.</div>
 
   <div id="aqeWithdrawStatus" class="aqe-update-card" style="margin-top:14px"></div>
 
-  <div class="aqe-update-card" style="margin-top:12px"><input id="aqeWithdrawAmount" class="inp" type="number" min="1" placeholder="Amount in UGX"><input id="aqeWithdrawPhone" class="inp" type="tel" style="margin-top:10px" placeholder="Mukuru payout/mobile number"><button class="aqe-update-action" style="margin-top:10px" onclick="aqeConfirmWithdraw()">Request Withdrawal</button></div>
+  <div class="aqe-update-card" style="margin-top:12px">
+    <input id="aqeWithdrawAmount" class="inp" type="number" min="30000" placeholder="Amount in UGX">
+    <input id="aqeWithdrawName" class="inp" type="text" style="margin-top:10px" placeholder="Receiver full name">
+    <input id="aqeWithdrawAccount" class="inp" type="text" style="margin-top:10px" placeholder="Receiver phone number or card number">
+    <select id="aqeWithdrawMethod" class="inp" style="margin-top:10px">
+      <option value="MOBILE_MONEY">Mobile Money</option>
+      <option value="AIRTEL_MONEY">Airtel Money</option>
+      <option value="CARD">Card</option>
+    </select>
+    <button class="aqe-update-action" style="margin-top:10px" onclick="aqeConfirmWithdraw()">Request Withdrawal</button>
+  </div>
 
-  <div class="aqe-update-card" style="margin-top:12px"><div class="px-label">VIP withdrawal rule</div><p class="aqe-update-muted">VIP members cannot withdraw available earnings before the 20th of the month. The monthly VIP salary is credited on the 20th.</p></div>
+  <div class="aqe-update-card" style="margin-top:12px">
+    <div class="px-label">Withdrawal eligibility</div>
+    <p class="aqe-update-muted">Basic and Premium: weekends only. VIP: up to 3 withdrawal applications in a rolling 7-day period.</p>
+    <p class="aqe-update-muted">Minimum UGX 30,000 · Maximum UGX 5,000,000 · 8% service charge.</p>
+    <p class="aqe-update-muted">VIP salary is UGX 10,000 for every directly referred VIP user. It is separate from ordinary earnings and remains locked until the 20th of the month.</p>
+  </div>
 
 </div></div>
 
