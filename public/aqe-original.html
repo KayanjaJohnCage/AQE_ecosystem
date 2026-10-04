@@ -4183,13 +4183,10 @@ function closeInvite() {
 
 
 
-function copyInvite() {
-
-  if (!state.currentUser || (state.currentUser.tier || 'basic') !== 'vip') { if(typeof pxOpenUpgrade==='function') pxOpenUpgrade(); return; }
 
   const code = state.currentUser.referralCode;
 
-  navigator.clipboard.writeText('Join AQE with my code: ' + code + ' at https://afiqueerescortsecosystem.com/customer?ref=' + code);
+  navigator.clipboard.writeText('Join AfriQueer Escorts Ecosystem with my referral code: ' + code + ' https://afiqueerescortsecosystem.com/customer?ref=' + code);
 
   showToast('Referral link copied!');
 
