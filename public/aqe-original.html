@@ -6824,7 +6824,7 @@ window.addEventListener('DOMContentLoaded', init);
 
   const PLANS={basic:{name:'Basic',price:65000,wallet:5000,qc:25},premium:{name:'Premium',price:120000,wallet:15000,qc:50},vip:{name:'VIP',price:500000,wallet:25000,qc:150}};
 
-  const VIP_ONLY=['screen-team','screen-tasks','screen-rewards','screen-raffle','screen-vault','screen-store','screen-groups','screen-aqe-campaigns','screen-aqe-prizes','screen-aqe-referrals'];
+  const VIP_ONLY=['screen-tasks','screen-vault','screen-store','screen-groups'];
 
   function user(){return window.state&&state.currentUser}
 
@@ -7310,28 +7310,33 @@ window.addEventListener('DOMContentLoaded', init);
 
 
 
-  function renderReferrals(){
-
+  async function renderReferrals(){
     const u=current(), box=document.getElementById('aqeReferralSummary');if(!box)return;
-
     if(!u){box.innerHTML='<div class="aqe-update-card">Sign in to view referrals.</div>';return;}
-
-    const r=RULES[rawTier(u)]||null;
-
-    const count=Number(u.successfulReferrals)||0;
-
-    const salary=rawTier(u)==='vip'?10000+count*1000:0;
-
-    const earnings=(state.referrals?.[u.id]?.earnings)||0;
-
-    box.innerHTML=
-
-      '<div class="aqe-update-card"><div class="px-label">SUCCESSFUL REFERRALS</div><div class="aqe-update-price">'+count+'</div></div>'+
-
-      '<div class="aqe-update-card"><div class="px-label">REFERRAL EARNINGS</div><div class="aqe-update-price">'+money(earnings)+'</div></div>'+
-
-      '<div class="aqe-update-card"><div class="px-label">VIP CURRENT SALARY</div><div class="aqe-update-price">'+money(salary)+'</div><div class="xs ca5">Only applicable to VIP.</div></div>';
-
+    box.innerHTML='<div class="aqe-update-card">Loading your real referral network…</div>';
+    try{
+      const data=await api('/api/referrals');
+      if(!data||!data.ok)throw new Error(data&&data.reason||'Referral data unavailable.');
+      const direct=Array.isArray(data.team?.direct)?data.team.direct:[];
+      const indirect=Array.isArray(data.team?.indirect)?data.team.indirect:[];
+      const total=Number(data.totalEarnings||0);
+      const code=String(data.referralCode||'');
+      const link=String(data.referralLink||'');
+      const rows=direct.concat(indirect);
+      box.innerHTML=
+        '<div class="aqe-update-card"><div class="px-label">REFERRAL CODE</div><div class="aqe-update-price" style="font-size:20px">'+escapeHtml(code||'—')+'</div><button class="aqe-update-action" style="margin-top:8px" onclick="copyInvite()">Copy Referral Link</button></div>'+
+        '<div class="aqe-update-card"><div class="px-label">DIRECT REFERRALS</div><div class="aqe-update-price">'+direct.length+'</div></div>'+
+        '<div class="aqe-update-card"><div class="px-label">INDIRECT REFERRALS</div><div class="aqe-update-price">'+indirect.length+'</div></div>'+
+        '<div class="aqe-update-card"><div class="px-label">REFERRAL EARNINGS</div><div class="aqe-update-price">'+money(total)+'</div><div class="xs ca5">Credited after eligible membership payment confirmation.</div></div>'+
+        '<div class="aqe-update-card" style="grid-column:1/-1"><div class="px-label">YOUR REFERRAL LINK</div><div class="xs" style="word-break:break-all;margin-top:6px">'+escapeHtml(link||'—')+'</div><div style="margin-top:10px"><button class="aqe-update-action" onclick="copyInvite()">Copy</button></div></div>'+
+        '<div class="aqe-update-card" style="grid-column:1/-1"><div class="px-label">REFERRAL TEAM</div>'+
+        (rows.length?'<div style="display:grid;gap:8px;margin-top:8px">'+rows.map(function(row){
+          return '<div class="aqe-update-card" style="padding:10px"><div class="flex jb"><b>'+escapeHtml(row.name)+'</b><span class="px-pill '+(row.relationshipLevel===1?'ok':'warn')+'">'+(row.relationshipLevel===1?'DIRECT':'INDIRECT')+'</span></div><div class="xs ca5">'+escapeHtml(String(row.tier||'basic').toUpperCase())+' · '+escapeHtml(String(row.verificationStatus||'unverified'))+'</div><div class="xs ca5">Referral earnings: '+money(Number(row.earnings?.total||0))+'</div></div>';
+        }).join('')+'</div>':'<div class="xs ca5" style="margin-top:8px">No referrals yet. Share your link to invite members.</div>')+
+        '</div>';
+    }catch(e){
+      box.innerHTML='<div class="aqe-update-card">'+escapeHtml(e.message||'Referral data unavailable.')+'</div>';
+    }
   }
 
 
@@ -13170,14 +13175,13 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
   }
   window.copyInvite=function(){
     var u=current();if(!u){if(typeof openAuth==="function")openAuth();return}
-    if(String(u.tier||"").toLowerCase()!=="vip"){if(typeof pxOpenUpgrade==="function")pxOpenUpgrade();return}
-    var code=referralCode(),url=location.origin+"/customer?ref="+encodeURIComponent(code),text="Join AQE with my code: "+code+" at "+url;
+    var code=referralCode(),url="https://afiqueerescortsecosystem.com/customer?ref="+encodeURIComponent(code),text="Join AQE with my code: "+code+" at "+url;
     function done(){toast("Referral link copied. Code "+code+" is attached to the registration link.","success")}
     if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(text).then(done).catch(function(){toast(url,"success")});else{var ta=document.createElement("textarea");ta.value=text;document.body.appendChild(ta);ta.select();document.execCommand("copy");ta.remove();done()}
   };
   window.copyRef=window.copyInvite;
   window.shareTo=function(platform){
-    var code=referralCode(),url=location.origin+"/customer?ref="+encodeURIComponent(code),text="Join AQE — use my referral code: "+code;
+    var code=referralCode(),url="https://afiqueerescortsecosystem.com/customer?ref="+encodeURIComponent(code),text="Join AQE — use my referral code: "+code;
     if(platform==="whatsapp")window.open("https://wa.me/?text="+encodeURIComponent(text+" "+url),"_blank");
     else if(platform==="telegram")window.open("https://t.me/share/url?url="+encodeURIComponent(url)+"&text="+encodeURIComponent(text),"_blank");
     else window.copyInvite();
