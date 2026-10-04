@@ -7295,23 +7295,19 @@ window.addEventListener('DOMContentLoaded', init);
 
 
 
-  function renderPaymentHistory(){
-
+  async function renderPaymentHistory(){
     const box=document.getElementById('aqePaymentHistory');if(!box)return;
-
-    ensureState();
-
-    const u=current();
-
-    if(!u){box.innerHTML='<div class="aqe-update-card">Sign in to view payment activity.</div>';return;}
-
-    const rows=state.paymentOrders.filter(x=>x.userId===u.id).slice(0,30);
-
-    box.innerHTML=rows.length?rows.map(o=>'<div class="aqe-prod-row"><div><b>'+escP(o.type.replaceAll('_',' '))+'</b><div class="xs ca5">'+escP(o.reference)+' · '+money(o.amount)+'</div></div><span class="aqe-prod-pill '+statusClass(o.status)+'">'+escP(o.status.toUpperCase())+'</span></div>').join(''):'<div class="aqe-update-card">No payment orders yet.</div>';
-
+    const u=current();if(!u){box.innerHTML='<div class="aqe-update-card">Sign in to view payment activity.</div>';return;}
+    box.innerHTML='<div class="aqe-update-card">Loading live payment activity…</div>';
+    try{
+      const data=await api('/api/receipts?limit=100');
+      const rows=Array.isArray(data.receipts)?data.receipts:[];
+      box.innerHTML=rows.length?rows.map(function(o){
+        const amount=Number(o.amount||o.cash_amount||0),qc=Number(o.qc_amount||0);
+        return '<div class="aqe-prod-row"><div><b>'+escP(String(o.transaction_type||o.description||'transaction').replaceAll('_',' '))+'</b><div class="xs ca5">'+escP(o.receipt_number||o.reference_id||'—')+' · '+(amount?'UGX '+amount.toLocaleString():qc+' QC')+'</div><div class="xs ca5">'+escP(o.created_at?new Date(o.created_at).toLocaleString():'')+'</div></div><span class="aqe-prod-pill '+statusClass(String(o.status||'completed'))+'">'+escP(String(o.status||'completed').toUpperCase())+'</span></div>';
+      }).join(''):'<div class="aqe-update-card">No financial receipts yet.</div>';
+    }catch(e){box.innerHTML='<div class="aqe-update-card">'+escP(e.message||'Payment activity unavailable.')+'</div>';}
   }
-
-
 
   async function renderReferrals(){
     const u=current(), box=document.getElementById('aqeReferralSummary');if(!box)return;
@@ -13652,6 +13648,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
     var u=U();if(!u)return;
     try{
       var e=await api("/api/earnings");
+      state.realEarnings=e;
       u.earnings=Number(e.totalEarnings||0);
       if(E("dashEarnings"))E("dashEarnings").textContent=money(u.earnings);
       var overview=E("aqeMemberOverview");
