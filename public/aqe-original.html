@@ -3189,6 +3189,14 @@ function renderConversations() {
 
 
 
+function aqeTransactionIsVipSalary(t){
+  var x=t||{};
+  var type=String(x.reference_type||x.referenceType||x.transaction_type||x.transactionType||x.type||'').toLowerCase();
+  var ref=String(x.reference_id||x.referenceId||x.reference||'').toLowerCase();
+  var desc=String(x.description||x.title||x.body||'').toLowerCase();
+  return type.indexOf('vip_salary')>=0||type.indexOf('vip salary')>=0||ref.indexOf('vip_salary')>=0||ref.indexOf('vip salary')>=0||desc.indexOf('vip salary')>=0||desc.indexOf('vip referral salary')>=0;
+}
+
 window.aqeCashNotificationMeta=function(n){
   var m=n&&n.metadata&&typeof n.metadata==='object'?n.metadata:{};
   var type=String(n&&n.type||'').toLowerCase(),body=String(n&&n.body||n&&n.text||'').toLowerCase();
