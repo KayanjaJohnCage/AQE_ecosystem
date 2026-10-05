@@ -12797,10 +12797,13 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
       var sign=meta.credit?'+':meta.deduction?'-':'';
       var color=meta.credit?'var(--gr)':meta.deduction?'var(--r)':'var(--a1)';
       var amountHtml=sign&&meta.amount>0?'<span style="color:'+color+';font-weight:800">'+sign+'UGX '+Number(meta.amount).toLocaleString()+'</span>':'';
-      return '<article class="bga8 rxl p3 b1 ba7 '+(n.read?"o6":"")+'"><button style="display:block;width:100%;text-align:left;background:none;border:0;color:inherit;cursor:pointer" onclick="markNotifRead(\''+esc(n.id)+'\')"><div class="flex aic jb g2"><div class="sm fw7 ca1">'+esc(n.text||"AQE notification")+'</div>'+amountHtml+'</div><div class="xs ca5 mt1">'+esc(n.time||"")+'</div></button></article>';
+      var friendType=String(n.type||'').toLowerCase()==='friend_request';
+      var requestId=n.referenceId||(n.metadata&&n.metadata.request_id)||'';
+      var actions=friendType&&requestId&&String(n.title||'').toLowerCase().indexOf('new friend request')>=0?
+        '<div class="flex g2 mt2"><button class="px-btn ok" type="button" onclick="event.stopPropagation();aqeRespondFriendRequest(\''+String(requestId).replace(/'/g,"\\'")+'\',\'accepted\')">Accept</button><button class="px-btn" type="button" onclick="event.stopPropagation();aqeRespondFriendRequest(\''+String(requestId).replace(/'/g,"\\'")+'\',\'rejected\')">Reject</button></div>':'';
+      return '<article class="bga8 rxl p3 b1 ba7 '+(n.read?"o6":"")+'"><button style="display:block;width:100%;text-align:left;background:none;border:0;color:inherit;cursor:pointer" onclick="markNotifRead(\''+String(n.id).replace(/'/g,"\\'")+'\')"><div class="flex aic jb g2"><div class="sm fw7 ca1">'+esc(n.text||"AQE notification")+'</div>'+amountHtml+'</div><div class="xs ca5 mt1">'+esc(n.time||"")+'</div></button>'+actions+'</article>';
     }).join(""):'<div class="tc ca5 xs py6">No notifications yet.</div>';
   };
-
   var oldBill=window.renderBill;
   if(oldBill&&!oldBill.__aqeCompletion){window.renderBill=function(){var r=oldBill.apply(this,arguments);window.renderAqeReceiptPage();return r};window.renderBill.__aqeCompletion=true;}
   var oldNotif=window.renderNotifications;
