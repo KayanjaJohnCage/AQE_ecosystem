@@ -12379,52 +12379,80 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
   function current(){return typeof state!=='undefined'&&state.currentUser?state.currentUser:null;}
 
   async function refreshFinancialState(){
-    var u=current(); if(!u)return;
-    try{
-      var results=await Promise.all([
-        api('/api/wallet'),
-        api('/api/qc/recharge'),
-        api('/api/dashboard'),
-        api('/api/receipts?limit=100'),
-        api('/api/notifications?limit=100')
-      ]);
-      var wallet=results[0].wallet||{};
-      var qc=results[1];
-      var dash=results[2].customer||{};
-      u.wallet=u.wallet||{};
-      u.wallet.UGX=Number(wallet.available_balance||0);
-      u.walletPending=Number(wallet.pending_balance||0);
-      u.qc=Number(qc.balance||dash.qcBalance||0);
-      u.earnings=Number(dash.earnings||u.earnings||0);\n      try{var er=await api("/api/earnings");u.earnings=Number(er.totalEarnings||0);}catch(_){}
-      u.tier=String(dash.tier||u.tier||'basic').toLowerCase();
-      u.tierVerified=Boolean(u.tierVerified||dash.tierVerified||['basic','premium','vip'].indexOf(u.tier)>-1&&u.verified);
-      state.currentUser=u;
-      state.px=state.px||{qc:0,wallet:0,bookings:[],comments:[],ledger:[],dmQueue:[],contentQueue:[],completed:0,vault:[],store:[],groups:[]};
-      state.px.wallet=u.wallet.UGX;
-      state.px.qc=u.qc;
-      state.px.ledger=(qc.ledger||[]).map(function(x){return {
-        id:x.id,title:x.description||x.transaction_type||'QC transaction',when:x.created_at?new Date(x.created_at).toLocaleString():'',
-        amount:x.direction==='OUT'?-Number(x.amount||0):Number(x.amount||0),balanceAfter:Number(x.balance_after||0)
-      };});
-      state.transactions=(results[3].receipts||[]).map(function(x){return {
-        id:x.id||x.receipt_number,type:String(x.transaction_type||'transaction').toLowerCase(),amount:Number(x.amount||x.cash_amount||0),
-        status:String(x.status||'COMPLETED').toLowerCase(),date:x.created_at?new Date(x.created_at).toLocaleString():'',
-        reference:x.receipt_number,receiptNumber:x.receipt_number,currency:x.currency||'UGX',description:x.description||''
-      };});
-      state.notifications=(results[4].notifications||[]).map(function(n){return {
-        id:n.id,text:(n.title?n.title+': ':'')+n.body,time:n.created_at?new Date(n.created_at).toLocaleString():'',read:!!n.read_at
-      };});
-      if(typeof saveState==='function')saveState();
-      if(typeof renderBill==='function')renderBill();
-      if(typeof renderDashActivity==='function')renderDashActivity();
-      if(typeof renderNotifications==='function')renderNotifications();
-      if(typeof pxRenderAll==='function')pxRenderAll();
-      if(typeof updateUIForUser==='function')updateUIForUser();
-      return {wallet:wallet,qc:qc,dash:dash};
-    }catch(e){
-      notify(e.message||'Could not refresh your account balances.','error');
-      return null;
+    var u=current();
+    if(!u){
+      try{
+        if(typeof window.hydrateUser==="function")u=await window.hydrateUser();
+      }catch(_){}
     }
+    if(!u)return null;
+
+    var wallet=null,qc=null,dash=null,receipts=null,notifications=null,earnings=null;
+
+    // Financial refresh must never fail wholesale because a secondary page feed fails.
+    try{wallet=await api('/api/wallet');}catch(e){console.warn('[AQE] wallet refresh failed',e);}
+    try{qc=await api('/api/qc/recharge');}catch(e){console.warn('[AQE] QC refresh failed',e);}
+    try{dash=await api('/api/dashboard');}catch(e){console.warn('[AQE] dashboard refresh failed',e);}
+    try{earnings=await api('/api/earnings');state.realEarnings=earnings;}catch(e){console.warn('[AQE] earnings refresh failed',e);}
+    try{receipts=await api('/api/receipts?limit=100');}catch(e){console.warn('[AQE] receipts refresh failed',e);}
+    try{notifications=await api('/api/notifications?limit=100');}catch(e){console.warn('[AQE] notifications refresh failed',e);}
+
+    wallet=wallet||{wallet:{available_balance:u.wallet&&u.wallet.UGX||0,pending_balance:0,currency:'UGX'},ledger:[]};
+    qc=qc||{balance:u.qc||0,ledger:[]};
+    dash=dash||{customer:{}};
+    receipts=receipts||{receipts:[]};
+    notifications=notifications||{notifications:[]};
+    earnings=earnings||state.realEarnings||{totalEarnings:u.earnings||0};
+
+    var walletRow=wallet.wallet||{};
+    var customer=dash.customer||{};
+
+    u.wallet=u.wallet||{};
+    u.wallet.UGX=Number(walletRow.available_balance||0);
+    u.walletPending=Number(walletRow.pending_balance||0);
+    u.qc=Number(qc.balance||customer.qcBalance||0);
+    u.earnings=Number(earnings.totalEarnings||0);
+    u.tier=String(customer.tier||u.tier||'basic').toLowerCase();
+    state.currentUser=u;
+
+    state.px=state.px||{qc:0,wallet:0,bookings:[],comments:[],ledger:[],dmQueue:[],contentQueue:[],completed:0,vault:[],store:[],groups:[]};
+    state.px.wallet=u.wallet.UGX;
+    state.px.qc=u.qc;
+    state.px.ledger=(qc.ledger||[]).map(function(x){return {
+      id:x.id,
+      title:x.description||x.transaction_type||'QC transaction',
+      when:x.created_at?new Date(x.created_at).toLocaleString():'',
+      amount:String(x.direction||'').toUpperCase()==='OUT'?-Number(x.amount||0):Number(x.amount||0),
+      balanceAfter:Number(x.balance_after||0)
+    };});
+
+    state.transactions=(receipts.receipts||[]).map(function(x){return {
+      id:x.id||x.receipt_number,
+      type:String(x.transaction_type||'transaction').toLowerCase(),
+      amount:Number(x.amount||x.cash_amount||0),
+      status:String(x.status||'COMPLETED').toLowerCase(),
+      date:x.created_at?new Date(x.created_at).toLocaleString():'',
+      reference:x.receipt_number,
+      receiptNumber:x.receipt_number,
+      currency:x.currency||'UGX',
+      description:x.description||''
+    };});
+
+    state.notifications=(notifications.notifications||[]).map(function(n){return {
+      id:n.id,
+      text:(n.title?n.title+': ':'')+n.body,
+      time:n.created_at?new Date(n.created_at).toLocaleString():'',
+      read:!!n.read_at
+    };});
+
+    try{if(typeof saveState==='function')saveState();}catch(_){}
+    try{if(typeof renderBill==='function')renderBill();}catch(_){}
+    try{if(typeof renderDashActivity==='function')renderDashActivity();}catch(_){}
+    try{if(typeof renderNotifications==='function')renderNotifications();}catch(_){}
+    try{if(typeof pxRenderAll==='function')pxRenderAll();}catch(_){}
+    try{if(typeof updateUIForUser==='function')updateUIForUser();}catch(_){}
+
+    return {wallet:walletRow,qc:qc,dash:customer,earnings:earnings};
   }
   window.aqeRefreshFinancialState=refreshFinancialState;
 
@@ -12933,7 +12961,6 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
   };
   var aqeAuthHydrationPromise=null;
   async function ensureAqeAuthenticated(){
-    if(current())return current();
     var s=sess();
     if(!s||!s.access_token)return null;
     if(!aqeAuthHydrationPromise){
@@ -12990,7 +13017,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
       }
     };
 
-    if(AQE_PROTECTED_SCREENS[id]&&!current()){
+    if(AQE_PROTECTED_SCREENS[id]){
       ensureAqeAuthenticated().then(function(u){
         if(!u){
           toastMsg("Your AQE session could not be restored. Please sign in again.","error");
