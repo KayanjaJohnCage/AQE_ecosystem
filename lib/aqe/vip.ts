@@ -332,26 +332,9 @@ export async function createPersistedVipWithdrawalRequest({
     };
   }
 
-  let directInviteCount = 0;
-  if (resolvedTier === "basic" || resolvedTier === "premium") {
-    const { count, error: inviteError } = await client
-      .from("profiles")
-      .select("user_id", { count: "exact", head: true })
-      .eq("referred_by", userId);
-    if (inviteError) {
-      return { ok: false, status: "REJECTED", reason: inviteError.message };
-    }
-    directInviteCount = count ?? 0;
-    if (directInviteCount < 2) {
-      return {
-        ok: false,
-        status: "REJECTED",
-        reason: "Basic and Premium members need at least 2 direct invites before withdrawing.",
-        directInviteCount,
-        requiredDirectInvites: 2,
-      };
-    }
-  }
+  // Withdrawal eligibility is determined by membership tier and the configured
+  // schedule. Referral count does not gate Basic/Premium withdrawals.
+  const directInviteCount = 0;
 
   const { data: lastWithdrawal, error: lastWithdrawalError } = await client
     .from("vip_withdrawal_requests")
