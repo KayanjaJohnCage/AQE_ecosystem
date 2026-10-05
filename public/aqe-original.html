@@ -4904,43 +4904,30 @@ window.addEventListener('DOMContentLoaded', init);
 
 
 
-  function mxSend() {
-
+  async function mxSend() {
     if (!requireMessaging()) return;
-
-    var input = el("chatInput");
-
-    var c = findConv(activeChatId);
-
-    var text = (input.value || "").replace(/\s+/g, " ").trim().slice(0, MX_CONTRACT.limits.text);
-
-    if (!text || !c) return;
-
-    var id = uid("m");
-
-    var m = { id: id, sender: "me", from: "me", text: text, status: "SENT", createdAt: new Date().toISOString(), time: time(new Date().toISOString()), clientId: id, idempotencyKey: id };
-
-    c.messages.push(m);
-
-    c.lastMsg = text;
-
-    c.time = "Just now";
-
-    messaging().outbox.push(id);
-
-    input.value = "";
-
-    persist();
-
-    mxRenderChat();
-
-    setTimeout(function () { m.status = "SERVER_ACCEPTED"; messaging().outbox = messaging().outbox.filter(function (x) { return x !== id; }); persist(); mxRenderChat(); }, 180);
-
-    setTimeout(function () { m.status = "DELIVERED"; persist(); mxRenderChat(); mxReply(c); }, 650);
-
+    var input=el("chatInput");
+    var c=findConv(activeChatId);
+    var textValue=(input&&input.value||"").replace(/\s+/g," ").trim().slice(0,MX_CONTRACT.limits.text);
+    if(!textValue||!c)return;
+    var recipientId=String(c.withId||c.id||"").trim();
+    var me=current();
+    if(me&&recipientId===String(me.id)){notify("Choose another AQE member.");return;}
+    try{
+      var sessionInfo=null;try{sessionInfo=JSON.parse(localStorage.getItem("aqe_next_session")||"null")}catch(_){}
+      var headers={"Content-Type":"application/json","Cache-Control":"no-store"};
+      if(sessionInfo&&sessionInfo.access_token)headers.Authorization="Bearer "+sessionInfo.access_token;
+      var response=await fetch("/api/messages",{method:"POST",headers:headers,body:JSON.stringify({recipientId:recipientId,body:textValue})});
+      var payload=await response.json().catch(function(){return {}});
+      if(!response.ok||payload.ok===false)throw new Error(payload.reason||payload.message||"Message failed.");
+      if(input)input.value="";
+      notify("Message sent successfully.");
+      if(typeof syncRealMessages==="function")await syncRealMessages();
+      else mxRenderChat();
+    }catch(err){
+      notify(err.message||"Message failed.");
+    }
   }
-
-
 
   function mxReply(c) {
 
