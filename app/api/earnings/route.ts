@@ -119,7 +119,7 @@ export async function GET(request: Request) {
     totalReferral,
     totalOther,
     totalEarnings,
-    vipSalary: {
+    vipSalary: isVip ? {
       payments: vipSalaryRows,
       directVipReferralCount,
       salaryPerVipReferral: 10_000,
@@ -127,11 +127,11 @@ export async function GET(request: Request) {
       totalCredited: vipSalaryTotal,
       assetBalance: Number(vipSalaryRoom?.salary_balance || 0),
       withdrawnTotal: Number(vipSalaryRoom?.withdrawn_salary_total || 0),
-      lockedBalance: isVip ? (salaryWithdrawable ? 0 : accruedVipSalary) : 0,
+      lockedBalance: salaryWithdrawable ? 0 : accruedVipSalary,
       withdrawableBalance: salaryWithdrawable ? Math.max(vipSalaryLockedBalance, Number(vipSalaryRoom?.salary_balance || 0)) : 0,
       withdrawableOnDay: 20,
       withdrawableToday: salaryWithdrawable,
-    },
+    } : null,
     withdrawableEarnings: totalEarnings,
     currency: "UGX",
   });
