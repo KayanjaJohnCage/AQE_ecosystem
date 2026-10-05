@@ -67,6 +67,9 @@ export async function GET(request: Request) {
   // referral wallet credits are already represented by referral_earnings.
   const earnedLedgerReferenceTypes = new Set([
     "WELCOME_BONUS",
+    "REWARD_EARNING",
+    "CASH_REWARD",
+    "DAILY_REWARD",
     "CREATOR_EARNING",
     "CONTENT_EARNING",
     "TEAM_LEADER_EARNING",
