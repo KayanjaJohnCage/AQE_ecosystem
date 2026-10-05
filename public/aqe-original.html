@@ -6901,7 +6901,26 @@ window.addEventListener('DOMContentLoaded', init);
 
   window.aqeWithdraw=function(){if(typeof showScreen==='function')showScreen('screen-aqe-withdraw');};
 
-  window.aqeConfirmWithdraw=function(){const n=Number(document.getElementById('aqeWithdrawAmount')?.value||0);if(n<=0){toast('Enter a valid withdrawal amount.');return;}toast('Withdrawal request prepared. Eligibility and schedule will be verified by the production server.');};
+  window.aqeConfirmWithdraw=async function(){
+    var amount=Number((document.getElementById('aqeWithdrawAmount')||{}).value||0);
+    var recipientName=String((document.getElementById('aqeWithdrawName')||{}).value||'').trim();
+    var recipientAccount=String((document.getElementById('aqeWithdrawAccount')||{}).value||'').trim();
+    var paymentMethod=String((document.getElementById('aqeWithdrawMethod')||{}).value||'MOBILE_MONEY');
+    if(!Number.isFinite(amount)||amount<30000){toast('Minimum withdrawal is UGX 30,000.','error');return;}
+    if(amount>5000000){toast('Maximum withdrawal is UGX 5,000,000.','error');return;}
+    if(!recipientName){toast('Enter the receiver full name.','error');return;}
+    if(!recipientAccount){toast('Enter the receiver phone number or card number.','error');return;}
+    try{
+      var r=await api('/api/vip/withdrawals',{method:'POST',body:JSON.stringify({
+        amount:amount,recipientName:recipientName,recipientAccount:recipientAccount,paymentMethod:paymentMethod,
+        currency:'UGX',tier:tier()
+      })});
+      toast(r.message||'Withdrawal request submitted successfully.');
+      await refreshFinancialState();
+      var status=E('aqeWithdrawStatus');
+      if(status)status.innerHTML='<div class="px-label">WITHDRAWAL REQUEST</div><div class="sm ca1 mt1">UGX '+Number(r.amount||amount).toLocaleString()+' submitted · Net after 8% service charge: UGX '+Number(r.netAmount||amount*0.92).toLocaleString()+'</div>';
+    }catch(e){toast(e.message||'Withdrawal request failed.','error');}
+  };
 
   window.aqeUploadMedia=function(){
 
@@ -10168,14 +10187,21 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 
   window.processWithdraw=async function(){
     var amount=Number((document.getElementById('withdrawAmount')||{}).value||0);
-    if(!amount||amount<5000){notify('Minimum withdrawal is UGX 10,000','error');return;}
+    var recipientAccount=String((document.getElementById('withdrawPhone')||{}).value||'').trim();
+    var recipientName=String((document.getElementById('withdrawName')||{}).value||'').trim();
+    if(!amount||amount<30000){notify('Minimum withdrawal is UGX 30,000','error');return;}
+    if(amount>5000000){notify('Maximum withdrawal is UGX 5,000,000','error');return;}
     var s=session();if(!s||!s.access_token){notify('Please sign in first','error');return;}
     try{
-      var r=await api('/api/vip/withdrawals',{method:'POST',body:JSON.stringify({amount:amount})});
+      var r=await api('/api/vip/withdrawals',{method:'POST',body:JSON.stringify({
+        amount:amount,recipientName:recipientName,recipientAccount:recipientAccount,paymentMethod:'MOBILE_MONEY',
+        currency:'UGX',tier:(state.currentUser&&state.currentUser.tier)||'basic'
+      })});
       if(typeof closeWithdraw==='function')closeWithdraw();
-      notify(r.message||r.reason||'Withdrawal request submitted.');
+      notify(r.message||'Withdrawal request submitted.');
       await hydrateUser();
-    }catch(e){notify(e.message,'error');}
+      await refreshFinancialState();
+    }catch(e){notify(e.message||'Withdrawal failed.','error');}
   };
 
   window.claimDailyQc=async function(){
