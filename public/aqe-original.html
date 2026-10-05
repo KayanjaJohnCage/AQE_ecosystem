@@ -6753,7 +6753,14 @@ window.addEventListener('DOMContentLoaded', init);
 
   <div class="px-title">Gifts Hall</div><div class="px-sub">Gift 0.5–100 QC to another user for attention or friendship. Every gift is recorded.</div>
 
-  <div class="aqe-update-card" style="margin-top:18px"><button class="aqe-update-action" onclick="aqeGift()">Send QC Gift</button></div>
+  <div class="aqe-update-card" style="margin-top:18px">
+    <div class="px-label">RECIPIENT</div>
+    <select id="aqeGiftRecipient" class="inp" style="margin-top:8px">
+      <option value="">Select an AQE user to receive the gift</option>
+    </select>
+    <div class="xs ca5 mt2">Only another AQE account can receive a gift. Your own account is excluded.</div>
+    <div style="margin-top:12px"><button class="aqe-update-action" onclick="aqeGift()">Send QC Gift</button></div>
+  </div>
 
   <div id="aqeGiftList" class="aqe-update-card" style="margin-top:12px"></div>
 
@@ -6875,7 +6882,38 @@ window.addEventListener('DOMContentLoaded', init);
 
   window.aqeSendFriendRequest=function(){toast('Friend Request sent. DM access is available after friendship is accepted.');};
 
-  window.aqeGift=function(){if(!user()){toast('Please sign in first.');return;} const amount=prompt('Gift QC (0.5–100):','0.5'); const n=Number(amount); if(!Number.isFinite(n)||n<0.5||n>100){toast('Enter a gift between 0.5 and 100 QC.');return;} toast(n+' QC gift prepared. Production server will validate balance and recipient.');};
+  window.aqeRenderGiftRecipients=function(){
+    var select=document.getElementById('aqeGiftRecipient');if(!select)return;
+    var me=user();if(!me)return;
+    var profiles=Array.isArray(state.profiles)?state.profiles:[];
+    var rows=profiles.filter(function(p){
+      return String(p.id||p.userId||'')!==String(me.id||'') && String(p.status||'').toLowerCase()!=='blocked';
+    });
+    var current=select.value;
+    select.innerHTML='<option value="">Select an AQE user to receive the gift</option>'+rows.map(function(p){
+      var id=String(p.id||p.userId||'');
+      var name=String(p.name||p.displayName||'').trim()||' AQE Member';
+      var tier=String(p.tier||'basic').toUpperCase();
+      var location=String(p.city||p.location||'').trim();
+      var label=name+' · '+tier+(location?' · '+location:'');
+      return '<option value="'+escP(id)+'">'+escP(label)+'</option>';
+    }).join('');
+    if(current&&rows.some(function(p){return String(p.id||p.userId||'')===current}))select.value=current;
+    if(!rows.length)select.innerHTML='<option value="">No other AQE users available</option>';
+  };
+
+  window.aqeGift=function(){
+    if(!user()){toast('Please sign in first.');return;}
+    var select=document.getElementById('aqeGiftRecipient');
+    var recipientId=select&&select.value;
+    if(!recipientId){toast('Select a recipient before sending a gift.');return;}
+    var option=select.options[select.selectedIndex];
+    var recipientName=option?option.textContent.split(' · ')[0]:'AQE Member';
+    var amount=prompt('Gift QC (0.5–100):','0.5');
+    var n=Number(amount);
+    if(!Number.isFinite(n)||n<0.5||n>100){toast('Enter a gift between 0.5 and 100 QC.');return;}
+    toast(n+' QC gift prepared for '+recipientName+'. The selected recipient is now explicit for the production gift workflow.');
+  };
 
   window.aqeSendMoney=async function(){
     if(!user()){toast('Please sign in first.');return;}
@@ -12948,8 +12986,25 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
     var salaryLocked=Number(vs.lockedBalance||vs.accruedBalance||0);
     var salaryReady=Number(vs.withdrawableBalance||0);
     var salaryCount=Number(vs.directVipReferralCount||0);
-    var rows=[].concat(e.referralEarnings||[],e.otherEarnings||[],e.creatorEarnings||[])
-      .sort(function(a,b){return String(b.created_at||'').localeCompare(String(a.created_at||''));});
+    var rows=[];
+    (e.referralEarnings||[]).forEach(function(x){rows.push(Object.assign({},x,{_earningLabel:'REFERRAL EARNING'}));});
+    (e.otherEarnings||[]).forEach(function(x){rows.push(Object.assign({},x,{_earningLabel:(function(){
+      var t=String(x.reference_type||x.transaction_type||x.source||'').toUpperCase();
+      var labels={
+        'WELCOME_BONUS':'WELCOME BONUS',
+        'REWARD_EARNING':'REWARD EARNING',
+        'CASH_REWARD':'REWARD EARNING',
+        'DAILY_REWARD':'REWARD EARNING',
+        'CREATOR_EARNING':'CREATOR EARNING',
+        'CONTENT_EARNING':'CONTENT EARNING',
+        'TEAM_LEADER_EARNING':'TEAM LEADER EARNING'
+      };
+      if(labels[t])return labels[t];
+      var clean=t.replaceAll('_',' ').trim();
+      return clean ? (clean.endsWith('EARNING') ? clean : clean+' EARNING') : 'EARNING';
+    })()}));});
+    (e.creatorEarnings||[]).forEach(function(x){rows.push(Object.assign({},x,{_earningLabel:'CREATOR EARNING'}));});
+    rows.sort(function(a,b){return String(b.created_at||'').localeCompare(String(a.created_at||''));});
 
     root.innerHTML='<div class="px4 py4"><div class="xs cg fw8 up">ACCOUNT EARNINGS</div><h3 class="xl fw8">Earnings</h3>'+
       '<div class="xs ca5 mt1">Ordinary earnings are separate from wallet deposits and VIP referral salary.</div>'+
@@ -12968,9 +13023,9 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
       '</div>'+
       '<div class="aqe-update-card" style="margin-top:14px"><div class="px-label">EARNING ACTIVITY</div>'+
       (rows.length?'<div style="display:grid;gap:8px;margin-top:8px">'+rows.slice(0,50).map(function(x){
-        var type=String(x.reference_type||x.transaction_type||x.source||'earning').replaceAll('_',' ');
+        var label=x._earningLabel||'EARNING';
         var amount=Number(x.amount||x.net_amount||0);
-        return '<div class="aqe-update-row"><span>'+earnEsc(type.toUpperCase())+'</span><b class="cgr">+'+earnMoney(amount)+'</b></div>';
+        return '<div class="aqe-update-row"><span>'+earnEsc(label)+'</span><b class="cgr">+'+earnMoney(amount)+'</b></div>';
       }).join('')+'</div>':'<div class="xs ca5 mt2">No ordinary earning activity yet.</div>')+
       '</div></div>';
   };
@@ -12989,7 +13044,9 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
   };
 
   setTimeout(syncRealCollections,800);
+  setTimeout(function(){if(typeof window.aqeRenderGiftRecipients==="function")window.aqeRenderGiftRecipients();},1000);
   setInterval(syncRealCollections,10000);
+  setInterval(function(){if(document.getElementById("screen-aqe-gifts")&&!document.getElementById("screen-aqe-gifts").classList.contains("hidden")&&typeof window.aqeRenderGiftRecipients==="function")window.aqeRenderGiftRecipients();},15000);
 })();
 </script>
 <script id="aqe-final-system-navigation-media-filters">
@@ -13104,6 +13161,8 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
     var match=code.match(/showScreen\s*\(\s*['"]([^'"]+)['"]\s*\)/);
     if(!match)return;
     var id=match[1];
+    var nav=target.closest("#drawer nav");
+    if(nav&&nav.dataset.aqeTouchMoved==="1"){nav.dataset.aqeTouchMoved="0";return;}
     ev.preventDefault();
     ev.stopImmediatePropagation();
     
@@ -13921,6 +13980,8 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
     var b=ev.target&&ev.target.closest?ev.target.closest("#drawer nav button"):null;
     if(!b)return;
     var id=idFromButton(b);if(!id)return;
+    var nav=b.closest("#drawer nav");
+    if(nav&&nav.dataset.aqeTouchMoved==="1"){nav.dataset.aqeTouchMoved="0";return;}
     ev.preventDefault();ev.stopImmediatePropagation();
     closeOverlays();
     if(typeof window.showScreen==="function")window.showScreen(id);
@@ -13961,6 +14022,12 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
     window.scrollTo(0,0);
     if(id==="screen-team"&&typeof window.renderTeam==="function")window.renderTeam();
     if(id==="screen-aqe-referrals"&&typeof window.renderReferrals==="function")window.renderReferrals();
+    if(id==="screen-aqe-gifts"){
+      if(typeof window.aqeRenderGiftRecipients==="function")window.aqeRenderGiftRecipients();
+      if((!window.state||!Array.isArray(window.state.profiles)||!window.state.profiles.length) && typeof window.syncCollections==="function"){
+        window.syncCollections().then(function(){if(typeof window.aqeRenderGiftRecipients==="function")window.aqeRenderGiftRecipients();}).catch(function(){});
+      }
+    }
     if(id==="screen-aqe-withdraw"&&typeof window.renderWithdraw==="function")window.renderWithdraw();
 
     /* The authoritative router intentionally bypasses legacy showScreen wrappers.
@@ -14035,8 +14102,26 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
         if(id==="__upgrade__"){if(typeof window.pxOpenUpgrade==="function")window.pxOpenUpgrade();el("drawer")?.classList.add("hidden");return}
         window.aqeNavigate(id);
       });
+      b.addEventListener("touchstart",function(e){
+        var t=e.touches&&e.touches[0];
+        b.__aqeTouchStartX=t?t.clientX:0;
+        b.__aqeTouchStartY=t?t.clientY:0;
+        b.__aqeTouchMoved=false;
+        var nav=b.closest("#drawer nav");if(nav)nav.dataset.aqeTouchMoved="0";
+      },{passive:true});
+      b.addEventListener("touchmove",function(e){
+        var t=e.touches&&e.touches[0];if(!t)return;
+        var dx=Math.abs(t.clientX-(b.__aqeTouchStartX||t.clientX));
+        var dy=Math.abs(t.clientY-(b.__aqeTouchStartY||t.clientY));
+        if(dx>8||dy>8){
+          b.__aqeTouchMoved=true;
+          var nav=b.closest("#drawer nav");if(nav)nav.dataset.aqeTouchMoved="1";
+        }
+      },{passive:true});
       b.addEventListener("touchend",function(e){
         e.preventDefault();e.stopPropagation();
+        var nav=b.closest("#drawer nav");
+        if(b.__aqeTouchMoved || (nav&&nav.dataset.aqeTouchMoved==="1"))return;
         if(id==="__upgrade__"){if(typeof window.pxOpenUpgrade==="function")window.pxOpenUpgrade();el("drawer")?.classList.add("hidden");return}
         window.aqeNavigate(id);
       },{passive:false});
