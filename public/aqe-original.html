@@ -12938,6 +12938,8 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 
   window.renderEarningsReal=function(){
     var root=E("screen-aqe-earnings");if(!root)return;
+    var earnMoney=function(n){return "UGX "+Number(n||0).toLocaleString();};
+    var earnEsc=function(v){return String(v==null?"":v).replace(/[&<>'"]/g,function(c){return ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'})[c]});};
     var e=state.realEarnings||{};
     var total=Number(e.totalEarnings||0);
     var ref=Number(e.totalReferral||0);
@@ -12952,13 +12954,13 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
     root.innerHTML='<div class="px4 py4"><div class="xs cg fw8 up">ACCOUNT EARNINGS</div><h3 class="xl fw8">Earnings</h3>'+
       '<div class="xs ca5 mt1">Ordinary earnings are separate from wallet deposits and VIP referral salary.</div>'+
       '<div class="g g3c g3" style="margin-top:14px">'+
-        '<div class="aqe-update-card"><div class="px-label">TOTAL ORDINARY EARNINGS</div><div class="aqe-update-price">'+money(total)+'</div></div>'+
-        '<div class="aqe-update-card"><div class="px-label">REFERRAL EARNINGS</div><div class="aqe-update-price">'+money(ref)+'</div></div>'+
-        '<div class="aqe-update-card"><div class="px-label">OTHER EARNINGS</div><div class="aqe-update-price">'+money(other)+'</div></div>'+
+        '<div class="aqe-update-card"><div class="px-label">TOTAL ORDINARY EARNINGS</div><div class="aqe-update-price">'+earnMoney(total)+'</div></div>'+
+        '<div class="aqe-update-card"><div class="px-label">REFERRAL EARNINGS</div><div class="aqe-update-price">'+earnMoney(ref)+'</div></div>'+
+        '<div class="aqe-update-card"><div class="px-label">OTHER EARNINGS</div><div class="aqe-update-price">'+earnMoney(other)+'</div></div>'+
       '</div>'+
       '<div class="aqe-update-card" style="margin-top:14px">'+
         '<div class="px-label">VIP REFERRAL SALARY</div>'+
-        '<div class="aqe-update-price">'+money(salaryLocked+salaryReady)+'</div>'+
+        '<div class="aqe-update-price">'+earnMoney(salaryLocked+salaryReady)+'</div>'+
         '<div class="xs ca5 mt1">'+salaryCount+' directly referred approved VIP member'+(salaryCount===1?'':'s')+' × UGX 10,000.</div>'+
         '<div class="xs '+(salaryReady>0?'cgr':'ca5')+' mt1">'+
           (salaryReady>0?'Withdrawable now — salary release day is the 20th.':'Locked until the 20th of the month.')+
@@ -12968,7 +12970,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
       (rows.length?'<div style="display:grid;gap:8px;margin-top:8px">'+rows.slice(0,50).map(function(x){
         var type=String(x.reference_type||x.transaction_type||x.source||'earning').replaceAll('_',' ');
         var amount=Number(x.amount||x.net_amount||0);
-        return '<div class="aqe-update-row"><span>'+escapeHtml(type.toUpperCase())+'</span><b class="cgr">+'+money(amount)+'</b></div>';
+        return '<div class="aqe-update-row"><span>'+earnEsc(type.toUpperCase())+'</span><b class="cgr">+'+earnMoney(amount)+'</b></div>';
       }).join('')+'</div>':'<div class="xs ca5 mt2">No ordinary earning activity yet.</div>')+
       '</div></div>';
   };
