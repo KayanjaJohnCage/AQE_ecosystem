@@ -87,7 +87,8 @@ export async function GET(request: Request) {
       .eq("user_id", session.userId)
       .eq("direction", "CREDIT")
       .neq("reference_type", "WALLET_DEPOSIT")
-      .neq("reference_type", "WITHDRAWAL_REFUND");
+      .neq("reference_type", "WITHDRAWAL_REFUND")
+      .neq("reference_type", "VIP_SALARY");
 
     if (earningLedger.error) {
       console.error("[AQE dashboard] earnings query failed", {
