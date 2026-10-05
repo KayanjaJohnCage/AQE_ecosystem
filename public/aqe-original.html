@@ -3208,59 +3208,12 @@ function renderNotifications(){
     var meta=window.aqeCashNotificationMeta(n),sign=meta.credit?'+':meta.deduction?'-':'';
     var color=meta.credit?'var(--gr)':meta.deduction?'var(--r)':'var(--a1)';
     var amountHtml=sign&&meta.amount>0?'<span style="color:'+color+';font-weight:800;margin-left:8px">'+sign+'UGX '+meta.amount.toLocaleString()+'</span>':'';
-    return '<div class="px4 py3 bb ba7 '+(n.read?'o6':'')+' cp hover:bga7/30" onclick="markNotifRead(\''+String(n.id).replace(/'/g,"\\'")+'\')"><div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px"><p class="xs ca1">'+String(n.text||'AQE notification')+'</p>'+amountHtml+'</div><p class="xs ca5 mt1">'+String(n.time||'')+'</p></div>';
+    var friendType=String(n.type||'').toLowerCase()==='friend_request';
+    var requestId=n.referenceId||n.reference_id||(n.metadata&&n.metadata.request_id)||'';
+    var pendingActions=friendType&&requestId&&String(n.title||'').toLowerCase().indexOf('new friend request')>=0?
+      '<div class="flex g2 mt2"><button class="px-btn ok" type="button" onclick="event.stopPropagation();aqeRespondFriendRequest(\''+String(requestId).replace(/'/g,"\\'")+'\',\'accepted\')">Accept</button><button class="px-btn" type="button" onclick="event.stopPropagation();aqeRespondFriendRequest(\''+String(requestId).replace(/'/g,"\\'")+'\',\'rejected\')">Reject</button></div>':'';
+    return '<div class="px4 py3 bb ba7 '+(n.read?'o6':'')+' cp hover:bga7/30" onclick="markNotifRead(\''+String(n.id).replace(/'/g,"\\'")+'\')"><div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px"><p class="xs ca1">'+String(n.text||'AQE notification')+'</p>'+amountHtml+'</div><p class="xs ca5 mt1">'+String(n.time||'')+'</p>'+pendingActions+'</div>';
   }).join('');
-}
-
-
-window.aqeCashTransactionMeta=function(t){
-  var o=t&&typeof t==='object'?t:{};
-  var m=o.metadata&&typeof o.metadata==='object'?o.metadata:{};
-  var type=String(o.transaction_type||o.type||'').toLowerCase();
-  var desc=String(o.description||o.note||'').toLowerCase();
-  var ref=String(o.referenceType||o.reference_type||o.reference_id||'').toLowerCase();
-  var source=String(o.source||'').toLowerCase();
-  var amount=Number(o.amount??o.cash_amount??o.walletAmount??o.wallet_cost??m.amount??m.cashAmount??m.walletAmount??m.walletCost??0);
-  amount=Math.abs(Number.isFinite(amount)?amount:0);
-  var before=Number(o.balance_before),after=Number(o.balance_after);
-  var credit=false,deduction=false;
-
-  if(Number.isFinite(before)&&Number.isFinite(after)&&before!==after){
-    credit=after>before;
-    deduction=after<before;
-  }
-  if(!credit&&!deduction){
-    if(type.indexOf('welcome')>=0||type.indexOf('reward')>=0||type.indexOf('referral')>=0||type.indexOf('creator')>=0||type.indexOf('earning')>=0)credit=true;
-    else if(type.indexOf('deposit')>=0||type.indexOf('credit')>=0||type.indexOf('received')>=0)credit=true;
-    else if(type.indexOf('withdraw')>=0||type.indexOf('debit')>=0||type.indexOf('deduct')>=0||type.indexOf('fee')>=0||type.indexOf('recharge')>=0||type.indexOf('membership')>=0||type.indexOf('upgrade')>=0)deduction=true;
-    else if(type.indexOf('transfer')>=0){
-      credit=type.indexOf('received')>=0||type.indexOf('incoming')>=0;
-      deduction=!credit;
-    }else if(desc.indexOf('received')>=0||desc.indexOf('credited')>=0)credit=true;
-    else if(desc.indexOf('withdraw')>=0||desc.indexOf('charged')>=0||desc.indexOf('deduct')>=0||desc.indexOf('recharge')>=0)deduction=true;
-  }
-
-  var label='TRANSACTION';
-  if(type.indexOf('welcome')>=0)label='WELCOME BONUS';
-  else if(type.indexOf('referral')>=0)label='REFERRAL EARNING';
-  else if(type.indexOf('reward')>=0)label='REWARD EARNING';
-  else if(type.indexOf('creator')>=0)label='CREATOR EARNING';
-  else if(type.indexOf('deposit')>=0||type==='wallet_deposit')label='WALLET DEPOSIT';
-  else if(type.indexOf('qc_recharge')>=0||type.indexOf('recharge')>=0)label='QC RECHARGE';
-  else if(type.indexOf('withdraw')>=0)label='WITHDRAWAL';
-  else if(type.indexOf('membership')>=0||type.indexOf('upgrade')>=0)label='MEMBERSHIP PAYMENT';
-  else if(type.indexOf('transfer')>=0)label=credit?'WALLET TRANSFER RECEIVED':'WALLET TRANSFER';
-  else if(source.indexOf('mukuru')>=0&&credit)label='WALLET DEPOSIT';
-  else if(desc.indexOf('welcome bonus')>=0)label='WELCOME BONUS';
-  else if(desc.indexOf('referral')>=0&&desc.indexOf('earning')>=0)label='REFERRAL EARNING';
-  else if(desc.indexOf('reward')>=0&&desc.indexOf('earning')>=0)label='REWARD EARNING';
-
-  return {credit:credit,deduction:deduction,amount:amount,label:label};
-};
-
-function aqeTransactionIsVipSalary(t){
-  var s=JSON.stringify(t||{}).toLowerCase();
-  return s.indexOf('vip salary')>=0||s.indexOf('vip_salary')>=0||s.indexOf('salarylocked')>=0||s.indexOf('salaryready')>=0;
 }
 
 function renderBill() {
@@ -12542,7 +12495,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 
     state.notifications=(notifications.notifications||[]).map(function(n){return {
       id:n.id,text:(n.title?n.title+': ':'')+n.body,title:n.title||'',body:n.body||'',type:n.type||'',
-      referenceType:n.reference_type||'',metadata:n.metadata||{},
+      referenceType:n.reference_type||'',referenceId:n.reference_id||'',metadata:n.metadata||{},
       time:n.created_at?new Date(n.created_at).toLocaleString():'',read:!!n.read_at
     };});
 
@@ -13523,6 +13476,16 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
     }catch(e){toast(e.message||"Message failed.","error")}
   };
 
+  window.aqeRespondFriendRequest=async function(requestId,status){
+    if(!requestId||!["accepted","rejected","cancelled"].includes(String(status)))return;
+    try{
+      var b=await api("/api/community/friends",{method:"PATCH",body:JSON.stringify({requestId:String(requestId),status:String(status)})});
+      toast(b.message||("Friend request "+status+"."),"success");
+      if(typeof window.aqeRefreshFinancialState==="function")await window.aqeRefreshFinancialState();
+      else if(typeof renderNotifications==="function")renderNotifications();
+    }catch(e){toast(e.message||"Could not update friend request.","error")}
+  };
+
   /* E) Real friend request from the profile detail button. */
   window.aqeSendFriendRequest=async function(){
     var id=window.activeProfileId, p=profileById(id);
@@ -13603,7 +13566,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
     var host=E("profileDetail");if(!host)return;
     var p=profileById(window.activeProfileId);if(!p||!p.userId)return;
     var row=host.querySelector(".aqe-real-actions");if(!row){
-      row=document.createElement("div");row.className="aqe-real-actions flex g2 mb4";row.innerHTML='<button class="btn bp" type="button" id="aqeRealMessageBtn"><i class="fas fa-comment-dots"></i> Message</button>';
+      row=document.createElement("div");row.className="aqe-real-actions flex g2 mb4";row.innerHTML='<button class="btn bp" type="button" id="aqeRealMessageBtn"><i class="fas fa-comment-dots"></i> Message</button><button class="btn bs2" type="button" id="aqeRealFriendBtn"><i class="fas fa-user-plus"></i> Add Friend</button>';
       var anchor=host.querySelector("#profileMediaGallery");if(anchor)anchor.parentNode.insertBefore(row,anchor);
     }
     var btn=E("aqeRealMessageBtn");if(btn)btn.onclick=function(){
@@ -13612,6 +13575,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
       if(!window.state.conversations.some(function(x){return String(x.id)===String(p.userId)}))window.state.conversations.push({id:p.userId,withName:p.name,withAvatar:(p.name||"AQ").split(" ").map(function(x){return x[0]}).join("").slice(0,2),messages:[],lastMsg:"",time:"Now",unread:0});
       if(typeof closeProfile==="function")closeProfile();if(typeof showScreen==="function")showScreen("screen-messages");setTimeout(function(){if(typeof openChat==="function")openChat(String(p.userId))},50);
     };
+    var friendBtn=E("aqeRealFriendBtn");if(friendBtn)friendBtn.onclick=function(){window.activeProfileId=window.activeProfileId||p.id;window.aqeSendFriendRequest();};
   }
 
   /* H) Mukuru receiver: show manager-configured name, phone, card and instructions in the payment flow. */
