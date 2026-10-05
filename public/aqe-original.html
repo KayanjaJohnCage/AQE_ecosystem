@@ -3212,53 +3212,80 @@ function renderNotifications(){
   }).join('');
 }
 
-function renderBill() {
 
-  const list = document.getElementById('billList');
+window.aqeCashTransactionMeta=function(t){
+  var o=t&&typeof t==='object'?t:{};
+  var m=o.metadata&&typeof o.metadata==='object'?o.metadata:{};
+  var type=String(o.transaction_type||o.type||'').toLowerCase();
+  var desc=String(o.description||o.note||'').toLowerCase();
+  var ref=String(o.referenceType||o.reference_type||o.reference_id||'').toLowerCase();
+  var source=String(o.source||'').toLowerCase();
+  var amount=Number(o.amount??o.cash_amount??o.walletAmount??o.wallet_cost??m.amount??m.cashAmount??m.walletAmount??m.walletCost??0);
+  amount=Math.abs(Number.isFinite(amount)?amount:0);
+  var before=Number(o.balance_before),after=Number(o.balance_after);
+  var credit=false,deduction=false;
 
-  const txs = state.transactions || [];
-
-  if (!txs.length) {
-
-    list.innerHTML = '<div class="tc ca5 sm py8">No transactions yet</div>';
-
-    return;
-
+  if(Number.isFinite(before)&&Number.isFinite(after)&&before!==after){
+    credit=after>before;
+    deduction=after<before;
+  }
+  if(!credit&&!deduction){
+    if(type.indexOf('welcome')>=0||type.indexOf('reward')>=0||type.indexOf('referral')>=0||type.indexOf('creator')>=0||type.indexOf('earning')>=0)credit=true;
+    else if(type.indexOf('deposit')>=0||type.indexOf('credit')>=0||type.indexOf('received')>=0)credit=true;
+    else if(type.indexOf('withdraw')>=0||type.indexOf('debit')>=0||type.indexOf('deduct')>=0||type.indexOf('fee')>=0||type.indexOf('recharge')>=0||type.indexOf('membership')>=0||type.indexOf('upgrade')>=0)deduction=true;
+    else if(type.indexOf('transfer')>=0){
+      credit=type.indexOf('received')>=0||type.indexOf('incoming')>=0;
+      deduction=!credit;
+    }else if(desc.indexOf('received')>=0||desc.indexOf('credited')>=0)credit=true;
+    else if(desc.indexOf('withdraw')>=0||desc.indexOf('charged')>=0||desc.indexOf('deduct')>=0||desc.indexOf('recharge')>=0)deduction=true;
   }
 
-  list.innerHTML = txs.slice().reverse().map(t => `
+  var label='TRANSACTION';
+  if(type.indexOf('welcome')>=0)label='WELCOME BONUS';
+  else if(type.indexOf('referral')>=0)label='REFERRAL EARNING';
+  else if(type.indexOf('reward')>=0)label='REWARD EARNING';
+  else if(type.indexOf('creator')>=0)label='CREATOR EARNING';
+  else if(type.indexOf('deposit')>=0||type==='wallet_deposit')label='WALLET DEPOSIT';
+  else if(type.indexOf('qc_recharge')>=0||type.indexOf('recharge')>=0)label='QC RECHARGE';
+  else if(type.indexOf('withdraw')>=0)label='WITHDRAWAL';
+  else if(type.indexOf('membership')>=0||type.indexOf('upgrade')>=0)label='MEMBERSHIP PAYMENT';
+  else if(type.indexOf('transfer')>=0)label=credit?'WALLET TRANSFER RECEIVED':'WALLET TRANSFER';
+  else if(source.indexOf('mukuru')>=0&&credit)label='WALLET DEPOSIT';
+  else if(desc.indexOf('welcome bonus')>=0)label='WELCOME BONUS';
+  else if(desc.indexOf('referral')>=0&&desc.indexOf('earning')>=0)label='REFERRAL EARNING';
+  else if(desc.indexOf('reward')>=0&&desc.indexOf('earning')>=0)label='REWARD EARNING';
 
-    <div class="bga8 rxl p3 b1 ba7 flex aic g3">
+  return {credit:credit,deduction:deduction,amount:amount,label:label};
+};
 
-      <div style="width:40px;height:40px;border-radius:50%;${t.type==='deposit'?'background:rgba(34,197,94,0.1);color:var(--gr)':t.type==='withdrawal'?'background:rgba(34,197,94,0.1);color:var(--r)':'background:rgba(59,130,246,0.1);color:var(--b)'};display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-
-        <i class="fas ${t.type==='deposit'?'fa-arrow-down':t.type==='withdrawal'?'fa-arrow-up':'fa-exchange-alt'}"></i>
-
-      </div>
-
-      <div class="f1 mw0">
-
-        <div class="sm fw5 ca1 cap">${t.type}</div>
-
-        <div class="xs ca4">${t.date}</div>
-
-      </div>
-
-      <div class="tr">
-
-        <div class="sm fw7 ${t.type==='deposit'||t.type==='earning'?'cgr':'ca1'}">${t.type==='deposit'||t.type==='earning'?'+':'-'}${formatMoney(t.amount, 'UGX')}</div>
-
-        <div class="xs ${t.status==='success'?'cgr':t.status==='pending'?'text-amber-400':'cr'}">${t.status}</div>
-
-      </div>
-
-    </div>
-
-  `).join('');
-
+function aqeTransactionIsVipSalary(t){
+  var s=JSON.stringify(t||{}).toLowerCase();
+  return s.indexOf('vip salary')>=0||s.indexOf('vip_salary')>=0||s.indexOf('salarylocked')>=0||s.indexOf('salaryready')>=0;
 }
 
-
+function renderBill() {
+  const list=document.getElementById('billList');
+  const txs=(state.transactions||[]).filter(function(t){return !aqeTransactionIsVipSalary(t);});
+  if(!txs.length){
+    list.innerHTML='<div class="tc ca5 sm py8">No transactions yet</div>';
+    return;
+  }
+  list.innerHTML=txs.slice().reverse().map(function(t){
+    var meta=window.aqeCashTransactionMeta(t),sign=meta.credit?'+':meta.deduction?'-':'';
+    var color=meta.credit?'var(--gr)':meta.deduction?'var(--r)':'var(--a1)';
+    var icon=meta.credit?'fa-arrow-down':meta.deduction?'fa-arrow-up':'fa-exchange-alt';
+    var iconBg=meta.credit?'rgba(34,197,94,0.1)':meta.deduction?'rgba(225,29,72,0.1)':'rgba(59,130,246,0.1)';
+    var date=t.date||t.created_at||'';
+    var status=String(t.status||'completed');
+    var statusClass=status==='success'||status==='completed'?'cgr':status==='pending'?'text-amber-400':'cr';
+    var amountHtml=sign&&meta.amount>0?'<div class="sm fw7" style="color:'+color+'">'+sign+'UGX '+meta.amount.toLocaleString()+'</div>':'<div class="sm fw7" style="color:'+color+'">'+(meta.amount>0?'UGX '+meta.amount.toLocaleString():'—')+'</div>';
+    return '<div class="bga8 rxl p3 b1 ba7 flex aic g3">'+
+      '<div style="width:40px;height:40px;border-radius:50%;background:'+iconBg+';color:'+color+';display:flex;align-items:center;justify-content:center;flex-shrink:0"><i class="fas '+icon+'"></i></div>'+
+      '<div class="f1 mw0"><div class="sm fw5 ca1">'+meta.label+'</div><div class="xs ca4">'+String(date)+'</div></div>'+
+      '<div class="tr">'+amountHtml+'<div class="xs '+statusClass+'">'+status+'</div></div>'+
+    '</div>';
+  }).join('');
+}
 
 function renderTeam() {
 
@@ -3369,36 +3396,21 @@ function renderTasks() {
 
 
 function renderDashActivity() {
-
-  const list = document.getElementById('dashActivity');
-
-  const txs = (state.transactions || []).slice(-3).reverse();
-
-  if (!txs.length) {
-
-    list.innerHTML = '<div class="ca5 xs py2">No recent activity</div>';
-
-    return;
-
-  }
-
-  list.innerHTML = txs.map(t => `
-
-    <div class="flex aic g3 p2 bga8/50 rlg b1 ba7/50">
-
-      <div style="width:32px;height:32px;border-radius:50%;${t.type==='deposit'?'background:rgba(34,197,94,0.1);color:var(--gr)':'background:rgba(59,130,246,0.1);color:var(--b)'};display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="fas ${t.type==='deposit'?'fa-arrow-down':'fa-shopping-bag'}"></i></div>
-
-      <div class="f1 mw0"><div class="xs fw5 ca1 cap">${t.type}</div><div class="xs ca4">${t.date}</div></div>
-
-      <div class="xs fw7 ${t.type==='deposit'?'cgr':'ca1'}">${t.type==='deposit'?'+':'-'}${formatMoney(t.amount,'UGX')}</div>
-
-    </div>
-
-  `).join('');
-
+  const list=document.getElementById('dashActivity');
+  const txs=(state.transactions||[]).filter(function(t){return !aqeTransactionIsVipSalary(t);}).slice(-3).reverse();
+  if(!txs.length){list.innerHTML='<div class="ca5 xs py2">No recent activity</div>';return;}
+  list.innerHTML=txs.map(function(t){
+    var meta=window.aqeCashTransactionMeta(t),sign=meta.credit?'+':meta.deduction?'-':'';
+    var color=meta.credit?'var(--gr)':meta.deduction?'var(--r)':'var(--a1)';
+    var icon=meta.credit?'fa-arrow-down':meta.deduction?'fa-arrow-up':'fa-exchange-alt';
+    var amountHtml=sign&&meta.amount>0?sign+'UGX '+meta.amount.toLocaleString():(meta.amount>0?'UGX '+meta.amount.toLocaleString():'—');
+    return '<div class="flex aic g3 p2 bga8/50 rlg b1 ba7/50">'+
+      '<div style="width:32px;height:32px;border-radius:50%;background:'+(meta.credit?'rgba(34,197,94,0.1)':meta.deduction?'rgba(225,29,72,0.1)':'rgba(59,130,246,0.1)')+';color:'+color+';display:flex;align-items:center;justify-content:center;flex-shrink:0"><i class="fas '+icon+'"></i></div>'+
+      '<div class="f1 mw0"><div class="xs fw5 ca1">'+meta.label+'</div><div class="xs ca4">'+String(t.date||t.created_at||'')+'</div></div>'+
+      '<div class="xs fw7" style="color:'+color+'">'+amountHtml+'</div>'+
+    '</div>';
+  }).join('');
 }
-
-
 
 // ==================== PROFILE MEDIA ====================
 
@@ -7391,10 +7403,19 @@ window.addEventListener('DOMContentLoaded', init);
     box.innerHTML='<div class="aqe-update-card">Loading live payment activity…</div>';
     try{
       const data=await api('/api/receipts?limit=100');
-      const rows=Array.isArray(data.receipts)?data.receipts:[];
+      const rows=(Array.isArray(data.receipts)?data.receipts:[]).filter(function(o){return !aqeTransactionIsVipSalary(o);});
       box.innerHTML=rows.length?rows.map(function(o){
-        const amount=Number(o.amount||o.cash_amount||0),qc=Number(o.qc_amount||0);
-        return '<div class="aqe-prod-row"><div><b>'+escP(String(o.transaction_type||o.description||'transaction').replaceAll('_',' '))+'</b><div class="xs ca5">'+escP(o.receipt_number||o.reference_id||'—')+' · '+(amount?'UGX '+amount.toLocaleString():qc+' QC')+'</div><div class="xs ca5">'+escP(o.created_at?new Date(o.created_at).toLocaleString():'')+'</div></div><span class="aqe-prod-pill '+statusClass(String(o.status||'completed'))+'">'+escP(String(o.status||'completed').toUpperCase())+'</span></div>';
+        var meta=window.aqeCashTransactionMeta(o);
+        var sign=meta.credit?'+':meta.deduction?'-':'';
+        var color=meta.credit?'var(--gr)':meta.deduction?'var(--r)':'var(--a1)';
+        var amount=meta.amount;
+        var amountText=sign&&amount>0?sign+'UGX '+amount.toLocaleString():(amount>0?'UGX '+amount.toLocaleString():'—');
+        var status=String(o.status||'completed').toUpperCase();
+        return '<div class="aqe-prod-row">'+
+          '<div style="min-width:0;flex:1"><b>'+escP(meta.label)+'</b>'+
+          '<div class="xs ca5">'+escP(o.receipt_number||o.reference_id||'—')+' · <span style="color:'+color+';font-weight:800">'+amountText+'</span></div>'+
+          '<div class="xs ca5">'+escP(o.created_at?new Date(o.created_at).toLocaleString():'')+'</div></div>'+
+          '<span class="aqe-prod-pill '+statusClass(String(o.status||'completed'))+'">'+escP(status)+'</span></div>';
       }).join(''):'<div class="aqe-update-card">No financial receipts yet.</div>';
     }catch(e){box.innerHTML='<div class="aqe-update-card">'+escP(e.message||'Payment activity unavailable.')+'</div>';}
   }
