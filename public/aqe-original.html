@@ -12820,9 +12820,20 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
   /* Dedicated receipt and notification pages; data stays server-authoritative. */
   window.renderAqeReceiptPage=function(){
     var list=E("receiptPageList");if(!list)return;
-    var rows=Array.isArray(state.transactions)?state.transactions:[];
+    var rows=(Array.isArray(state.transactions)?state.transactions:[]).filter(function(t){return !aqeTransactionIsVipSalary(t);});
     list.innerHTML=rows.length?rows.map(function(t){
-      return '<article class="bga8 rxl p3 b1 ba7"><div class="flex aic jb g3"><div class="f1 mw0"><div class="sm fw7 ca1">'+esc(t.description||t.type||"Transaction")+'</div><div class="xs ca5 mt1">'+esc(t.date||"")+'</div><div class="xs ca5 mt1">Receipt: '+esc(t.receiptNumber||t.reference||"—")+'</div></div><div class="tr"><div class="sm fw8 cg">'+esc((t.currency||"UGX")+" "+Number(t.amount||0).toLocaleString())+'</div><div class="xs ca5 mt1">'+esc(String(t.status||"completed").toUpperCase())+'</div></div></div></article>';
+      var meta=typeof window.aqeCashTransactionMeta==="function"?window.aqeCashTransactionMeta(t):{credit:false,deduction:false,amount:Number(t.amount||0),label:t.type||"TRANSACTION"};
+      var sign=meta.credit?'+':meta.deduction?'-':'';
+      var color=meta.credit?'var(--gr)':meta.deduction?'var(--r)':'var(--a1)';
+      var icon=meta.credit?'fa-arrow-down':meta.deduction?'fa-arrow-up':'fa-exchange-alt';
+      var amountText=sign&&meta.amount>0?sign+'UGX '+Number(meta.amount).toLocaleString():(meta.amount>0?'UGX '+Number(meta.amount).toLocaleString():'—');
+      var status=String(t.status||"completed");
+      var statusClass=status==="success"||status==="completed"?"cgr":status==="pending"?"text-amber-400":"cr";
+      return '<article class="bga8 rxl p3 b1 ba7"><div class="flex aic jb g3">'+
+        '<div style="width:40px;height:40px;border-radius:50%;background:'+(meta.credit?'rgba(34,197,94,.1)':meta.deduction?'rgba(225,29,72,.1)':'rgba(59,130,246,.1)')+';color:'+color+';display:flex;align-items:center;justify-content:center;flex-shrink:0"><i class="fas '+icon+'"></i></div>'+
+        '<div class="f1 mw0"><div class="sm fw7 ca1">'+esc(meta.label)+'</div><div class="xs ca5 mt1">'+esc(t.date||"")+'</div><div class="xs ca5 mt1">Receipt: '+esc(t.receiptNumber||t.reference||"—")+'</div></div>'+
+        '<div class="tr"><div class="sm fw8" style="color:'+color+'">'+esc(amountText)+'</div><div class="xs '+statusClass+' mt1">'+esc(status.toUpperCase())+'</div></div>'+
+      '</div></article>';
     }).join(""):'<div class="tc ca5 xs py6">No receipts yet. Completed deposits, upgrades, QC recharge and other financial actions will appear here.</div>';
   };
   window.renderAqeNotificationPage=function(){
