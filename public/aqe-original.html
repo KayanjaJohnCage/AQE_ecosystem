@@ -3179,41 +3179,38 @@ function renderConversations() {
 
 
 
-function renderNotifications() {
-
-  const list = document.getElementById('notifList');
-
-  const dot = document.getElementById('notifDot');
-
-  const unread = state.notifications.filter(n => !n.read).length;
-
-  dot.classList.toggle('hidden', unread === 0);
-
-
-
-  if (!state.notifications.length) {
-
-    list.innerHTML = '<div class="tc ca5 xs py6">No notifications</div>';
-
-    return;
-
+window.aqeCashNotificationMeta=function(n){
+  var m=n&&n.metadata&&typeof n.metadata==='object'?n.metadata:{};
+  var type=String(n&&n.type||'').toLowerCase(),body=String(n&&n.body||n&&n.text||'').toLowerCase();
+  var title=String(n&&n.title||'').toLowerCase(),kind=String(m.paymentKind||'').toLowerCase();
+  var ref=String(n&&n.referenceType||'').toLowerCase();
+  var amount=Number(m.amount??m.walletAmount??m.cashAmount??m.walletCost??0),credit=false,deduction=false;
+  if(['welcome_bonus','reward','reward_credited','referral_earning','creator_earning'].indexOf(type)>=0)credit=true;
+  if(type==='payment_completed'&&(kind==='wallet_deposit'||body.indexOf('wallet deposit')>=0||body.indexOf('credited to your aqe cash wallet')>=0))credit=true;
+  if(type==='qc_recharge'){deduction=true;amount=Number(m.walletCost||amount||0);}
+  if(['withdrawal','withdrawal_completed','withdrawal_requested'].indexOf(type)>=0||body.indexOf('withdrawal')>=0)deduction=true;
+  if(type==='wallet_transfer_sent'||body.indexOf('sent to')>=0||(body.indexOf('transferred')>=0&&body.indexOf('received')<0))deduction=true;
+  if(type==='wallet_transfer_received'||body.indexOf('received from')>=0)credit=true;
+  if(type==='payment_completed'&&kind==='membership_upgrade'){credit=false;deduction=false;}
+  if(type==='payment_request'){credit=false;deduction=false;}
+  if(!credit&&!deduction){
+    if(ref.indexOf('welcome')>=0||ref.indexOf('reward')>=0||ref.indexOf('earning')>=0||title.indexOf('credited')>=0)credit=true;
+    else if(ref.indexOf('withdraw')>=0||ref.indexOf('debit')>=0||ref.indexOf('fee')>=0||title.indexOf('deduct')>=0||title.indexOf('charged')>=0)deduction=true;
   }
+  return {credit:credit,deduction:deduction,amount:amount};
+};
 
-  list.innerHTML = state.notifications.map(n => `
-
-    <div class="px4 py3 bb ba7 ${n.read?'o6':''} cp hover:bga7/30" onclick="markNotifRead(${n.id})">
-
-      <p class="xs ca1">${n.text}</p>
-
-      <p class="xs ca5 mt1">${n.time}</p>
-
-    </div>
-
-  `).join('');
-
+function renderNotifications(){
+  const list=document.getElementById('notifList'),dot=document.getElementById('notifDot');
+  const unread=state.notifications.filter(n=>!n.read).length;dot.classList.toggle('hidden',unread===0);
+  if(!state.notifications.length){list.innerHTML='<div class="tc ca5 xs py6">No notifications</div>';return;}
+  list.innerHTML=state.notifications.map(function(n){
+    var meta=window.aqeCashNotificationMeta(n),sign=meta.credit?'+':meta.deduction?'-':'';
+    var color=meta.credit?'var(--gr)':meta.deduction?'var(--r)':'var(--a1)';
+    var amountHtml=sign&&meta.amount>0?'<span style="color:'+color+';font-weight:800;margin-left:8px">'+sign+'UGX '+meta.amount.toLocaleString()+'</span>':'';
+    return '<div class="px4 py3 bb ba7 '+(n.read?'o6':'')+' cp hover:bga7/30" onclick="markNotifRead(\''+String(n.id).replace(/'/g,"\\'")+'\')"><div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px"><p class="xs ca1">'+String(n.text||'AQE notification')+'</p>'+amountHtml+'</div><p class="xs ca5 mt1">'+String(n.time||'')+'</p></div>';
+  }).join('');
 }
-
-
 
 function renderBill() {
 
@@ -5924,13 +5921,19 @@ window.addEventListener('DOMContentLoaded', init);
 
   <div class="px4 py4">
 
-    <div class="px-title">VIP Media Vault <i class="fas fa-lock cg" style="font-size:16px"></i></div>
+    <div class="px-title">VIP Asset Room <i class="fas fa-lock cg" style="font-size:16px"></i></div>
 
-    <div class="px-sub">Private VIP media and saleable content. Production uses private storage, signed URLs and audit logs.</div>
+    <div class="px-sub">Your private VIP asset room for media, protected assets and VIP-only salary information.</div>
 
-    <button class="px-btn primary" style="margin:16px 0" onclick="pxAddAsset()">+ Upload asset</button>
+    <div id="aqeVipSalaryRoomCard" class="hidden"></div>
 
-    <div id="pxVaultList"></div>
+    <div class="px-card" style="margin-top:16px">
+      <div class="fw7">Private VIP assets</div>
+      <div class="xs ca5 mt1">Production uses private storage, signed URLs and audit logs.</div>
+      <button class="px-btn primary" style="margin-top:12px" onclick="pxAddAsset()">+ Upload asset</button>
+    </div>
+
+    <div id="pxVaultList" style="margin-top:14px"></div>
 
   </div>
 
@@ -6280,16 +6283,32 @@ window.addEventListener('DOMContentLoaded', init);
 
   }
 
+  function renderVipSalaryAssetRoom(){
+    var card=document.getElementById('aqeVipSalaryRoomCard');if(!card)return;
+    var u=window.state&&state.currentUser;
+    if(!u||String(u.tier||'').toLowerCase()!=='vip'){
+      card.classList.add('hidden');card.innerHTML='';return;
+    }
+    var e=state.realEarnings||{},vs=e.vipSalary||{};
+    var locked=Number(vs.lockedBalance||vs.accruedBalance||0);
+    var ready=Number(vs.withdrawableBalance||0);
+    var count=Number(vs.directVipReferralCount||0);
+    var total=locked+ready;
+    card.classList.remove('hidden');
+    card.innerHTML='<div class="px-card" style="margin-top:16px;border:1px solid var(--g);background:linear-gradient(135deg,rgba(251,191,36,.08),rgba(139,92,246,.08))">'+
+      '<div class="flex aic jb g2"><div><div class="px-label">VIP SALARY · PRIVATE</div><div class="px-metric cg">UGX '+total.toLocaleString()+'</div></div><i class="fas fa-crown cg" style="font-size:24px"></i></div>'+
+      '<div class="xs ca5 mt2">'+count+' approved directly referred VIP member'+(count===1?'':'s')+' × UGX 10,000.</div>'+
+      '<div class="xs '+(ready>0?'cgr':'ca5')+' mt2">'+(ready>0?'UGX '+ready.toLocaleString()+' is available for salary withdrawal.':'Salary remains locked until the 20th of the month.')+'</div>'+
+      '<div class="xs ca5 mt1">This information is visible only to VIP members inside the Asset Room.</div>'+
+    '</div>';
+  }
+
   function renderVault(){
-
-    var l=document.getElementById('pxVaultList'); if(!l) return;
-
-    l.innerHTML = px().vault.map(function(v){
-
+    renderVipSalaryAssetRoom();
+    var l=document.getElementById('pxVaultList');if(!l)return;
+    l.innerHTML=px().vault.map(function(v){
       return '<div class="px-item"><div><b>'+esc(v.name)+'</b><div class="px-sub">'+(v.forSale?('For sale · '+v.price+' credits'):'Private')+'</div></div><button class="px-btn" onclick="pxToggleAsset(\''+v.id+'\')">'+(v.forSale?'Make private':'Put on sale')+'</button></div>';
-
     }).join('');
-
   }
 
   function renderStore(){
@@ -6721,7 +6740,7 @@ window.addEventListener('DOMContentLoaded', init);
 
     <div class="aqe-update-card"><span class="aqe-update-chip">PREMIUM</span><div class="aqe-update-price" style="margin-top:10px">UGX 150,000</div><p class="aqe-update-muted">Initial registration/referral amount. Renewal: UGX 5,000/month. Referral reward is calculated from the referred tier price.</p><button class="aqe-update-action" onclick="aqeSubscribe('premium')">Choose Premium</button></div>
 
-    <div class="aqe-update-card"><span class="aqe-update-chip">VIP</span><div class="aqe-update-price" style="margin-top:10px">UGX 250,000</div><p class="aqe-update-muted">Initial registration/referral amount. Renewal: UGX 8,500/month. VIP referrers earn 12% of the referred tier price. VIP salary: UGX 10,000 on the 20th.</p><button class="aqe-update-action vip" onclick="aqeSubscribe('vip')">Choose VIP</button></div>
+    <div class="aqe-update-card"><span class="aqe-update-chip">VIP</span><div class="aqe-update-price" style="margin-top:10px">UGX 250,000</div><p class="aqe-update-muted">Initial registration/referral amount. Renewal: UGX 8,500/month. VIP referrers earn 12% of the referred tier price.</p><button class="aqe-update-action vip" onclick="aqeSubscribe('vip')">Choose VIP</button></div>
 
   </div>
 
@@ -6796,7 +6815,7 @@ window.addEventListener('DOMContentLoaded', init);
 
   <div id="aqeReferralSummary" class="aqe-update-grid" style="margin-top:14px"></div>
 
-  <div class="aqe-update-card" style="margin-top:14px"><div class="px-label">Current referral rules</div><p class="aqe-update-muted">Referral earnings follow the configured membership-tier rates. Direct and indirect referral earnings are credited after the referred member's eligible membership payment is confirmed.</p><p class="aqe-update-muted">VIP referral salary is UGX 10,000 for every directly referred approved VIP member and is released on the 20th of the month.</p></div>
+  <div class="aqe-update-card" style="margin-top:14px"><div class="px-label">Current referral rules</div><p class="aqe-update-muted">Referral earnings follow the configured membership-tier rates. Direct and indirect referral earnings are credited after the referred member's eligible membership payment is confirmed.</p><p class="aqe-update-muted">VIP salary information is available privately inside the VIP Asset Room.</p></div>
 
 </div></div>
 
@@ -6805,7 +6824,7 @@ window.addEventListener('DOMContentLoaded', init);
 <div id="screen-aqe-withdraw" class="screen hidden"><div class="px4 py4">
 
   <div class="px-title">Withdraw</div>
-  <div class="xs ca5 mt1">Withdraw ordinary available cash earnings. VIP salary is kept separate until the 20th.</div>
+  <div class="xs ca5 mt1">Withdraw ordinary available cash earnings. VIP salary is managed separately inside the VIP Asset Room.</div>
 
   <div id="aqeWithdrawStatus" class="aqe-update-card" style="margin-top:14px"></div>
 
@@ -6825,7 +6844,6 @@ window.addEventListener('DOMContentLoaded', init);
     <div class="px-label">Withdrawal eligibility</div>
     <p class="aqe-update-muted">Basic and Premium: weekends only. VIP: up to 3 withdrawal applications in a rolling 7-day period.</p>
     <p class="aqe-update-muted">Minimum UGX 30,000 · Maximum UGX 5,000,000 · 8% service charge.</p>
-    <p class="aqe-update-muted">VIP salary is UGX 10,000 for every directly referred VIP user. It is separate from ordinary earnings and remains locked until the 20th of the month.</p>
   </div>
 
 </div></div>
@@ -7186,7 +7204,6 @@ window.addEventListener('DOMContentLoaded', init);
 
     const next=sub.nextRenewal?new Date(sub.nextRenewal).toLocaleDateString():'—';
 
-    const salary=rawTier(u)==='vip'?(10000+(Number(u.successfulReferrals)||0)*1000):0;
 
     box.innerHTML='<div class="aqe-prod-grid">'+
 
@@ -7196,7 +7213,7 @@ window.addEventListener('DOMContentLoaded', init);
 
       '<div><div class="px-label">MONTHLY RENEWAL</div><b>'+money(r.renewal)+'</b></div>'+
 
-      '<div><div class="px-label">VIP MONTHLY SALARY</div><b>'+money(salary)+'</b></div>'+
+      ''+
 
       '</div>'+
 
@@ -12503,10 +12520,9 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
     };});
 
     state.notifications=(notifications.notifications||[]).map(function(n){return {
-      id:n.id,
-      text:(n.title?n.title+': ':'')+n.body,
-      time:n.created_at?new Date(n.created_at).toLocaleString():'',
-      read:!!n.read_at
+      id:n.id,text:(n.title?n.title+': ':'')+n.body,title:n.title||'',body:n.body||'',type:n.type||'',
+      referenceType:n.reference_type||'',metadata:n.metadata||{},
+      time:n.created_at?new Date(n.created_at).toLocaleString():'',read:!!n.read_at
     };});
 
     try{if(typeof saveState==='function')saveState();}catch(_){}
@@ -12553,7 +12569,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
   if(oldShow&&!oldShow.__aqeFinancialRefresh){
     window.showScreen=function(id){
       var result=oldShow.apply(this,arguments);
-      if(id==='screen-wallet'||id==='screen-bill'||id==='screen-me'||id==='screen-vip'||id==='screen-queue'){
+      if(id==='screen-wallet'||id==='screen-bill'||id==='screen-me'||id==='screen-vip'||id==='screen-queue'||id==='screen-vault'){
         refreshFinancialState().catch(function(){});
       }
       return result;
@@ -12792,7 +12808,11 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
     var list=E("notificationPageList");if(!list)return;
     var rows=Array.isArray(state.notifications)?state.notifications:[];
     list.innerHTML=rows.length?rows.map(function(n){
-      return '<article class="bga8 rxl p3 b1 ba7 '+(n.read?"o6":"")+'"><button style="display:block;width:100%;text-align:left;background:none;border:0;color:inherit;cursor:pointer" onclick="markNotifRead(\''+esc(n.id)+'\')"><div class="sm fw7 ca1">'+esc(n.text||"AQE notification")+'</div><div class="xs ca5 mt1">'+esc(n.time||"")+'</div></button></article>';
+      var meta=typeof window.aqeCashNotificationMeta==="function"?window.aqeCashNotificationMeta(n):{credit:false,deduction:false,amount:0};
+      var sign=meta.credit?'+':meta.deduction?'-':'';
+      var color=meta.credit?'var(--gr)':meta.deduction?'var(--r)':'var(--a1)';
+      var amountHtml=sign&&meta.amount>0?'<span style="color:'+color+';font-weight:800">'+sign+'UGX '+Number(meta.amount).toLocaleString()+'</span>':'';
+      return '<article class="bga8 rxl p3 b1 ba7 '+(n.read?"o6":"")+'"><button style="display:block;width:100%;text-align:left;background:none;border:0;color:inherit;cursor:pointer" onclick="markNotifRead(\''+esc(n.id)+'\')"><div class="flex aic jb g2"><div class="sm fw7 ca1">'+esc(n.text||"AQE notification")+'</div>'+amountHtml+'</div><div class="xs ca5 mt1">'+esc(n.time||"")+'</div></button></article>';
     }).join(""):'<div class="tc ca5 xs py6">No notifications yet.</div>';
   };
 
@@ -12982,10 +13002,6 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
     var total=Number(e.totalEarnings||0);
     var ref=Number(e.totalReferral||0);
     var other=Number(e.totalOther||0)+Number(e.totalCreator||0);
-    var vs=e.vipSalary||{};
-    var salaryLocked=Number(vs.lockedBalance||vs.accruedBalance||0);
-    var salaryReady=Number(vs.withdrawableBalance||0);
-    var salaryCount=Number(vs.directVipReferralCount||0);
     var rows=[];
     (e.referralEarnings||[]).forEach(function(x){rows.push(Object.assign({},x,{_earningLabel:'REFERRAL EARNING'}));});
     (e.otherEarnings||[]).forEach(function(x){rows.push(Object.assign({},x,{_earningLabel:(function(){
@@ -13012,14 +13028,6 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
         '<div class="aqe-update-card"><div class="px-label">TOTAL ORDINARY EARNINGS</div><div class="aqe-update-price">'+earnMoney(total)+'</div></div>'+
         '<div class="aqe-update-card"><div class="px-label">REFERRAL EARNINGS</div><div class="aqe-update-price">'+earnMoney(ref)+'</div></div>'+
         '<div class="aqe-update-card"><div class="px-label">OTHER EARNINGS</div><div class="aqe-update-price">'+earnMoney(other)+'</div></div>'+
-      '</div>'+
-      '<div class="aqe-update-card" style="margin-top:14px">'+
-        '<div class="px-label">VIP REFERRAL SALARY</div>'+
-        '<div class="aqe-update-price">'+earnMoney(salaryLocked+salaryReady)+'</div>'+
-        '<div class="xs ca5 mt1">'+salaryCount+' directly referred approved VIP member'+(salaryCount===1?'':'s')+' × UGX 10,000.</div>'+
-        '<div class="xs '+(salaryReady>0?'cgr':'ca5')+' mt1">'+
-          (salaryReady>0?'Withdrawable now — salary release day is the 20th.':'Locked until the 20th of the month.')+
-        '</div>'+
       '</div>'+
       '<div class="aqe-update-card" style="margin-top:14px"><div class="px-label">EARNING ACTIVITY</div>'+
       (rows.length?'<div style="display:grid;gap:8px;margin-top:8px">'+rows.slice(0,50).map(function(x){
