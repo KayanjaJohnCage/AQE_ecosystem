@@ -67,7 +67,6 @@ export async function GET(request: Request) {
   // referral wallet credits are already represented by referral_earnings.
   const earnedLedgerReferenceTypes = new Set([
     "WELCOME_BONUS",
-    "VIP_SALARY",
     "CREATOR_EARNING",
     "CONTENT_EARNING",
     "TEAM_LEADER_EARNING",
@@ -80,6 +79,21 @@ export async function GET(request: Request) {
   const totalReferral = creditedReferralRows.reduce((n: number, x: any) => n + Number(x.amount || 0), 0);
   const totalOther = otherEarnings.reduce((n: number, x: any) => n + Number(x.amount || 0), 0);
   const totalEarnings = totalCreator + totalReferral + totalOther;
+
+  // VIP salary is a separate locked benefit, never part of ordinary Earnings.
+  // One direct VIP referral earns UGX 10,000 for the VIP referrer.
+  const vipReferralQuery = await c.from("profiles")
+    .select("user_id,tier,verification_status")
+    .eq("referred_by", s.userId)
+    .eq("tier", "vip");
+  if (vipReferralQuery.error) {
+    return NextResponse.json({ ok: false, reason: vipReferralQuery.error.message }, { status: 500 });
+  }
+  const directVipReferralCount = (vipReferralQuery.data || []).filter(
+    (x: any) => String(x.verification_status || "").toLowerCase() === "approved",
+  ).length;
+  const accruedVipSalary = directVipReferralCount * 10_000;
+
   const isVip = await (async () => {
     const p = await c.from("profiles").select("tier,verification_status").eq("user_id", s.userId).maybeSingle();
     return String(p.data?.tier || "").toLowerCase() === "vip" && String(p.data?.verification_status || "").toLowerCase() === "approved";
@@ -104,11 +118,14 @@ export async function GET(request: Request) {
     totalEarnings,
     vipSalary: {
       payments: vipSalaryRows,
+      directVipReferralCount,
+      salaryPerVipReferral: 10_000,
+      accruedBalance: accruedVipSalary,
       totalCredited: vipSalaryTotal,
       assetBalance: Number(vipSalaryRoom?.salary_balance || 0),
       withdrawnTotal: Number(vipSalaryRoom?.withdrawn_salary_total || 0),
-      lockedBalance: lockedVipSalary,
-      withdrawableBalance: salaryWithdrawable ? vipSalaryLockedBalance : 0,
+      lockedBalance: isVip ? (salaryWithdrawable ? 0 : accruedVipSalary) : 0,
+      withdrawableBalance: salaryWithdrawable ? Math.max(vipSalaryLockedBalance, Number(vipSalaryRoom?.salary_balance || 0)) : 0,
       withdrawableOnDay: 20,
       withdrawableToday: salaryWithdrawable,
     },
