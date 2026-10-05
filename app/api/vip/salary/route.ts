@@ -42,44 +42,68 @@ export async function GET(request: Request) {
   const s = status();
   const period = s.period;
   let room = await client.from("vip_asset_rooms").select("salary_balance,withdrawn_salary_total").eq("user_id",access.session.userId).maybeSingle();
+  if (room.error) return NextResponse.json({ok:false,reason:room.error.message},{status:500});
+
+  const refs = await client.from("profiles")
+    .select("user_id,verification_status")
+    .eq("referred_by",access.session.userId)
+    .eq("tier","vip");
+  if (refs.error) return NextResponse.json({ok:false,reason:refs.error.message},{status:500});
+  const directVipReferralCount = (refs.data||[]).filter(
+    (r:any)=>String(r.verification_status||"").toLowerCase()==="approved"
+  ).length;
+  const accrued = directVipReferralCount * 10000;
 
   if (s.unlocked) {
-    const existing = await client.from("vip_salary_payments").select("id").eq("user_id",access.session.userId).eq("period",period).maybeSingle();
-    if (!existing.data) {
-      const refs = await client.from("profiles")
-        .select("user_id,verification_status")
-        .eq("referred_by",access.session.userId)
-        .eq("tier","vip");
-      if (refs.error) return NextResponse.json({ok:false,reason:refs.error.message},{status:500});
-      const inviteCount = (refs.data||[]).filter((r:any)=>String(r.verification_status||"").toLowerCase()==="approved").length;
-      const amount = inviteCount * 10000;
-      const existingPayment = await client.from("vip_salary_payments")
-        .select("id,amount,invite_count")
+    const existingPayment = await client.from("vip_salary_payments")
+      .select("id,amount,invite_count")
+      .eq("user_id",access.session.userId)
+      .eq("period",period)
+      .maybeSingle();
+    if (existingPayment.error) return NextResponse.json({ok:false,reason:existingPayment.error.message},{status:500});
+
+    const previousAmount = Number(existingPayment.data?.amount||0);
+    const delta = Math.max(0,accrued-previousAmount);
+
+    const saved = await client.from("vip_salary_payments").upsert({
+      user_id:access.session.userId,
+      period,
+      invite_count:directVipReferralCount,
+      salary_per_invite:10000,
+      amount:accrued,
+      currency:"UGX",
+      status:"credited"
+    },{onConflict:"user_id,period"}).select("id").maybeSingle();
+    if (saved.error) return NextResponse.json({ok:false,reason:saved.error.message},{status:500});
+
+    if (delta>0) {
+      const current = Number(room.data?.salary_balance??0);
+      const updated = await client.from("vip_asset_rooms")
+        .update({
+          salary_balance:current+delta,
+          updated_at:new Date().toISOString()
+        })
         .eq("user_id",access.session.userId)
-        .eq("period",period)
+        .eq("salary_balance",current);
+      if (updated.error) return NextResponse.json({ok:false,reason:updated.error.message},{status:500});
+      room = await client.from("vip_asset_rooms")
+        .select("salary_balance,withdrawn_salary_total")
+        .eq("user_id",access.session.userId)
         .maybeSingle();
-      const previousAmount = Number(existingPayment.data?.amount||0);
-      const delta = Math.max(0,amount-previousAmount);
-      const saved = await client.from("vip_salary_payments").upsert({
-        user_id:access.session.userId,period,invite_count:inviteCount,salary_per_invite:10000,
-        amount,currency:"UGX",status:"credited"
-      },{onConflict:"user_id,period"}).select("id").maybeSingle();
-      if (saved.error) return NextResponse.json({ok:false,reason:saved.error.message},{status:500});
-      if (delta>0) {
-        const current = Number(room.data?.salary_balance ?? 0);
-        const updated = await client.from("vip_asset_rooms")
-          .update({salary_balance:current+delta,updated_at:new Date().toISOString()})
-          .eq("user_id",access.session.userId)
-          .eq("salary_balance",current);
-        if (updated.error) return NextResponse.json({ok:false,reason:updated.error.message},{status:500});
-        room = await client.from("vip_asset_rooms").select("salary_balance,withdrawn_salary_total").eq("user_id",access.session.userId).maybeSingle();
-      }
     }
   }
 
+  const salaryBalance = Number(room.data?.salary_balance??0);
+  const withdrawn = Number(room.data?.withdrawn_salary_total??0);
+
   return NextResponse.json({
-    ok:true,salary:Number(room.data?.salary_balance??0), accrued:inviteCount * 10000, directVipReferralCount:inviteCount, salaryPerVipReferral:10000,
-    withdrawn:Number(room.data?.withdrawn_salary_total??0),unlockDay:20,
+    ok:true,
+    salary:salaryBalance,
+    accrued,
+    directVipReferralCount,
+    salaryPerVipReferral:10000,
+    withdrawn,
+unlockDay:20,
     unlocked:s.unlocked,currentDay:s.day,
     message:s.unlocked ? "VIP salary is credited for this month. Withdrawals are open." : "VIP salary withdrawal is locked until the 20th."
   });
